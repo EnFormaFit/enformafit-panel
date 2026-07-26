@@ -206,6 +206,10 @@ input[type=file]{display:none}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
       <span>Lógicas del plan</span>
     </button>
+    <button class="sb-item" onclick="S('rutinas')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      <span>Editor rutinas</span>
+    </button>
     <div class="sb-bottom">
       <div class="sb-trainer">
         <div class="sb-av">A</div>
@@ -244,7 +248,7 @@ input[type=file]{display:none}
 <div class="toast" id="toast"></div>
 
 <script>
-const CLIENTES = [{"id": "joel_gonzález", "nom": "Joel González", "init": "JG", "tipo": "uno", "semana": 7, "semTotal": 12, "pesoIni": 90, "pesoAct": 85.4, "obj": 80, "adh": 0.81, "pasosObj": 10000, "checkInDone": true, "revDone": true, "nextRev": 7, "diasSinPeso": 2, "lesiones": "", "inicioBloque": "2026-06-13", "macros": {"kcal": 2000, "p": 160, "c": 200, "g": 65}, "checkIn": {"entrenos": 3, "nutriDias": [0, 1, 2, 3, 5], "pasosDias": [0, 2, 3, 4], "estrellas": 4, "nota": "Esta semana me sentí con mucha energía, el entreno del miércoles fue brutal.", "fecha": "2026-07-25"}, "revision": {"fotos": {"rev_0": "", "rev_1": "", "rev_2": "", "rev_3": ""}, "medidas": {"peso": 85.4, "pecho": 98, "cintura": 85, "cadera": 100, "bicepsd": 36, "bicepsi": 35, "muslod": 56, "musloi": 55, "gemelod": 38, "gemeloi": 37}, "preguntas": {"0": "Me siento muy bien, con más energía que al principio.", "1": "Los entrenamientos fueron bien, aunque el martes estuve cansado.", "2": "La nutrición la seguí casi perfecta.", "3": "Los desayunos con proteína me saciaron mucho.", "4": "Mejoraría el control del snack nocturno."}, "fecha": "2026-07-23"}, "histPesos": [{"f": "2026-06-13", "v": 90.0}, {"f": "2026-06-11", "v": 89.8}, {"f": "2026-06-09", "v": 89.6}, {"f": "2026-06-20", "v": 89.2}, {"f": "2026-06-18", "v": 89.0}, {"f": "2026-06-16", "v": 88.8}, {"f": "2026-06-27", "v": 88.5}, {"f": "2026-06-25", "v": 88.3}, {"f": "2026-06-23", "v": 88.1}, {"f": "2026-07-04", "v": 87.8}, {"f": "2026-07-02", "v": 87.5}, {"f": "2026-06-30", "v": 87.3}, {"f": "2026-07-11", "v": 87.0}, {"f": "2026-07-09", "v": 86.8}, {"f": "2026-07-07", "v": 86.6}, {"f": "2026-07-18", "v": 86.2}, {"f": "2026-07-16", "v": 86.0}, {"f": "2026-07-14", "v": 85.8}]}, {"id": "ángel_martínez", "nom": "Ángel Martínez", "init": "AM", "tipo": "uno", "semana": 5, "semTotal": 12, "pesoIni": 88, "pesoAct": 84.2, "obj": 78, "adh": 0.73, "pasosObj": 10000, "checkInDone": true, "revDone": false, "nextRev": 7, "diasSinPeso": 4, "lesiones": "Dolor rodilla derecha", "inicioBloque": "2026-06-27", "macros": {"kcal": 2000, "p": 160, "c": 200, "g": 65}, "checkIn": {"entrenos": 3, "nutriDias": [0, 1, 2, 3, 5], "pasosDias": [0, 2, 3, 4], "estrellas": 4, "nota": "Esta semana me sentí con mucha energía, el entreno del miércoles fue brutal.", "fecha": "2026-07-25"}, "revision": null, "histPesos": [{"f": "2026-06-13", "v": 88.0}, {"f": "2026-06-11", "v": 87.8}, {"f": "2026-06-09", "v": 87.6}, {"f": "2026-06-20", "v": 87.2}, {"f": "2026-06-18", "v": 87.0}, {"f": "2026-06-16", "v": 86.8}, {"f": "2026-06-27", "v": 86.5}, {"f": "2026-06-25", "v": 86.3}, {"f": "2026-06-23", "v": 86.1}, {"f": "2026-07-04", "v": 85.8}, {"f": "2026-07-02", "v": 85.5}, {"f": "2026-06-30", "v": 85.3}, {"f": "2026-07-11", "v": 85.0}, {"f": "2026-07-09", "v": 84.8}, {"f": "2026-07-07", "v": 84.6}, {"f": "2026-07-18", "v": 84.2}, {"f": "2026-07-16", "v": 84.0}, {"f": "2026-07-14", "v": 83.8}]}, {"id": "markel_ibarra", "nom": "Markel Ibarra", "init": "MI", "tipo": "uno", "semana": 3, "semTotal": 12, "pesoIni": 95, "pesoAct": 92.1, "obj": 85, "adh": 0.9, "pasosObj": 10000, "checkInDone": false, "revDone": false, "nextRev": 3, "diasSinPeso": 1, "lesiones": "", "inicioBloque": "2026-07-11", "macros": {"kcal": 2000, "p": 160, "c": 200, "g": 65}, "checkIn": null, "revision": null, "histPesos": [{"f": "2026-06-13", "v": 95.0}, {"f": "2026-06-11", "v": 94.8}, {"f": "2026-06-09", "v": 94.6}, {"f": "2026-06-20", "v": 94.2}, {"f": "2026-06-18", "v": 94.0}, {"f": "2026-06-16", "v": 93.8}, {"f": "2026-06-27", "v": 93.5}, {"f": "2026-06-25", "v": 93.3}, {"f": "2026-06-23", "v": 93.1}, {"f": "2026-07-04", "v": 92.8}, {"f": "2026-07-02", "v": 92.5}, {"f": "2026-06-30", "v": 92.3}, {"f": "2026-07-11", "v": 92.0}, {"f": "2026-07-09", "v": 91.8}, {"f": "2026-07-07", "v": 91.6}, {"f": "2026-07-18", "v": 91.2}, {"f": "2026-07-16", "v": 91.0}, {"f": "2026-07-14", "v": 90.8}]}, {"id": "guillermo_pérez", "nom": "Guillermo Pérez", "init": "GP", "tipo": "programa", "semana": 8, "semTotal": 13, "pesoIni": 85, "pesoAct": 81.0, "obj": 76, "adh": 0.65, "pasosObj": 8000, "checkInDone": true, "revDone": true, "nextRev": 8, "diasSinPeso": 3, "lesiones": "", "inicioBloque": "2026-06-06", "macros": {"kcal": 2000, "p": 160, "c": 200, "g": 65}, "checkIn": {"entrenos": 3, "nutriDias": [0, 1, 2, 3, 5], "pasosDias": [0, 2, 3, 4], "estrellas": 4, "nota": "Esta semana me sentí con mucha energía, el entreno del miércoles fue brutal.", "fecha": "2026-07-25"}, "revision": {"fotos": {"rev_0": "", "rev_1": "", "rev_2": "", "rev_3": ""}, "medidas": {"peso": 81.0, "pecho": 98, "cintura": 85, "cadera": 100, "bicepsd": 36, "bicepsi": 35, "muslod": 56, "musloi": 55, "gemelod": 38, "gemeloi": 37}, "preguntas": {"0": "Me siento muy bien, con más energía que al principio.", "1": "Los entrenamientos fueron bien, aunque el martes estuve cansado.", "2": "La nutrición la seguí casi perfecta.", "3": "Los desayunos con proteína me saciaron mucho.", "4": "Mejoraría el control del snack nocturno."}, "fecha": "2026-07-23"}, "histPesos": [{"f": "2026-06-13", "v": 85.0}, {"f": "2026-06-11", "v": 84.8}, {"f": "2026-06-09", "v": 84.6}, {"f": "2026-06-20", "v": 84.2}, {"f": "2026-06-18", "v": 84.0}, {"f": "2026-06-16", "v": 83.8}, {"f": "2026-06-27", "v": 83.5}, {"f": "2026-06-25", "v": 83.3}, {"f": "2026-06-23", "v": 83.1}, {"f": "2026-07-04", "v": 82.8}, {"f": "2026-07-02", "v": 82.5}, {"f": "2026-06-30", "v": 82.3}, {"f": "2026-07-11", "v": 82.0}, {"f": "2026-07-09", "v": 81.8}, {"f": "2026-07-07", "v": 81.6}, {"f": "2026-07-18", "v": 81.2}, {"f": "2026-07-16", "v": 81.0}, {"f": "2026-07-14", "v": 80.8}]}, {"id": "miguel_torres", "nom": "Miguel Torres", "init": "MT", "tipo": "programa", "semana": 4, "semTotal": 13, "pesoIni": 92, "pesoAct": 89.5, "obj": 82, "adh": 0.55, "pasosObj": 8000, "checkInDone": false, "revDone": false, "nextRev": 4, "diasSinPeso": 8, "lesiones": "Tendinitis hombro izq.", "inicioBloque": "2026-07-04", "macros": {"kcal": 2000, "p": 160, "c": 200, "g": 65}, "checkIn": null, "revision": null, "histPesos": [{"f": "2026-06-13", "v": 92.0}, {"f": "2026-06-11", "v": 91.8}, {"f": "2026-06-09", "v": 91.6}, {"f": "2026-06-20", "v": 91.2}, {"f": "2026-06-18", "v": 91.0}, {"f": "2026-06-16", "v": 90.8}, {"f": "2026-06-27", "v": 90.5}, {"f": "2026-06-25", "v": 90.3}, {"f": "2026-06-23", "v": 90.1}, {"f": "2026-07-04", "v": 89.8}, {"f": "2026-07-02", "v": 89.5}, {"f": "2026-06-30", "v": 89.3}, {"f": "2026-07-11", "v": 89.0}, {"f": "2026-07-09", "v": 88.8}, {"f": "2026-07-07", "v": 88.6}, {"f": "2026-07-18", "v": 88.2}, {"f": "2026-07-16", "v": 88.0}, {"f": "2026-07-14", "v": 87.8}]}, {"id": "pedro_sánchez", "nom": "Pedro Sánchez", "init": "PS", "tipo": "uno", "semana": 11, "semTotal": 12, "pesoIni": 78, "pesoAct": 74.8, "obj": 72, "adh": 0.88, "pasosObj": 10000, "checkInDone": true, "revDone": false, "nextRev": 11, "diasSinPeso": 1, "lesiones": "", "inicioBloque": "2026-05-16", "macros": {"kcal": 2000, "p": 160, "c": 200, "g": 65}, "checkIn": {"entrenos": 3, "nutriDias": [0, 1, 2, 3, 5], "pasosDias": [0, 2, 3, 4], "estrellas": 4, "nota": "Esta semana me sentí con mucha energía, el entreno del miércoles fue brutal.", "fecha": "2026-07-25"}, "revision": null, "histPesos": [{"f": "2026-06-13", "v": 78.0}, {"f": "2026-06-11", "v": 77.8}, {"f": "2026-06-09", "v": 77.6}, {"f": "2026-06-20", "v": 77.2}, {"f": "2026-06-18", "v": 77.0}, {"f": "2026-06-16", "v": 76.8}, {"f": "2026-06-27", "v": 76.5}, {"f": "2026-06-25", "v": 76.3}, {"f": "2026-06-23", "v": 76.1}, {"f": "2026-07-04", "v": 75.8}, {"f": "2026-07-02", "v": 75.5}, {"f": "2026-06-30", "v": 75.3}, {"f": "2026-07-11", "v": 75.0}, {"f": "2026-07-09", "v": 74.8}, {"f": "2026-07-07", "v": 74.6}, {"f": "2026-07-18", "v": 74.2}, {"f": "2026-07-16", "v": 74.0}, {"f": "2026-07-14", "v": 73.8}]}, {"id": "ismael_lópez", "nom": "Ismael López", "init": "IL", "tipo": "programa", "semana": 2, "semTotal": 13, "pesoIni": 102, "pesoAct": 100.1, "obj": 90, "adh": 0.7, "pasosObj": 8000, "checkInDone": true, "revDone": false, "nextRev": 4, "diasSinPeso": 2, "lesiones": "", "inicioBloque": "2026-07-18", "macros": {"kcal": 2000, "p": 160, "c": 200, "g": 65}, "checkIn": {"entrenos": 3, "nutriDias": [0, 1, 2, 3, 5], "pasosDias": [0, 2, 3, 4], "estrellas": 4, "nota": "Esta semana me sentí con mucha energía, el entreno del miércoles fue brutal.", "fecha": "2026-07-25"}, "revision": null, "histPesos": [{"f": "2026-06-13", "v": 102.0}, {"f": "2026-06-11", "v": 101.8}, {"f": "2026-06-09", "v": 101.6}, {"f": "2026-06-20", "v": 101.2}, {"f": "2026-06-18", "v": 101.0}, {"f": "2026-06-16", "v": 100.8}, {"f": "2026-06-27", "v": 100.5}, {"f": "2026-06-25", "v": 100.3}, {"f": "2026-06-23", "v": 100.1}, {"f": "2026-07-04", "v": 99.8}, {"f": "2026-07-02", "v": 99.5}, {"f": "2026-06-30", "v": 99.3}, {"f": "2026-07-11", "v": 99.0}, {"f": "2026-07-09", "v": 98.8}, {"f": "2026-07-07", "v": 98.6}, {"f": "2026-07-18", "v": 98.2}, {"f": "2026-07-16", "v": 98.0}, {"f": "2026-07-14", "v": 97.8}]}, {"id": "carlos_ruiz", "nom": "Carlos Ruiz", "init": "CR", "tipo": "programa", "semana": 6, "semTotal": 13, "pesoIni": 89, "pesoAct": 85.2, "obj": 80, "adh": 0.42, "pasosObj": 8000, "checkInDone": false, "revDone": false, "nextRev": 8, "diasSinPeso": 12, "lesiones": "Sin lesiones", "inicioBloque": "2026-06-20", "macros": {"kcal": 2000, "p": 160, "c": 200, "g": 65}, "checkIn": null, "revision": null, "histPesos": [{"f": "2026-06-13", "v": 89.0}, {"f": "2026-06-11", "v": 88.8}, {"f": "2026-06-09", "v": 88.6}, {"f": "2026-06-20", "v": 88.2}, {"f": "2026-06-18", "v": 88.0}, {"f": "2026-06-16", "v": 87.8}, {"f": "2026-06-27", "v": 87.5}, {"f": "2026-06-25", "v": 87.3}, {"f": "2026-06-23", "v": 87.1}, {"f": "2026-07-04", "v": 86.8}, {"f": "2026-07-02", "v": 86.5}, {"f": "2026-06-30", "v": 86.3}, {"f": "2026-07-11", "v": 86.0}, {"f": "2026-07-09", "v": 85.8}, {"f": "2026-07-07", "v": 85.6}, {"f": "2026-07-18", "v": 85.2}, {"f": "2026-07-16", "v": 85.0}, {"f": "2026-07-14", "v": 84.8}]}, {"id": "david_fernández", "nom": "David Fernández", "init": "DF", "tipo": "uno", "semana": 9, "semTotal": 12, "pesoIni": 83, "pesoAct": 79.5, "obj": 75, "adh": 0.78, "pasosObj": 10000, "checkInDone": true, "revDone": true, "nextRev": 11, "diasSinPeso": 2, "lesiones": "", "inicioBloque": "2026-05-30", "macros": {"kcal": 2000, "p": 160, "c": 200, "g": 65}, "checkIn": {"entrenos": 3, "nutriDias": [0, 1, 2, 3, 5], "pasosDias": [0, 2, 3, 4], "estrellas": 4, "nota": "Esta semana me sentí con mucha energía, el entreno del miércoles fue brutal.", "fecha": "2026-07-25"}, "revision": {"fotos": {"rev_0": "", "rev_1": "", "rev_2": "", "rev_3": ""}, "medidas": {"peso": 79.5, "pecho": 98, "cintura": 85, "cadera": 100, "bicepsd": 36, "bicepsi": 35, "muslod": 56, "musloi": 55, "gemelod": 38, "gemeloi": 37}, "preguntas": {"0": "Me siento muy bien, con más energía que al principio.", "1": "Los entrenamientos fueron bien, aunque el martes estuve cansado.", "2": "La nutrición la seguí casi perfecta.", "3": "Los desayunos con proteína me saciaron mucho.", "4": "Mejoraría el control del snack nocturno."}, "fecha": "2026-07-23"}, "histPesos": [{"f": "2026-06-13", "v": 83.0}, {"f": "2026-06-11", "v": 82.8}, {"f": "2026-06-09", "v": 82.6}, {"f": "2026-06-20", "v": 82.2}, {"f": "2026-06-18", "v": 82.0}, {"f": "2026-06-16", "v": 81.8}, {"f": "2026-06-27", "v": 81.5}, {"f": "2026-06-25", "v": 81.3}, {"f": "2026-06-23", "v": 81.1}, {"f": "2026-07-04", "v": 80.8}, {"f": "2026-07-02", "v": 80.5}, {"f": "2026-06-30", "v": 80.3}, {"f": "2026-07-11", "v": 80.0}, {"f": "2026-07-09", "v": 79.8}, {"f": "2026-07-07", "v": 79.6}, {"f": "2026-07-18", "v": 79.2}, {"f": "2026-07-16", "v": 79.0}, {"f": "2026-07-14", "v": 78.8}]}];
+const CLIENTES = [{"id": "joel_gonzález", "nom": "Joel González", "init": "JG", "tipo": "uno", "semana": 7, "semTotal": 13, "pesoIni": 90, "pesoAct": 85.4, "obj": 80, "adh": 0.81, "pasosObj": 10000, "checkInDone": true, "revDone": true, "nextRev": 7, "diasSinPeso": 2, "lesiones": "", "inicioBloque": "2026-06-14", "macros": {"kcal": 2000, "p": 160, "c": 200, "g": 65}, "checkIn": {"entrenos": 3, "nutriDias": [0, 1, 2, 3, 5], "pasosDias": [0, 2, 3, 4], "estrellas": 4, "nota": "Esta semana me sentí con mucha energía, el entreno del miércoles fue brutal.", "fecha": "2026-07-26"}, "revision": {"fotos": {"rev_0": "", "rev_1": "", "rev_2": "", "rev_3": ""}, "medidas": {"peso": 85.4, "pecho": 98, "cintura": 85, "cadera": 100, "bicepsd": 36, "bicepsi": 35, "muslod": 56, "musloi": 55, "gemelod": 38, "gemeloi": 37}, "preguntas": {"0": "Me siento muy bien, con más energía que al principio.", "1": "Los entrenamientos fueron bien, aunque el martes estuve cansado.", "2": "La nutrición la seguí casi perfecta.", "3": "Los desayunos con proteína me saciaron mucho.", "4": "Mejoraría el control del snack nocturno."}, "fecha": "2026-07-24"}, "histPesos": [{"f": "2026-06-14", "v": 90.0}, {"f": "2026-06-12", "v": 89.8}, {"f": "2026-06-10", "v": 89.6}, {"f": "2026-06-21", "v": 89.2}, {"f": "2026-06-19", "v": 89.0}, {"f": "2026-06-17", "v": 88.8}, {"f": "2026-06-28", "v": 88.5}, {"f": "2026-06-26", "v": 88.3}, {"f": "2026-06-24", "v": 88.1}, {"f": "2026-07-05", "v": 87.8}, {"f": "2026-07-03", "v": 87.5}, {"f": "2026-07-01", "v": 87.3}, {"f": "2026-07-12", "v": 87.0}, {"f": "2026-07-10", "v": 86.8}, {"f": "2026-07-08", "v": 86.6}, {"f": "2026-07-19", "v": 86.2}, {"f": "2026-07-17", "v": 86.0}, {"f": "2026-07-15", "v": 85.8}]}, {"id": "ángel_martínez", "nom": "Ángel Martínez", "init": "AM", "tipo": "uno", "semana": 5, "semTotal": 13, "pesoIni": 88, "pesoAct": 84.2, "obj": 78, "adh": 0.73, "pasosObj": 10000, "checkInDone": true, "revDone": false, "nextRev": 7, "diasSinPeso": 4, "lesiones": "Dolor rodilla derecha", "inicioBloque": "2026-06-28", "macros": {"kcal": 2000, "p": 160, "c": 200, "g": 65}, "checkIn": {"entrenos": 3, "nutriDias": [0, 1, 2, 3, 5], "pasosDias": [0, 2, 3, 4], "estrellas": 4, "nota": "Esta semana me sentí con mucha energía, el entreno del miércoles fue brutal.", "fecha": "2026-07-26"}, "revision": null, "histPesos": [{"f": "2026-06-14", "v": 88.0}, {"f": "2026-06-12", "v": 87.8}, {"f": "2026-06-10", "v": 87.6}, {"f": "2026-06-21", "v": 87.2}, {"f": "2026-06-19", "v": 87.0}, {"f": "2026-06-17", "v": 86.8}, {"f": "2026-06-28", "v": 86.5}, {"f": "2026-06-26", "v": 86.3}, {"f": "2026-06-24", "v": 86.1}, {"f": "2026-07-05", "v": 85.8}, {"f": "2026-07-03", "v": 85.5}, {"f": "2026-07-01", "v": 85.3}, {"f": "2026-07-12", "v": 85.0}, {"f": "2026-07-10", "v": 84.8}, {"f": "2026-07-08", "v": 84.6}, {"f": "2026-07-19", "v": 84.2}, {"f": "2026-07-17", "v": 84.0}, {"f": "2026-07-15", "v": 83.8}]}, {"id": "markel_ibarra", "nom": "Markel Ibarra", "init": "MI", "tipo": "uno", "semana": 3, "semTotal": 13, "pesoIni": 95, "pesoAct": 92.1, "obj": 85, "adh": 0.9, "pasosObj": 10000, "checkInDone": false, "revDone": false, "nextRev": 3, "diasSinPeso": 1, "lesiones": "", "inicioBloque": "2026-07-12", "macros": {"kcal": 2000, "p": 160, "c": 200, "g": 65}, "checkIn": null, "revision": null, "histPesos": [{"f": "2026-06-14", "v": 95.0}, {"f": "2026-06-12", "v": 94.8}, {"f": "2026-06-10", "v": 94.6}, {"f": "2026-06-21", "v": 94.2}, {"f": "2026-06-19", "v": 94.0}, {"f": "2026-06-17", "v": 93.8}, {"f": "2026-06-28", "v": 93.5}, {"f": "2026-06-26", "v": 93.3}, {"f": "2026-06-24", "v": 93.1}, {"f": "2026-07-05", "v": 92.8}, {"f": "2026-07-03", "v": 92.5}, {"f": "2026-07-01", "v": 92.3}, {"f": "2026-07-12", "v": 92.0}, {"f": "2026-07-10", "v": 91.8}, {"f": "2026-07-08", "v": 91.6}, {"f": "2026-07-19", "v": 91.2}, {"f": "2026-07-17", "v": 91.0}, {"f": "2026-07-15", "v": 90.8}]}, {"id": "guillermo_pérez", "nom": "Guillermo Pérez", "init": "GP", "tipo": "programa", "semana": 8, "semTotal": 14, "pesoIni": 85, "pesoAct": 81.0, "obj": 76, "adh": 0.65, "pasosObj": 8000, "checkInDone": true, "revDone": true, "nextRev": 8, "diasSinPeso": 3, "lesiones": "", "inicioBloque": "2026-06-07", "macros": {"kcal": 2000, "p": 160, "c": 200, "g": 65}, "checkIn": {"entrenos": 3, "nutriDias": [0, 1, 2, 3, 5], "pasosDias": [0, 2, 3, 4], "estrellas": 4, "nota": "Esta semana me sentí con mucha energía, el entreno del miércoles fue brutal.", "fecha": "2026-07-26"}, "revision": {"fotos": {"rev_0": "", "rev_1": "", "rev_2": "", "rev_3": ""}, "medidas": {"peso": 81.0, "pecho": 98, "cintura": 85, "cadera": 100, "bicepsd": 36, "bicepsi": 35, "muslod": 56, "musloi": 55, "gemelod": 38, "gemeloi": 37}, "preguntas": {"0": "Me siento muy bien, con más energía que al principio.", "1": "Los entrenamientos fueron bien, aunque el martes estuve cansado.", "2": "La nutrición la seguí casi perfecta.", "3": "Los desayunos con proteína me saciaron mucho.", "4": "Mejoraría el control del snack nocturno."}, "fecha": "2026-07-24"}, "histPesos": [{"f": "2026-06-14", "v": 85.0}, {"f": "2026-06-12", "v": 84.8}, {"f": "2026-06-10", "v": 84.6}, {"f": "2026-06-21", "v": 84.2}, {"f": "2026-06-19", "v": 84.0}, {"f": "2026-06-17", "v": 83.8}, {"f": "2026-06-28", "v": 83.5}, {"f": "2026-06-26", "v": 83.3}, {"f": "2026-06-24", "v": 83.1}, {"f": "2026-07-05", "v": 82.8}, {"f": "2026-07-03", "v": 82.5}, {"f": "2026-07-01", "v": 82.3}, {"f": "2026-07-12", "v": 82.0}, {"f": "2026-07-10", "v": 81.8}, {"f": "2026-07-08", "v": 81.6}, {"f": "2026-07-19", "v": 81.2}, {"f": "2026-07-17", "v": 81.0}, {"f": "2026-07-15", "v": 80.8}]}, {"id": "miguel_torres", "nom": "Miguel Torres", "init": "MT", "tipo": "programa", "semana": 4, "semTotal": 14, "pesoIni": 92, "pesoAct": 89.5, "obj": 82, "adh": 0.55, "pasosObj": 8000, "checkInDone": false, "revDone": false, "nextRev": 4, "diasSinPeso": 8, "lesiones": "Tendinitis hombro izq.", "inicioBloque": "2026-07-05", "macros": {"kcal": 2000, "p": 160, "c": 200, "g": 65}, "checkIn": null, "revision": null, "histPesos": [{"f": "2026-06-14", "v": 92.0}, {"f": "2026-06-12", "v": 91.8}, {"f": "2026-06-10", "v": 91.6}, {"f": "2026-06-21", "v": 91.2}, {"f": "2026-06-19", "v": 91.0}, {"f": "2026-06-17", "v": 90.8}, {"f": "2026-06-28", "v": 90.5}, {"f": "2026-06-26", "v": 90.3}, {"f": "2026-06-24", "v": 90.1}, {"f": "2026-07-05", "v": 89.8}, {"f": "2026-07-03", "v": 89.5}, {"f": "2026-07-01", "v": 89.3}, {"f": "2026-07-12", "v": 89.0}, {"f": "2026-07-10", "v": 88.8}, {"f": "2026-07-08", "v": 88.6}, {"f": "2026-07-19", "v": 88.2}, {"f": "2026-07-17", "v": 88.0}, {"f": "2026-07-15", "v": 87.8}]}, {"id": "pedro_sánchez", "nom": "Pedro Sánchez", "init": "PS", "tipo": "uno", "semana": 11, "semTotal": 13, "pesoIni": 78, "pesoAct": 74.8, "obj": 72, "adh": 0.88, "pasosObj": 10000, "checkInDone": true, "revDone": false, "nextRev": 11, "diasSinPeso": 1, "lesiones": "", "inicioBloque": "2026-05-17", "macros": {"kcal": 2000, "p": 160, "c": 200, "g": 65}, "checkIn": {"entrenos": 3, "nutriDias": [0, 1, 2, 3, 5], "pasosDias": [0, 2, 3, 4], "estrellas": 4, "nota": "Esta semana me sentí con mucha energía, el entreno del miércoles fue brutal.", "fecha": "2026-07-26"}, "revision": null, "histPesos": [{"f": "2026-06-14", "v": 78.0}, {"f": "2026-06-12", "v": 77.8}, {"f": "2026-06-10", "v": 77.6}, {"f": "2026-06-21", "v": 77.2}, {"f": "2026-06-19", "v": 77.0}, {"f": "2026-06-17", "v": 76.8}, {"f": "2026-06-28", "v": 76.5}, {"f": "2026-06-26", "v": 76.3}, {"f": "2026-06-24", "v": 76.1}, {"f": "2026-07-05", "v": 75.8}, {"f": "2026-07-03", "v": 75.5}, {"f": "2026-07-01", "v": 75.3}, {"f": "2026-07-12", "v": 75.0}, {"f": "2026-07-10", "v": 74.8}, {"f": "2026-07-08", "v": 74.6}, {"f": "2026-07-19", "v": 74.2}, {"f": "2026-07-17", "v": 74.0}, {"f": "2026-07-15", "v": 73.8}]}, {"id": "ismael_lópez", "nom": "Ismael López", "init": "IL", "tipo": "programa", "semana": 2, "semTotal": 14, "pesoIni": 102, "pesoAct": 100.1, "obj": 90, "adh": 0.7, "pasosObj": 8000, "checkInDone": true, "revDone": false, "nextRev": 4, "diasSinPeso": 2, "lesiones": "", "inicioBloque": "2026-07-19", "macros": {"kcal": 2000, "p": 160, "c": 200, "g": 65}, "checkIn": {"entrenos": 3, "nutriDias": [0, 1, 2, 3, 5], "pasosDias": [0, 2, 3, 4], "estrellas": 4, "nota": "Esta semana me sentí con mucha energía, el entreno del miércoles fue brutal.", "fecha": "2026-07-26"}, "revision": null, "histPesos": [{"f": "2026-06-14", "v": 102.0}, {"f": "2026-06-12", "v": 101.8}, {"f": "2026-06-10", "v": 101.6}, {"f": "2026-06-21", "v": 101.2}, {"f": "2026-06-19", "v": 101.0}, {"f": "2026-06-17", "v": 100.8}, {"f": "2026-06-28", "v": 100.5}, {"f": "2026-06-26", "v": 100.3}, {"f": "2026-06-24", "v": 100.1}, {"f": "2026-07-05", "v": 99.8}, {"f": "2026-07-03", "v": 99.5}, {"f": "2026-07-01", "v": 99.3}, {"f": "2026-07-12", "v": 99.0}, {"f": "2026-07-10", "v": 98.8}, {"f": "2026-07-08", "v": 98.6}, {"f": "2026-07-19", "v": 98.2}, {"f": "2026-07-17", "v": 98.0}, {"f": "2026-07-15", "v": 97.8}]}, {"id": "carlos_ruiz", "nom": "Carlos Ruiz", "init": "CR", "tipo": "programa", "semana": 6, "semTotal": 14, "pesoIni": 89, "pesoAct": 85.2, "obj": 80, "adh": 0.42, "pasosObj": 8000, "checkInDone": false, "revDone": false, "nextRev": 8, "diasSinPeso": 12, "lesiones": "Sin lesiones", "inicioBloque": "2026-06-21", "macros": {"kcal": 2000, "p": 160, "c": 200, "g": 65}, "checkIn": null, "revision": null, "histPesos": [{"f": "2026-06-14", "v": 89.0}, {"f": "2026-06-12", "v": 88.8}, {"f": "2026-06-10", "v": 88.6}, {"f": "2026-06-21", "v": 88.2}, {"f": "2026-06-19", "v": 88.0}, {"f": "2026-06-17", "v": 87.8}, {"f": "2026-06-28", "v": 87.5}, {"f": "2026-06-26", "v": 87.3}, {"f": "2026-06-24", "v": 87.1}, {"f": "2026-07-05", "v": 86.8}, {"f": "2026-07-03", "v": 86.5}, {"f": "2026-07-01", "v": 86.3}, {"f": "2026-07-12", "v": 86.0}, {"f": "2026-07-10", "v": 85.8}, {"f": "2026-07-08", "v": 85.6}, {"f": "2026-07-19", "v": 85.2}, {"f": "2026-07-17", "v": 85.0}, {"f": "2026-07-15", "v": 84.8}]}, {"id": "david_fernández", "nom": "David Fernández", "init": "DF", "tipo": "uno", "semana": 9, "semTotal": 13, "pesoIni": 83, "pesoAct": 79.5, "obj": 75, "adh": 0.78, "pasosObj": 10000, "checkInDone": true, "revDone": true, "nextRev": 11, "diasSinPeso": 2, "lesiones": "", "inicioBloque": "2026-05-31", "macros": {"kcal": 2000, "p": 160, "c": 200, "g": 65}, "checkIn": {"entrenos": 3, "nutriDias": [0, 1, 2, 3, 5], "pasosDias": [0, 2, 3, 4], "estrellas": 4, "nota": "Esta semana me sentí con mucha energía, el entreno del miércoles fue brutal.", "fecha": "2026-07-26"}, "revision": {"fotos": {"rev_0": "", "rev_1": "", "rev_2": "", "rev_3": ""}, "medidas": {"peso": 79.5, "pecho": 98, "cintura": 85, "cadera": 100, "bicepsd": 36, "bicepsi": 35, "muslod": 56, "musloi": 55, "gemelod": 38, "gemeloi": 37}, "preguntas": {"0": "Me siento muy bien, con más energía que al principio.", "1": "Los entrenamientos fueron bien, aunque el martes estuve cansado.", "2": "La nutrición la seguí casi perfecta.", "3": "Los desayunos con proteína me saciaron mucho.", "4": "Mejoraría el control del snack nocturno."}, "fecha": "2026-07-24"}, "histPesos": [{"f": "2026-06-14", "v": 83.0}, {"f": "2026-06-12", "v": 82.8}, {"f": "2026-06-10", "v": 82.6}, {"f": "2026-06-21", "v": 82.2}, {"f": "2026-06-19", "v": 82.0}, {"f": "2026-06-17", "v": 81.8}, {"f": "2026-06-28", "v": 81.5}, {"f": "2026-06-26", "v": 81.3}, {"f": "2026-06-24", "v": 81.1}, {"f": "2026-07-05", "v": 80.8}, {"f": "2026-07-03", "v": 80.5}, {"f": "2026-07-01", "v": 80.3}, {"f": "2026-07-12", "v": 80.0}, {"f": "2026-07-10", "v": 79.8}, {"f": "2026-07-08", "v": 79.6}, {"f": "2026-07-19", "v": 79.2}, {"f": "2026-07-17", "v": 79.0}, {"f": "2026-07-15", "v": 78.8}]}];
 
 // ── STATE ──
 let SEC='checkins', CUR_CLI=null, DRAWER_TAB='checkin', EDITING=false, SEARCH='';
@@ -276,7 +280,7 @@ function updateBadges(){
 }
 
 // ── NAV ──
-const TITLES={checkins:'Check-ins semana',revisiones:'Revisiones de la semana',alertas:'Alertas',uno:'Clientes 1:1',programa:'Programa grupal',logicas:'Lógicas del plan',nuevo:'Nuevo cliente'};
+const TITLES={checkins:'Check-ins semana',revisiones:'Revisiones de la semana',alertas:'Alertas',uno:'Clientes 1:1',programa:'Programa grupal',logicas:'Lógicas del plan',rutinas:'Editor de rutinas',nuevo:'Nuevo cliente'};
 function S(s){
   SEC=s;
   document.getElementById('tb-title').textContent=TITLES[s]||s;
@@ -285,7 +289,7 @@ function S(s){
   const items=document.querySelectorAll('.sb-item');
   if(map[s]!==undefined&&items[map[s]])items[map[s]].classList.add('on');
   const ct=document.getElementById('ct');
-  const fns={checkins:renderCheckins,revisiones:renderRevisiones,alertas:renderAlertas,uno:()=>renderClientes('uno'),programa:()=>renderClientes('programa'),logicas:renderLogicas,nuevo:renderNuevo};
+  const fns={checkins:renderCheckins,revisiones:renderRevisiones,alertas:renderAlertas,uno:()=>renderClientes('uno'),programa:()=>renderClientes('programa'),logicas:renderLogicas,rutinas:renderEditorRutinas,nuevo:renderNuevo};
   ct.innerHTML='';
   ct.style.display='flex';
   ct.style.flexDirection='column';
@@ -308,14 +312,16 @@ function renderCheckins(){
   const lunes=new Date(now);lunes.setDate(now.getDate()-diasDesde);
   const lunesStr=lunes.toLocaleDateString('es',{day:'numeric',month:'long'});
 
-  const enviados=CLIENTES.filter(c=>c.checkInDone);
-  const pendientes=CLIENTES.filter(c=>!c.checkInDone);
+  // Check-ins SOLO para clientes 1:1 (programa no tiene check-in semanal)
+  const unoClientes=CLIENTES.filter(c=>c.tipo==='uno');
+  const enviados=unoClientes.filter(c=>c.checkInDone);
+  const pendientes=unoClientes.filter(c=>!c.checkInDone);
 
   let html=`
   <div class="kpi-grid">
     <div class="kpi">
       <div class="kpi-ico" style="background:var(--vd2)">✅</div>
-      <div><div class="kpi-v" style="color:var(--vd)">${enviados.length}</div><div class="kpi-l">Check-ins enviados</div><div class="kpi-delta" style="color:var(--vd)">de ${CLIENTES.length} clientes</div></div>
+      <div><div class="kpi-v" style="color:var(--vd)">${enviados.length}</div><div class="kpi-l">Check-ins enviados</div><div class="kpi-delta" style="color:var(--vd)">de ${unoClientes.length} clientes 1:1</div></div>
     </div>
     <div class="kpi">
       <div class="kpi-ico" style="background:var(--am2)">⏳</div>
@@ -358,7 +364,10 @@ function renderCheckins(){
 
 // ── REVISIONES ──
 function renderRevisiones(){
-  const conRev=CLIENTES.filter(c=>c.semana===c.nextRev);
+  // Revisiones separadas por tipo
+  const conRevUno=CLIENTES.filter(c=>c.tipo==='uno'&&c.semana===c.nextRev);
+  const conRevProg=CLIENTES.filter(c=>c.tipo==='programa'&&c.semana===c.nextRev);
+  const conRev=[...conRevUno,...conRevProg];
   const proxSem=CLIENTES.filter(c=>c.nextRev-c.semana===1);
 
   let html=`<div class="kpi-grid">
@@ -381,21 +390,17 @@ function renderRevisiones(){
   </div>`;
 
   if(conRev.filter(c=>c.revDone).length){
-    html+=`<div class="card">
-      <div class="ch"><h2>✅ Revisiones recibidas — listas para feedback</h2></div>
-      ${conRev.filter(c=>c.revDone).map(c=>`
-        <div style="display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--bor2);cursor:pointer" onclick="openDrawer('${c.id}','revision')">
-          <div class="cr-av" style="background:${getColor(CLIENTES.indexOf(c))}">${c.init}</div>
-          <div style="flex:1">
-            <div style="font-weight:700">${c.nom}</div>
-            <div style="font-size:12px;color:var(--t3)">${c.tipo==='uno'?'1:1':'Programa'} · Revisión S${c.nextRev} · ${c.revision?.fecha||''}</div>
-          </div>
-          <div style="display:flex;gap:6px;align-items:center">
-            <span class="badge bvd">Enviada</span>
-            <span style="font-size:13px;color:var(--az2);font-weight:700">Dar feedback →</span>
-          </div>
-        </div>`).join('')}
-    </div>`;
+    const enviadas1=conRevUno.filter(c=>c.revDone);
+    const enviadasP=conRevProg.filter(c=>c.revDone);
+    let revH='<div class="card"><div class="ch"><h2>✅ Revisiones recibidas — listas para feedback</h2></div>';
+    if(enviadas1.length)revH+='<div style="padding:8px 18px 0;font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px">👤 1:1 Coaching</div>';
+    enviadas1.forEach(c=>{revH+=`<div style="display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--bor2);cursor:pointer" onclick="openDrawer('${c.id}','revision')"><div class="cr-av" style="background:${getColor(CLIENTES.indexOf(c))}">${c.init}</div><div style="flex:1"><div style="font-weight:700">${c.nom}</div><div style="font-size:12px;color:var(--t3)">1:1 · Revisión S${c.nextRev} · ${c.revision?.fecha||''}</div></div><div style="display:flex;gap:6px;align-items:center"><span class="badge bvd">Enviada</span><span style="font-size:13px;color:var(--az2);font-weight:700">Dar feedback →</span></div></div>`;});
+    if(enviadasP.length)revH+='<div style="padding:8px 18px 0;font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px">👥 Programa grupal</div>';
+    enviadasP.forEach(c=>{revH+=`<div style="display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--bor2);cursor:pointer" onclick="openDrawer('${c.id}','revision')"><div class="cr-av" style="background:${getColor(CLIENTES.indexOf(c))}">${c.init}</div><div style="flex:1"><div style="font-weight:700">${c.nom}</div><div style="font-size:12px;color:var(--t3)">Programa · Revisión S${c.nextRev} · ${c.revision?.fecha||''}</div></div><div style="display:flex;gap:6px;align-items:center"><span class="badge bvd">Enviada</span><span style="font-size:13px;color:var(--az2);font-weight:700">Dar feedback →</span></div></div>`;});
+    revH+='</div>';
+    html+=revH;
+    if(false){html+=`
+`;}
   }
 
   if(conRev.filter(c=>!c.revDone).length){
@@ -755,6 +760,138 @@ function renderLogicas(){
 }
 
 // ── NUEVO CLIENTE ──
+// ── EDITOR RUTINAS ──
+let _rutCli=null,_rutSem=1,_rutDia=0;
+
+function renderEditorRutinas(){
+  // Selector de cliente
+  const opts=CLIENTES.map(c=>`<option value="${c.id}" ${_rutCli===c.id?'selected':''}>${c.nom} (${c.tipo==='uno'?'1:1':'Programa'} S${c.semana}/${c.semTotal})</option>`).join('');
+  const cli=_rutCli?CLIENTES.find(c=>c.id===_rutCli):null;
+  
+  if(!cli){
+    return`<div class="card"><div class="ch"><h2>✏️ Editor de rutinas</h2></div><div class="cb">
+      <div style="margin-bottom:14px">
+        <label style="font-size:11.5px;font-weight:700;color:var(--t2);display:block;margin-bottom:6px">SELECCIONA UN CLIENTE</label>
+        <select onchange="_rutCli=this.value;_rutSem=1;_rutDia=0;S('rutinas')" style="width:100%;border:1.5px solid var(--bor);border-radius:8px;padding:10px;font-size:14px;outline:none;font-family:inherit">
+          <option value="">-- Elige cliente --</option>
+          ${opts}
+        </select>
+      </div>
+    </div></div>`;
+  }
+
+  const semTotal=cli.semTotal;
+  // Semanas tabs
+  const semTabs=Array.from({length:semTotal},(_, i)=>`<button class="hw ${_rutSem===i+1?'on':''}" onclick="_rutSem=${i+1};_rutDia=0;S('rutinas')">S${i+1}</button>`).join('');
+  
+  // Días de entrenamiento demo (4 días)
+  const DIAS_DEMO=[
+    {nom:'Lunes',tipo:'Tren Superior A',ejercicios:[
+      {nom:'Press Banca con Barra',sets:4,reps:'6-8',rir:2,rest:180},
+      {nom:'Remo con Barra Pronado',sets:4,reps:'6-8',rir:2,rest:180},
+      {nom:'Press Militar con Mancuernas',sets:3,reps:'8-10',rir:2,rest:120},
+      {nom:'Jalón al Pecho Agarre Ancho',sets:3,reps:'8-10',rir:2,rest:120},
+      {nom:'Curl de Bíceps con Barra EZ',sets:3,reps:'10-12',rir:1,rest:90},
+      {nom:'Extensión Tríceps en Polea Alta',sets:3,reps:'10-12',rir:1,rest:90},
+    ]},
+    {nom:'Martes',tipo:'Tren Inferior A',ejercicios:[
+      {nom:'Sentadilla con Barra Alta',sets:4,reps:'6-8',rir:2,rest:180},
+      {nom:'Prensa de Pierna',sets:3,reps:'10-12',rir:2,rest:150},
+      {nom:'Extensión de Cuádriceps en Máquina',sets:3,reps:'12-15',rir:1,rest:90},
+      {nom:'Curl de Isquiotibiales Tumbado',sets:3,reps:'10-12',rir:1,rest:90},
+      {nom:'Elevación de Talones de Pie',sets:4,reps:'15-20',rir:1,rest:60},
+      {nom:'Plancha Abdominal',sets:3,reps:'30-45s',rir:0,rest:60},
+    ]},
+    {nom:'Jueves',tipo:'Tren Superior B',ejercicios:[
+      {nom:'Press Banca Inclinado con Mancuernas',sets:4,reps:'8-10',rir:2,rest:150},
+      {nom:'Remo en Polea Baja con Barra',sets:4,reps:'8-10',rir:2,rest:150},
+      {nom:'Aperturas en Máquina (Pec Deck)',sets:3,reps:'12-15',rir:1,rest:90},
+      {nom:'Jalón Neutro en Polea',sets:3,reps:'10-12',rir:1,rest:90},
+      {nom:'Elevación Lateral con Mancuernas',sets:4,reps:'15-20',rir:1,rest:60},
+    ]},
+    {nom:'Viernes',tipo:'Tren Inferior B',ejercicios:[
+      {nom:'Peso Muerto Convencional',sets:4,reps:'5-6',rir:2,rest:180},
+      {nom:'Sentadilla Búlgara con Mancuerna',sets:3,reps:'8-10',rir:2,rest:150},
+      {nom:'Extensión de Cadera en Máquina',sets:3,reps:'12-15',rir:1,rest:90},
+      {nom:'Curl de Isquiotibiales Sentado',sets:3,reps:'10-12',rir:1,rest:90},
+      {nom:'Peso Muerto Rumano con Mancuernas',sets:3,reps:'10-12',rir:2,rest:120},
+    ]},
+  ];
+
+  const dias=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+  const diaTabs=DIAS_DEMO.map((d,i)=>`<button class="hw ${_rutDia===i?'on':''}" onclick="_rutDia=${i};S('rutinas')" style="flex-shrink:0">${d.nom.slice(0,3)}</button>`).join('');
+  
+  const diaActual=DIAS_DEMO[_rutDia];
+
+  let ejHtml='';
+  diaActual.ejercicios.forEach((ej,ei)=>{
+    ejHtml+=`<div style="border:1px solid var(--bor);border-radius:8px;margin-bottom:8px;overflow:hidden">
+      <div style="display:grid;grid-template-columns:24px 1fr 60px 60px 50px 60px 28px;gap:6px;align-items:center;padding:10px 12px;background:#fff">
+        <span style="font-size:11px;font-weight:700;color:var(--t3)">${ei+1}</span>
+        <input value="${ej.nom}" style="border:1px solid var(--bor);border-radius:6px;padding:6px 8px;font-size:13px;font-weight:600;outline:none;font-family:inherit;width:100%" placeholder="Nombre ejercicio" oninput="toast('Cambio guardado','vd')">
+        <input value="${ej.sets}" style="border:1px solid var(--bor);border-radius:6px;padding:6px;font-size:13px;text-align:center;outline:none;font-family:inherit;width:100%" placeholder="Series" type="number">
+        <input value="${ej.reps}" style="border:1px solid var(--bor);border-radius:6px;padding:6px;font-size:12px;text-align:center;outline:none;font-family:inherit;width:100%" placeholder="Reps">
+        <input value="${ej.rir}" style="border:1px solid var(--bor);border-radius:6px;padding:6px;font-size:13px;text-align:center;outline:none;font-family:inherit;width:100%;color:var(--nr)" placeholder="RIR" type="number" min="0" max="5">
+        <select style="border:1px solid var(--bor);border-radius:6px;padding:6px;font-size:12px;outline:none;font-family:inherit;width:100%">
+          <option ${ej.rest===60?'selected':''}>60s</option>
+          <option ${ej.rest===90?'selected':''}>90s</option>
+          <option ${ej.rest===120?'selected':''}>2min</option>
+          <option ${ej.rest===150?'selected':''}>2:30</option>
+          <option ${ej.rest===180?'selected':''}>3min</option>
+        </select>
+        <button onclick="this.closest('div').remove();toast('Ejercicio eliminado','')" style="background:var(--rj2);border:none;border-radius:6px;width:28px;height:28px;cursor:pointer;color:var(--rj);font-size:14px;display:flex;align-items:center;justify-content:center">✕</button>
+      </div>
+    </div>`;
+  });
+
+  return`
+  <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center;flex-wrap:wrap">
+    <select onchange="_rutCli=this.value;_rutSem=1;_rutDia=0;S('rutinas')" style="border:1.5px solid var(--bor);border-radius:8px;padding:8px 12px;font-size:14px;outline:none;font-family:inherit;flex:1;min-width:200px">
+      <option value="">-- Elige cliente --</option>
+      ${opts}
+    </select>
+    <button class="btn btnp" onclick="toast('Cambios guardados para ${cli.nom} S${_rutSem}','vd')">💾 Guardar S${_rutSem}</button>
+  </div>
+  
+  <div class="card">
+    <div class="ch">
+      <h2>📅 Semanas del bloque</h2>
+      <span class="badge baz">${cli.nom} · ${cli.tipo==='uno'?'1:1':'Programa'}</span>
+    </div>
+    <div class="cb" style="padding:10px 14px">
+      <div class="hist-weeks" style="flex-wrap:wrap;gap:4px">${semTabs}</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ch">
+      <h2>💪 Semana ${_rutSem} — Días</h2>
+    </div>
+    <div class="cb" style="padding:10px 14px">
+      <div class="hist-weeks">${diaTabs}</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ch">
+      <h2>${diaActual.nom} · ${diaActual.tipo}</h2>
+      <button class="btn btns btno" onclick="this.closest('.card').querySelector('.ej-list').insertAdjacentHTML('beforeend','<div style=\'border:1px solid var(--bor);border-radius:8px;margin-bottom:8px;overflow:hidden\'><div style=\'display:grid;grid-template-columns:24px 1fr 60px 60px 50px 60px 28px;gap:6px;align-items:center;padding:10px 12px;background:#fff\'><span style=\'font-size:11px;font-weight:700;color:var(--t3)\'>+</span><input placeholder=\'Nombre ejercicio\' style=\'border:1px solid var(--bor);border-radius:6px;padding:6px 8px;font-size:13px;font-weight:600;outline:none;font-family:inherit;width:100%\'><input value=\'4\' placeholder=\'Series\' type=\'number\' style=\'border:1px solid var(--bor);border-radius:6px;padding:6px;font-size:13px;text-align:center;outline:none;font-family:inherit;width:100%\'><input value=\'8-10\' placeholder=\'Reps\' style=\'border:1px solid var(--bor);border-radius:6px;padding:6px;font-size:12px;text-align:center;outline:none;font-family:inherit;width:100%\'><input value=\'2\' placeholder=\'RIR\' type=\'number\' min=\'0\' max=\'5\' style=\'border:1px solid var(--bor);border-radius:6px;padding:6px;font-size:13px;text-align:center;outline:none;font-family:inherit;width:100%;color:var(--nr)\'><select style=\'border:1px solid var(--bor);border-radius:6px;padding:6px;font-size:12px;outline:none;font-family:inherit;width:100%\'><option>60s</option><option>90s</option><option selected>2min</option><option>2:30</option><option>3min</option></select><button onclick=\'this.closest(\'div\').remove()\' style=\'background:var(--rj2);border:none;border-radius:6px;width:28px;height:28px;cursor:pointer;color:var(--rj);font-size:14px\'>✕</button></div></div>');toast('Ejercicio añadido','vd')">+ Ejercicio</button>
+    </div>
+    <div style="padding:0 14px 8px">
+      <div style="display:grid;grid-template-columns:24px 1fr 60px 60px 50px 60px 28px;gap:6px;margin-bottom:6px;padding:0 2px">
+        <span style="font-size:10px;font-weight:700;color:var(--t3)">#</span>
+        <span style="font-size:10px;font-weight:700;color:var(--t3)">EJERCICIO</span>
+        <span style="font-size:10px;font-weight:700;color:var(--t3);text-align:center">SERIES</span>
+        <span style="font-size:10px;font-weight:700;color:var(--t3);text-align:center">REPS</span>
+        <span style="font-size:10px;font-weight:700;color:var(--nr);text-align:center">RIR</span>
+        <span style="font-size:10px;font-weight:700;color:var(--t3);text-align:center">DESC.</span>
+        <span></span>
+      </div>
+      <div class="ej-list">${ejHtml}</div>
+    </div>
+  </div>`;
+}
+
 function renderNuevo(){
   return`<div class="card" style="max-width:500px"><div class="ch"><h2>➕ Nuevo cliente</h2></div><div class="cb">
     ${[['Nombre completo','nom','text'],['Email','email','email'],['Tipo','tipo','select'],['Peso inicial (kg)','pesoIni','number'],['Peso objetivo (kg)','obj','number'],['Altura (cm)','altura','number'],['Pasos diarios','pasosObj','number']].map(([l,k,t])=>`
