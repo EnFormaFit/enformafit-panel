@@ -248,9 +248,13 @@ svg.mini{overflow:visible}
     </button>
 
     <div class="sb-bottom">
+      <div style="display:flex;gap:6px;margin-bottom:10px">
+        <button onclick="setRol('ceo')" id="btn-rol-ceo" style="flex:1;padding:5px;border-radius:6px;border:1.5px solid rgba(255,255,255,.3);background:rgba(255,255,255,.2);color:rgba(255,255,255,.9);font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">👑 CEO</button>
+        <button onclick="setRol('trainer')" id="btn-rol-trainer" style="flex:1;padding:5px;border-radius:6px;border:1.5px solid rgba(255,255,255,.3);background:none;color:rgba(255,255,255,.5);font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">🏋️ Entrenador</button>
+      </div>
       <div class="sb-trainer">
         <div class="sb-av">A</div>
-        <div><div style="font-weight:700;font-size:12px">Álvaro Casal</div><div style="opacity:.6;font-size:11px">Admin</div></div>
+        <div><div style="font-weight:700;font-size:12px">Álvaro Casal</div><div style="opacity:.6;font-size:11px" id="sb-rol-label">CEO · Admin</div></div>
       </div>
     </div>
   </nav>
@@ -288,6 +292,17 @@ const EJS=[{"nombre": "Sentadilla Barra Alta", "grupo": "Cuádriceps", "tipo": "
 // ── STATE ──
 let SEC='ci', CUR=null, DTAB='resumen', EDITING=false, SEARCH='';
 let RUT_CLI=null, RUT_SEM=1, RUT_DIA=0;
+let _ROL='ceo'; // ceo | trainer
+function setRol(rol){
+  _ROL=rol;
+  document.getElementById('sb-rol-label').textContent=rol==='ceo'?'CEO · Admin':'Entrenador';
+  ['ceo','trainer'].forEach(r=>{
+    const btn=document.getElementById('btn-rol-'+r);
+    if(btn)btn.style.background=r===rol?'rgba(255,255,255,.2)':'none';
+    if(btn)btn.style.color=r===rol?'rgba(255,255,255,.9)':'rgba(255,255,255,.5)';
+  });
+  toast('Vista: '+(rol==='ceo'?'CEO completa':'Entrenador'),'');
+}
 // Copy/paste state for rutinas
 let CP_MODE=null; // null | 'semana' | 'dia' | 'ej'
 let CP_DATA=null; // copied data
@@ -341,7 +356,24 @@ function S(s){
   const html=(fns[s]||renderCI)();
   ct.innerHTML=html;
 }
-function search(q){SEARCH=q.toLowerCase();if(SEC==='uno'||SEC==='prog')S(SEC);}
+function search(q){
+  SEARCH=q.toLowerCase();
+  // Search works in all client views
+  if(SEC==='uno'||SEC==='prog'||SEC==='ci'||SEC==='rev1'||SEC==='revp')S(SEC);
+  else{
+    // Global search: find matching clients and show
+    if(q.length>1){
+      const matches=CLIENTES.filter(c=>c.nom.toLowerCase().includes(SEARCH));
+      if(matches.length){
+        const ct=document.getElementById('ct');
+        let h='<div class="card"><div class="ch"><h2>🔍 Búsqueda: "'+q+'" ('+matches.length+' resultados)</h2></div><table class="ctable"><thead><tr><th>Cliente</th><th>Tipo</th><th>Semana</th><th>Adh.</th><th></th></tr></thead><tbody>';
+        matches.forEach(c=>{h+=`<tr onclick="openD('${c.id}','resumen')"><td><div style="display:flex;align-items:center;gap:8px"><div class="cr-av" style="background:${gc(CLIENTES.indexOf(c))}">${c.init}</div>${c.nom}</div></td><td><span class="badge ${c.tipo==='uno'?'baz':'bvd'}">${c.tipo==='uno'?'1:1':'Programa'}</span></td><td>S${c.semana}/${c.semTotal}</td><td><span class="badge ${adhCls(c.adh)}">${Math.round(c.adh*100)}%</span></td><td style="color:var(--az2);font-size:12px;font-weight:600">Ver →</td></tr>`;});
+        h+='</tbody></table></div>';
+        ct.innerHTML=h;
+      }
+    }
+  }
+}
 function toast(msg,t=''){const el=document.getElementById('toast');el.textContent=msg;el.className='toast show'+(t?' '+t:'');setTimeout(()=>el.classList.remove('show'),2600);}
 
 // ── DRAWER ──
@@ -397,7 +429,7 @@ function renderCI(){
     h+=`<tr onclick="openD('${c.id}','checkin')">
       <td><div style="display:flex;align-items:center;gap:8px"><div class="cr-av" style="background:${gc(CLIENTES.indexOf(c))}">${c.init}</div>${c.nom}</div></td>
       <td><span class="badge ${adhCls(c.adh)}">${Math.round(c.adh*100)}%</span></td>
-      <td>${ci.entrenos||0}</td>
+      <td>${ci.entrenos||0}/4 días</td>
       <td>${ci.nutriDias?.length||0}/7</td>
       <td>${ci.pasosDias?.length||0}/7</td>
       <td>${'⭐'.repeat(ci.estrellas||0)}</td>
@@ -507,7 +539,7 @@ function dResumen(){
     <div class="ci-box"><div class="ci-v" style="color:var(--az);font-size:16px">${c.obj}kg</div><div class="ci-l">Objetivo</div></div>
     <div class="ci-box"><div class="ci-v" style="color:${parseFloat(left)>0?'var(--nr)':'var(--vd)'};font-size:16px">${parseFloat(left)>0?left+'kg':'✅'}</div><div class="ci-l">Para objetivo</div></div>
   </div>
-  ${c.lesiones?`<div style="background:var(--am2);border:1px solid var(--am);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:13px"><b>🩹</b> ${c.lesiones}</div>`:''}
+  ${c.lesiones?`<div style="background:var(--am2);border:1px solid var(--am);border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:13px;cursor:pointer" onclick="setDtab('editar')" title="Click para editar">🩹 ${c.lesiones} <span style="font-size:11px;color:var(--am);margin-left:6px">✏️ editar</span></div>`:''}
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
     ${c.tipo==='uno'?`<button class="btn btno" style="width:100%" onclick="setDtab('checkin')">📋 Check-in</button>`:''}
     <button class="btn btno" style="width:100%" onclick="setDtab('revision')">📸 Revisión</button>
@@ -524,7 +556,7 @@ function dCheckin(){
   const ci=c.checkIn;
   return`
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
-    <div class="ci-box"><div class="ci-v" style="color:var(--az)">${ci.entrenos}</div><div class="ci-l">Entrenos</div></div>
+    <div class="ci-box"><div class="ci-v" style="color:var(--az)">${ci.entrenos}/${[...Array(7)].filter((_,i)=>!DIAS_DEMO[i]?.rest).length}</div><div class="ci-l">Entrenos</div></div>
     <div class="ci-box"><div class="ci-v" style="color:var(--vd)">${ci.nutriDias?.length||0}/7</div><div class="ci-l">Nutrición</div></div>
     <div class="ci-box"><div class="ci-v" style="color:var(--nr)">${ci.pasosDias?.length||0}/7</div><div class="ci-l">Pasos</div></div>
   </div>
@@ -612,6 +644,22 @@ function guardarC(){EDITING=false;renderD();toast('Guardado: '+CUR?.nom,'vd');}
 // ══════════════════════════════════════════
 
 // Estructura: RUTINAS[cliId][sem][dia] = [{nom,sets,reps,rir,rest,acl,url}, ...]
+// Undo stack
+const UNDO_STACK=[];
+const UNDO_MAX=20;
+function pushUndo(){
+  if(!RUT_CLI)return;
+  const snap=JSON.stringify(RUTINAS[RUT_CLI]||{});
+  UNDO_STACK.push({cli:RUT_CLI,data:snap});
+  if(UNDO_STACK.length>UNDO_MAX)UNDO_STACK.shift();
+}
+function undo(){
+  if(!UNDO_STACK.length){toast('Nada que deshacer','');return;}
+  const last=UNDO_STACK.pop();
+  RUTINAS[last.cli]=JSON.parse(last.data);
+  toast('↩ Deshecho','vd');S('rut');
+}
+document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();undo();}});
 // Días demo por cliente
 const DIAS_DEMO=[
   {nom:'Lunes',tipo:'Tren Superior A',rest:false},
@@ -676,28 +724,44 @@ function renderRutinas(){
   const diaActual=dias[RUT_DIA];
 
   // Copy/paste bar
+  // Multi-paste destinations
+  const totalSems=cli.semTotal;
+  let pasteMultiHTML='';
+  if(CP_MODE==='semana'&&CP_DATA){
+    // Show checkboxes for all other weeks
+    const semOpts=Array.from({length:totalSems},(_,i)=>{const s=i+1;if(s===RUT_SEM)return'';return`<label style="display:inline-flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;padding:3px 6px;border:1px solid var(--bor);border-radius:5px;background:#fff"><input type="checkbox" value="${s}" style="margin:0"> S${s}</label>`;}).join('');
+    pasteMultiHTML=`<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:5px;align-items:center"><span style="font-size:11px;font-weight:700;color:var(--az2)">Pegar en:</span>${semOpts}<button class="cp-btn active" onclick="pegarMultiple()" style="margin-left:4px">📌 Pegar seleccionadas</button></div>`;
+  }
   let cpBar=`<div class="cp-bar">
     <span>📋 Copiar/pegar:</span>
-    <button class="cp-btn ${CP_MODE==='semana'&&CP_DATA?.sem===RUT_SEM?'active':''}" onclick="copiarSemana(${RUT_SEM})">📅 Copiar S${RUT_SEM}</button>
-    ${!diaActual.rest?`<button class="cp-btn ${CP_MODE==='dia'&&CP_DATA?.dia===RUT_DIA?'active':''}" onclick="copiarDia(${RUT_SEM},${RUT_DIA})">💪 Copiar este día</button>`:''}
-    ${CP_MODE&&CP_DATA?`<button class="cp-btn active" onclick="pegarAqui(${RUT_SEM},${RUT_DIA})">📌 Pegar aquí${CP_MODE==='semana'?' (semana completa)':CP_MODE==='dia'?' (este día)':CP_MODE==='ej'?' (ejercicio)':''}</button>`:''}
-    ${CP_MODE?`<button class="cp-btn" onclick="CP_MODE=null;CP_DATA=null;S('rut')" style="color:var(--rj);border-color:var(--rj)">✕ Cancelar</button>`:''}
-  </div>`;
+    <button class="cp-btn ${CP_MODE==='semana'&&CP_DATA?.sem===RUT_SEM?'active':''}" onclick="copiarSemana(${RUT_SEM})">📅 Copiar S${RUT_SEM} completa</button>
+    ${!diaActual.rest?`<button class="cp-btn ${CP_MODE==='dia'&&CP_DATA?.dia===RUT_DIA?'active':''}" onclick="copiarDia(${RUT_SEM},${RUT_DIA})">💪 Copiar ${diaActual.nom}</button>`:''}
+    ${CP_MODE&&CP_DATA&&CP_MODE!=='semana'?`<button class="cp-btn active" onclick="pegarAqui(${RUT_SEM},${RUT_DIA})">📌 Pegar aquí</button>`:''}
+    ${CP_MODE?`<button class="cp-btn" onclick="CP_MODE=null;CP_DATA=null;CP_TARGETS=[];S('rut')" style="color:var(--rj);border-color:var(--rj)">✕ Cancelar</button>`:''}
+    <span style="margin-left:auto;font-size:11px;color:var(--t3)">Ctrl+Z para deshacer</span>
+  </div>${pasteMultiHTML}`;
 
   // Exercise editor
   let ejSection='';
   if(diaActual.rest){
-    ejSection=`<div class="card"><div class="cb" style="text-align:center;padding:24px;color:var(--t3)">
+    ejSection=`<div class="card"><div class="cb" style="text-align:center;padding:24px">
       <div style="font-size:32px;margin-bottom:8px">😴</div>
-      <div style="font-weight:700;margin-bottom:6px">Día de descanso</div>
-      <button class="btn btno" style="margin-top:8px" onclick="cambiarAEntrenamiento(${RUT_DIA})">Convertir a día de entreno</button>
+      <div style="font-weight:700;margin-bottom:6px;color:var(--t2)">Día de descanso</div>
+      <div style="font-size:13px;color:var(--t3);margin-bottom:14px">Puedes convertirlo a día de entrenamiento o copiar un día existente y pegarlo aquí.</div>
+      <div style="display:flex;gap:8px;justify-content:center">
+        <button class="btn btnp" onclick="cambiarAEntrenamiento(${RUT_DIA})">💪 Convertir a entreno</button>
+        ${CP_MODE==='dia'&&CP_DATA?`<button class="btn btno" onclick="pegarAqui(${RUT_SEM},${RUT_DIA})">📌 Pegar día copiado</button>`:''}
+      </div>
     </div></div>`;
   } else {
     const ejes=getRutina(RUT_CLI,RUT_SEM,RUT_DIA);
     ejSection=`<div class="card">
       <div class="ch">
         <h2>${diaActual.nom} · ${diaActual.tipo} · S${RUT_SEM}</h2>
-        <button class="btn btno" style="font-size:12px" onclick="addEj()">+ Ejercicio</button>
+        <div style="display:flex;gap:6px">
+          <button class="btn btno" style="font-size:12px" onclick="addEj()">+ Ejercicio</button>
+          <button class="btn btno" style="font-size:11px;color:var(--t3)" onclick="if(confirm('¿Convertir a día de descanso?'))cambiarADescanso(${RUT_DIA})">😴 Descanso</button>
+        </div>
       </div>
       <div style="overflow-x:auto">
         <div class="ej-grid-hd">
@@ -808,12 +872,36 @@ function addEj(){
   setTimeout(()=>{const inputs=document.querySelectorAll('.ej-inp');if(inputs.length)inputs[inputs.length-1].focus();},100);
 }
 function delEj(ei){
+  pushUndo();
   const ejes=getRutina(RUT_CLI,RUT_SEM,RUT_DIA);
   ejes.splice(ei,1);
   S('rut');
 }
 function guardarRutina(){toast('Rutina S'+RUT_SEM+' guardada para '+CLIENTES.find(c=>c.id===RUT_CLI)?.nom,'vd');}
-function cambiarAEntrenamiento(dia){toast('Función próximamente','');}
+function cambiarAEntrenamiento(dia){
+  pushUndo();
+  // Change rest day to training day by copying an adjacent training day
+  const srcDia=dia<=1?3:0; // copy from nearest training day
+  const ejes=getRutina(RUT_CLI,RUT_SEM,srcDia);
+  if(!RUTINAS[RUT_CLI])RUTINAS[RUT_CLI]={};
+  if(!RUTINAS[RUT_CLI][RUT_SEM])RUTINAS[RUT_CLI][RUT_SEM]={};
+  RUTINAS[RUT_CLI][RUT_SEM][dia]=JSON.parse(JSON.stringify(ejes));
+  // Mark day as no longer rest in local state
+  DIAS_DEMO[dia].rest=false;
+  DIAS_DEMO[dia].tipo='Entreno';
+  toast('Día convertido a entrenamiento ✓','vd');
+  S('rut');
+}
+function cambiarADescanso(dia){
+  pushUndo();
+  if(!RUTINAS[RUT_CLI])RUTINAS[RUT_CLI]={};
+  if(!RUTINAS[RUT_CLI][RUT_SEM])RUTINAS[RUT_CLI][RUT_SEM]={};
+  RUTINAS[RUT_CLI][RUT_SEM][dia]=[];
+  DIAS_DEMO[dia].rest=true;
+  DIAS_DEMO[dia].tipo='Descanso';
+  toast('Día convertido a descanso ✓','vd');
+  S('rut');
+}
 
 // ── COPY / PASTE ──
 function copiarSemana(sem){
@@ -841,8 +929,25 @@ function copiarEj(ei){
   toast(ejes[ei].nom+' copiado','vd');
   S('rut');
 }
+let CP_TARGETS=[];
+function pegarMultiple(){
+  const checks=document.querySelectorAll('.cp-bar input[type=checkbox]:checked');
+  if(!checks.length){toast('Selecciona al menos una semana','rj');return;}
+  pushUndo();
+  checks.forEach(cb=>{
+    const s=parseInt(cb.value);
+    if(!RUTINAS[RUT_CLI])RUTINAS[RUT_CLI]={};
+    if(!RUTINAS[RUT_CLI][s])RUTINAS[RUT_CLI][s]={};
+    Object.keys(CP_DATA.data).forEach(d=>{
+      RUTINAS[RUT_CLI][s][parseInt(d)]=JSON.parse(JSON.stringify(CP_DATA.data[d]));
+    });
+  });
+  toast('S'+CP_DATA.sem+' pegada en '+checks.length+' semana'+(checks.length>1?'s':''),'vd');
+  CP_MODE=null;CP_DATA=null;S('rut');
+}
 function pegarAqui(sem,dia){
   if(!CP_DATA){toast('Nada copiado','');return;}
+  pushUndo();
   if(!RUTINAS[RUT_CLI])RUTINAS[RUT_CLI]={};
   if(!RUTINAS[RUT_CLI][sem])RUTINAS[RUT_CLI][sem]={};
 
@@ -898,13 +1003,49 @@ function renderLogicas(){
 
 // ── NUEVO ──
 function renderNuevo(){
-  return`<div class="card" style="max-width:480px"><div class="ch"><h2>➕ Nuevo cliente</h2></div><div class="cb">
-    ${[['Nombre','nom','text'],['Email','email','email'],['Tipo','tipo','select'],['Peso inicial (kg)','pesoIni','number'],['Objetivo (kg)','obj','number'],['Pasos/día','pasosObj','number']].map(([l,k,t])=>`
-    <div style="margin-bottom:10px"><label style="font-size:11.5px;font-weight:700;color:var(--t2);display:block;margin-bottom:3px">${l}</label>
-    ${t==='select'?`<select id="nc-${k}" style="width:100%;border:1.5px solid var(--bor);border-radius:8px;padding:9px;font-size:14px;outline:none;font-family:inherit"><option value="uno">1:1 Coaching</option><option value="programa">Programa grupal</option></select>`:`<input id="nc-${k}" type="${t}" style="width:100%;border:1.5px solid var(--bor);border-radius:8px;padding:9px;font-size:14px;outline:none;font-family:inherit">`}
-    </div>`).join('')}
-    <button class="btn btnp btnf" onclick="toast('Cliente creado (demo) ✓','vd')">Crear cliente ✓</button>
+  return`<div class="card" style="max-width:500px"><div class="ch"><h2>➕ Nuevo cliente</h2></div><div class="cb">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div><label style="font-size:11px;font-weight:700;color:var(--t2);display:block;margin-bottom:3px">NOMBRE COMPLETO</label><input id="nc-nom" type="text" placeholder="Nombre Apellido" style="width:100%;border:1.5px solid var(--bor);border-radius:8px;padding:9px;font-size:14px;outline:none;font-family:inherit"></div>
+      <div><label style="font-size:11px;font-weight:700;color:var(--t2);display:block;margin-bottom:3px">EMAIL</label><input id="nc-email" type="email" placeholder="email@ejemplo.com" style="width:100%;border:1.5px solid var(--bor);border-radius:8px;padding:9px;font-size:14px;outline:none;font-family:inherit"></div>
+      <div><label style="font-size:11px;font-weight:700;color:var(--t2);display:block;margin-bottom:3px">TIPO</label><select id="nc-tipo" style="width:100%;border:1.5px solid var(--bor);border-radius:8px;padding:9px;font-size:14px;outline:none;font-family:inherit"><option value="uno">1:1 Coaching</option><option value="programa">Programa grupal</option></select></div>
+      <div><label style="font-size:11px;font-weight:700;color:var(--t2);display:block;margin-bottom:3px">PESO INICIAL (kg)</label><input id="nc-peso" type="number" placeholder="85" step="0.1" style="width:100%;border:1.5px solid var(--bor);border-radius:8px;padding:9px;font-size:14px;outline:none;font-family:inherit"></div>
+      <div><label style="font-size:11px;font-weight:700;color:var(--t2);display:block;margin-bottom:3px">PESO OBJETIVO (kg)</label><input id="nc-obj" type="number" placeholder="78" step="0.1" style="width:100%;border:1.5px solid var(--bor);border-radius:8px;padding:9px;font-size:14px;outline:none;font-family:inherit"></div>
+      <div><label style="font-size:11px;font-weight:700;color:var(--t2);display:block;margin-bottom:3px">ALTURA (cm)</label><input id="nc-altura" type="number" placeholder="178" style="width:100%;border:1.5px solid var(--bor);border-radius:8px;padding:9px;font-size:14px;outline:none;font-family:inherit"></div>
+      <div><label style="font-size:11px;font-weight:700;color:var(--t2);display:block;margin-bottom:3px">PASOS DIARIOS</label><input id="nc-pasos" type="number" placeholder="10000" style="width:100%;border:1.5px solid var(--bor);border-radius:8px;padding:9px;font-size:14px;outline:none;font-family:inherit"></div>
+      <div><label style="font-size:11px;font-weight:700;color:var(--t2);display:block;margin-bottom:3px">KCAL OBJETIVO</label><input id="nc-kcal" type="number" placeholder="2000" style="width:100%;border:1.5px solid var(--bor);border-radius:8px;padding:9px;font-size:14px;outline:none;font-family:inherit"></div>
+    </div>
+    <div style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;color:var(--t2);display:block;margin-bottom:3px">LESIONES / MOLESTIAS</label><textarea id="nc-lesiones" placeholder="Ninguna" style="width:100%;border:1.5px solid var(--bor);border-radius:8px;padding:9px;font-size:14px;outline:none;font-family:inherit;resize:none;min-height:60px"></textarea></div>
+    <button class="btn btnp btnf" onclick="crearCliente()">Crear cliente ✓</button>
   </div></div>`;
+}
+
+function crearCliente(){
+  const nom=document.getElementById('nc-nom')?.value?.trim();
+  const email=document.getElementById('nc-email')?.value?.trim();
+  const tipo=document.getElementById('nc-tipo')?.value||'uno';
+  const peso=parseFloat(document.getElementById('nc-peso')?.value||'80');
+  const obj=parseFloat(document.getElementById('nc-obj')?.value||'75');
+  const pasos=parseInt(document.getElementById('nc-pasos')?.value||'10000');
+  const kcal=parseInt(document.getElementById('nc-kcal')?.value||'2000');
+  const lesiones=document.getElementById('nc-lesiones')?.value?.trim()||'';
+  if(!nom||!email){toast('Nombre y email son obligatorios','rj');return;}
+  const init=nom.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  const id=nom.toLowerCase().replace(/\s+/g,'_')+'_'+Date.now();
+  const rs=tipo==='programa'?[4,8,12,14]:[3,7,11,13];
+  const nuevo={
+    id,nom,init,tipo,email,
+    semana:1,semTotal:tipo==='programa'?14:13,
+    pesoIni:peso,pesoAct:peso,obj,pasosObj:pasos,
+    adh:0,checkInDone:false,revDone:false,nextRev:rs[0],
+    diasSinPeso:0,lesiones,
+    inicioBloque:new Date().toISOString().split('T')[0],
+    macros:{kcal,p:Math.round(kcal*0.3/4),c:Math.round(kcal*0.4/4),g:Math.round(kcal*0.3/9)},
+    bajanSem:0.8,histPesos:[],checkIn:null,revision:null,
+  };
+  CLIENTES.push(nuevo);
+  updateBadges();
+  toast('✅ '+nom+' añadido como '+(tipo==='uno'?'1:1':'Programa'),'vd');
+  S(tipo==='uno'?'uno':'prog');
 }
 </script>
 </body>
