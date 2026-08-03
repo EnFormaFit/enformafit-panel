@@ -876,8 +876,8 @@ function tRevision(c){
     </table>
   </div>`;
   const PP=c.tipo==='programa'
-    ?['¿Cómo te sientes?','¿Cómo ha ido el entrenamiento?','¿Cómo ha ido la nutrición?','¿Qué ha funcionado mejor?','¿Qué cambiarías?']
-    :['¿Cómo te sientes?','¿Cuáles han sido tus éxitos?','¿Cómo te has sentido con ellos?','¿Cómo van los entrenamientos?','¿Cómo va la nutrición?','¿Qué mejorarías?','¿Algo más?'];
+    ?['¿Cómo ha ido el entrenamiento estas semanas?','¿Cómo ha ido la nutrición y el seguimiento del plan?','¿Has tenido alguna dificultad o problema con el plan?','¿Qué es lo que mejor ha funcionado para ti?','¿Qué cambiarías o mejorarías de cara al próximo ciclo?']
+    :['¿Qué tal estás?','¿Cuáles han sido tus éxitos en estas semanas?','¿Cómo te has sentido con los éxitos que has conseguido?','¿Qué tal van tus entrenamientos?','¿Qué tal va tu nutrición?','¿Qué es lo que te gustaría mejorar durante el siguiente bloque de semanas?','¿Hay algo que te gustaría comentarme?'];
   const respsH=rev?.preguntas&&Object.values(rev.preguntas).some(Boolean)?`<div class="sec-t">Respuestas</div>
   <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
     ${PP.map((q,i)=>rev.preguntas[i]?`<div style="background:var(--bg);border-radius:8px;padding:10px 13px;border-left:3px solid var(--az2)"><div style="font-size:10.5px;font-weight:700;color:var(--t3);margin-bottom:4px">${q}</div><div style="font-size:13px;line-height:1.5">${rev.preguntas[i]}</div></div>`:'').join('')}
