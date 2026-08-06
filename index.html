@@ -166,7 +166,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
   transition:all .15s;white-space:nowrap}
 .fs-tab.on{background:#fff;color:var(--az);font-weight:700;
   box-shadow:0 1px 4px rgba(0,0,0,.08)}
-.fs-body{flex:1;overflow-y:auto}
+.fs-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
 
 /* ── RESUMEN GRID ── */
 .res-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
@@ -457,6 +457,7 @@ function nav(s){
 function render(){
   const ct=document.getElementById('ct');
   if(VIEW==='client'&&CLI_ID){renderClient(ct);return;}
+  ct.style.display=''; // restore flex for list views
   const map={
     ci:rCi,rev1:()=>rRevs('uno'),alertas1:()=>rAlertas('uno'),uno:()=>rLista('uno'),
     revp:()=>rRevs('prog'),alertasp:()=>rAlertas('prog'),prog:()=>rLista('prog'),
@@ -487,6 +488,7 @@ function setTab(t){CLI_TAB=t;if(t!=='editar')EDITING=false;render();}
 
 function renderClient(ct){
   const c=byId(CLI_ID);if(!c)return;
+  ct.style.display='block'; // override flex for fullscreen
   const col=gc(ciIdx(c));
   const tabs=c.tipo==='uno'
     ?['resumen','nutricion','entreno','checkin','revision','editar']
@@ -891,74 +893,67 @@ function tRevision(c){
 }
 
 // ── NUTRICIÓN EDITABLE ──
-// Separate layer from Editar: changes grams → recalculates macros of that meal
-// Does NOT touch macros objetivo in Editar tab
-if(!window._NE)window._NE={};// {cliId:{meal:{cat:newGrams}}}
+// Edits stored in _NE[cliId][meal][cat] = grams
+// DOM updated in place — no page re-render on change
+if(!window._NE)window._NE={};
+const _NUT_UNDO=[];
 
 function tNutricion(c){
   if(!window._NE)window._NE={};
   const ne=window._NE[c.id]||{};
   const MEALS=['desayuno','comida','cena','snack'];
-  const MEAL_ICON={desayuno:'☀️',comida:'🌞',cena:'🌙',snack:'🍎'};
+  const MEAL_NOM={desayuno:'☀️ Desayuno',comida:'🌞 Comida',cena:'🌙 Cena',snack:'🍎 Snack'};
 
-  // Build plan from menu defaults, applying edits
-  const plan={};
-  MEALS.forEach(meal=>{
-    const md=MENU[meal];
-    plan[meal]={};
-    // Demo: pick first of each category as default
-    if(md.proteinas_magras?.length){
-      const def=md.proteinas_magras[0];
-      const g=ne[meal]?.prot??def.cantidad;
-      const r=g/(def.cantidad||1);
-      plan[meal].prot={...def,cantidad:g,p:Math.round(def.p*r*10)/10,c:Math.round(def.c*r*10)/10,g:Math.round(def.g*r*10)/10,kcal:Math.round(def.kcal*r)};
-    }
-    if(md.hidratos?.length){
-      const def=md.hidratos[0];
-      const g=ne[meal]?.hidrat??def.cantidad;
-      const r=g/(def.cantidad||1);
-      plan[meal].hidrat={...def,cantidad:g,p:Math.round(def.p*r*10)/10,c:Math.round(def.c*r*10)/10,g:Math.round(def.g*r*10)/10,kcal:Math.round(def.kcal*r)};
-    }
-    if(md.verduras?.length){
-      const def=md.verduras[0];
-      const g=ne[meal]?.verd??def.cantidad;
-      const r=g/(def.cantidad||1);
-      plan[meal].verd={...def,cantidad:g,p:Math.round(def.p*r*10)/10,c:Math.round(def.c*r*10)/10,g:Math.round(def.g*r*10)/10,kcal:Math.round(def.kcal*r)};
-    }
-    if(md.grasas?.length){
-      const def=md.grasas[0];
-      const g=ne[meal]?.fat??def.cantidad;
-      const r=g/(def.cantidad||1);
-      plan[meal].fat={...def,cantidad:g,p:Math.round(def.p*r*10)/10,c:Math.round(def.c*r*10)/10,g:Math.round(def.g*r*10)/10,kcal:Math.round(def.kcal*r)};
-    }
-  });
+  // Build plan: pick first item of each category as default, apply stored edits
+  function buildPlan(){
+    const plan={};
+    MEALS.forEach(meal=>{
+      const md=MENU[meal]; plan[meal]={};
+      const cats={prot:'proteinas_magras',hidrat:'hidratos',verd:'verduras',fat:'grasas',fruta:'frutas'};
+      Object.entries(cats).forEach(([key,mdKey])=>{
+        if(!md[mdKey]?.length)return;
+        const def=md[mdKey][0];
+        const g=(window._NE[c.id]||{})[meal]?.[key]??def.cantidad;
+        const r=g/(def.cantidad||1);
+        plan[meal][key]={...def,cantidad:g,
+          p:+(def.p_100*g/100).toFixed(1),
+          c:+(def.c_100*g/100).toFixed(1),
+          g:+(def.g_100*g/100).toFixed(1),
+          kcal:Math.round(def.kcal_100*g/100),
+        };
+      });
+    });
+    return plan;
+  }
 
-  // Day totals
-  let totK=0,totP=0,totC=0,totG=0;
-  MEALS.forEach(meal=>{Object.values(plan[meal]).forEach(it=>{totK+=it.kcal||0;totP+=it.p||0;totC+=it.c||0;totG+=it.g||0;});});
-  const diff=Math.round(totK-c.macros.kcal);
+  function totals(plan){
+    let K=0,P=0,C=0,G=0;
+    MEALS.forEach(m=>Object.values(plan[m]).forEach(it=>{K+=it.kcal;P+=it.p;C+=it.c;G+=it.g;}));
+    return{K:Math.round(K),P:Math.round(P),C:Math.round(C),G:Math.round(G)};
+  }
+
+  const plan=buildPlan();
+  const tot=totals(plan);
+  const diff=tot.K-c.macros.kcal;
   const diffCol=Math.abs(diff)<100?'var(--vd)':Math.abs(diff)<200?'var(--am)':'var(--rj)';
 
-  let h=`<div class="res-macros" style="margin-bottom:16px">
-    <div class="res-macro" style="border-color:var(--nr)"><div class="rm-v" style="color:var(--nr)">${Math.round(totK)}</div><div class="rm-l">kcal totales</div></div>
-    <div class="res-macro" style="border-color:var(--az2)"><div class="rm-v" style="color:var(--az2)">${Math.round(totP)}g</div><div class="rm-l">Proteína</div></div>
-    <div class="res-macro" style="border-color:var(--vd)"><div class="rm-v" style="color:var(--vd)">${Math.round(totC)}g</div><div class="rm-l">Carbos</div></div>
-    <div class="res-macro" style="border-color:var(--am)"><div class="rm-v" style="color:var(--am)">${Math.round(totG)}g</div><div class="rm-l">Grasa</div></div>
-    <div class="res-macro" style="border-color:${diffCol}">
-      <div class="rm-v" style="color:${diffCol}">${diff>0?'+':''}${diff}</div>
-      <div class="rm-l">vs obj ${c.macros.kcal}kcal</div>
-    </div>
+  let h=`<div id="nut-totals-${c.id}" class="res-macros" style="margin-bottom:14px">
+    <div class="res-macro" style="border-color:var(--nr)"><div class="rm-v" style="color:var(--nr)" id="nt-k-${c.id}">${tot.K}</div><div class="rm-l">kcal día</div></div>
+    <div class="res-macro" style="border-color:var(--az2)"><div class="rm-v" style="color:var(--az2)" id="nt-p-${c.id}">${tot.P}g</div><div class="rm-l">Proteína</div></div>
+    <div class="res-macro" style="border-color:var(--vd)"><div class="rm-v" style="color:var(--vd)" id="nt-c-${c.id}">${tot.C}g</div><div class="rm-l">Carbos</div></div>
+    <div class="res-macro" style="border-color:var(--am)"><div class="rm-v" style="color:var(--am)" id="nt-g-${c.id}">${tot.G}g</div><div class="rm-l">Grasa</div></div>
+    <div class="res-macro" style="border-color:${diffCol}"><div class="rm-v" style="color:${diffCol}" id="nt-d-${c.id}">${diff>0?'+':''}${diff}</div><div class="rm-l">vs obj ${c.macros.kcal}kcal</div></div>
   </div>
-  <div style="font-size:12px;color:var(--t3);margin-bottom:12px">Cambia los gramos de cualquier alimento → los macros y kcal se recalculan automáticamente. Los macros objetivo (en Editar) no se modifican.</div>`;
+  <div style="font-size:12px;color:var(--t3);margin-bottom:12px">Cambia los gramos → macros se actualizan en tiempo real. Los macros objetivo (pestaña Editar) no se modifican.<br><span style="color:var(--az2)">Ctrl+Z para deshacer último cambio de gramos.</span></div>`;
 
   MEALS.forEach(meal=>{
     const items=Object.entries(plan[meal]);
     let mK=0,mP=0,mC=0,mG=0;
-    items.forEach(([,it])=>{mK+=it.kcal||0;mP+=it.p||0;mC+=it.c||0;mG+=it.g||0;});
+    items.forEach(([,it])=>{mK+=it.kcal;mP+=it.p;mC+=it.c;mG+=it.g;});
     h+=`<div class="card" style="margin-bottom:10px">
       <div class="nut-meal-hd">
-        <span style="font-weight:700;font-size:13.5px">${MEAL_ICON[meal]} ${MENU[meal].nom}</span>
-        <span style="font-size:12px;color:var(--t3)">${Math.round(mK)} kcal · P:${Math.round(mP)}g C:${Math.round(mC)}g G:${Math.round(mG)}g</span>
+        <span style="font-weight:700;font-size:13.5px">${MEAL_NOM[meal]}</span>
+        <span id="meal-sum-${c.id}-${meal}" style="font-size:12px;color:var(--t3)">${Math.round(mK)} kcal · P:${Math.round(mP)}g C:${Math.round(mC)}g G:${Math.round(mG)}g</span>
       </div>
       <div style="overflow-x:auto">
       <table class="nut-table"><thead><tr>
@@ -967,42 +962,112 @@ function tNutricion(c){
         <th style="text-align:center;color:var(--vd)">Carbs</th>
         <th style="text-align:center;color:var(--am)">Grasa</th>
         <th style="text-align:center;color:var(--nr)">Kcal</th>
-      </tr></thead><tbody>
-      ${items.map(([cat,it])=>`<tr>
-        <td style="font-weight:600">${it.nom}</td>
+      </tr></thead><tbody id="meal-rows-${c.id}-${meal}">
+      ${items.map(([cat,it])=>`<tr id="nut-row-${c.id}-${meal}-${cat}">
+        <td style="font-weight:600">${it.nom} <span style="font-size:10px;color:var(--t3)">(crudo)</span></td>
         <td style="text-align:center">
           <div style="display:flex;align-items:center;gap:4px;justify-content:center">
             <input type="number" value="${it.cantidad}" step="5" min="0" class="nut-inp"
-              onchange="nutEdit('${c.id}','${meal}','${cat}',this.value);renderNutMacros('${c.id}')">
+              data-cli="${c.id}" data-meal="${meal}" data-cat="${cat}"
+              data-p100="${it.p_100}" data-c100="${it.c_100}" data-g100="${it.g_100}" data-k100="${it.kcal_100}"
+              oninput="nutEditLive(this)">
             <span style="font-size:11px;color:var(--t3)">${it.u}</span>
           </div>
         </td>
-        <td style="text-align:center;color:var(--az2);font-weight:600">${it.p}g</td>
-        <td style="text-align:center;color:var(--vd);font-weight:600">${it.c}g</td>
-        <td style="text-align:center;color:var(--am);font-weight:600">${it.g}g</td>
-        <td style="text-align:center;color:var(--nr);font-weight:600">${it.kcal}</td>
+        <td style="text-align:center;color:var(--az2);font-weight:600" id="np-${c.id}-${meal}-${cat}">${it.p}g</td>
+        <td style="text-align:center;color:var(--vd);font-weight:600" id="nc-${c.id}-${meal}-${cat}">${it.c}g</td>
+        <td style="text-align:center;color:var(--am);font-weight:600" id="ng-${c.id}-${meal}-${cat}">${it.g}g</td>
+        <td style="text-align:center;color:var(--nr);font-weight:600" id="nk-${c.id}-${meal}-${cat}">${it.kcal}</td>
       </tr>`).join('')}
       </tbody></table></div>
     </div>`;
   });
-  h+=`<div style="display:flex;gap:8px;margin-top:4px">
-    <div style="font-size:12px;color:var(--vd);display:flex;align-items:center;gap:5px">✅ Los cambios se guardan automáticamente</div>
-    <button class="btn btno btns" style="margin-left:auto" onclick="if(!window._NE)window._NE={};window._NE['${c.id}']={};setTab('nutricion');toast('Cambios reseteados','')">↺ Resetear</button>
+
+  h+=`<div style="display:flex;align-items:center;gap:10px;margin-top:6px">
+    <div style="font-size:12px;color:var(--vd)">✅ Cambios guardados automáticamente</div>
+    <button class="btn btno btns" style="margin-left:auto" onclick="nutReset('${c.id}')">↺ Resetear todo</button>
   </div>`;
   return h;
 }
 
-function nutEdit(cliId,meal,cat,newG){
-  if(!window._NE)window._NE={};
+// Live update: no re-render, update DOM cells directly
+function nutEditLive(inp){
+  const cliId=inp.dataset.cli, meal=inp.dataset.meal, cat=inp.dataset.cat;
+  const g=parseFloat(inp.value)||0;
+  const p100=parseFloat(inp.dataset.p100), c100=parseFloat(inp.dataset.c100);
+  const g100=parseFloat(inp.dataset.g100), k100=parseFloat(inp.dataset.k100);
+
+  // Store undo snapshot
   if(!window._NE[cliId])window._NE[cliId]={};
+  const prev=(window._NE[cliId][meal]||{})[cat];
+  _NUT_UNDO.push({cliId,meal,cat,g:prev??g,inp});
+  if(_NUT_UNDO.length>30)_NUT_UNDO.shift();
+
+  // Store new value
   if(!window._NE[cliId][meal])window._NE[cliId][meal]={};
-  window._NE[cliId][meal][cat]=parseFloat(newG)||0;
-  // Auto-save confirmation
-  setTimeout(()=>toast('Guardado automáticamente ✓','vd'),300);
+  window._NE[cliId][meal][cat]=g;
+
+  // Update this row's cells
+  const r=g/100;
+  const np=+(p100*r).toFixed(1), nc=+(c100*r).toFixed(1);
+  const ng=+(g100*r).toFixed(1), nk=Math.round(k100*r);
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+  set(`np-${cliId}-${meal}-${cat}`,np+'g');
+  set(`nc-${cliId}-${meal}-${cat}`,nc+'g');
+  set(`ng-${cliId}-${meal}-${cat}`,ng+'g');
+  set(`nk-${cliId}-${meal}-${cat}`,nk);
+
+  // Recalc meal totals
+  let mK=0,mP=0,mC=0,mG=0;
+  const mealRows=document.querySelectorAll(`#meal-rows-${cliId}-${meal} tr`);
+  mealRows.forEach(row=>{
+    const id=row.id.replace(`nut-row-${cliId}-${meal}-`,'');
+    mK+=parseFloat(document.getElementById(`nk-${cliId}-${meal}-${id}`)?.textContent||0);
+    mP+=parseFloat(document.getElementById(`np-${cliId}-${meal}-${id}`)?.textContent||0);
+    mC+=parseFloat(document.getElementById(`nc-${cliId}-${meal}-${id}`)?.textContent||0);
+    mG+=parseFloat(document.getElementById(`ng-${cliId}-${meal}-${id}`)?.textContent||0);
+  });
+  const ms=document.getElementById(`meal-sum-${cliId}-${meal}`);
+  if(ms)ms.textContent=`${Math.round(mK)} kcal · P:${Math.round(mP)}g C:${Math.round(mC)}g G:${Math.round(mG)}g`;
+
+  // Recalc day totals
+  let dK=0,dP=0,dC=0,dG=0;
+  ['desayuno','comida','cena','snack'].forEach(m=>{
+    ['prot','hidrat','verd','fat','fruta'].forEach(ct=>{
+      dK+=parseFloat(document.getElementById(`nk-${cliId}-${m}-${ct}`)?.textContent||0);
+      dP+=parseFloat(document.getElementById(`np-${cliId}-${m}-${ct}`)?.textContent||0);
+      dC+=parseFloat(document.getElementById(`nc-${cliId}-${m}-${ct}`)?.textContent||0);
+      dG+=parseFloat(document.getElementById(`ng-${cliId}-${m}-${ct}`)?.textContent||0);
+    });
+  });
+  set(`nt-k-${cliId}`,Math.round(dK));
+  set(`nt-p-${cliId}`,Math.round(dP)+'g');
+  set(`nt-c-${cliId}`,Math.round(dC)+'g');
+  set(`nt-g-${cliId}`,Math.round(dG)+'g');
+  const c=byId(cliId);
+  const diff=Math.round(dK-(c?.macros?.kcal||2000));
+  const de=document.getElementById(`nt-d-${cliId}`);
+  if(de){de.textContent=(diff>0?'+':'')+diff;de.style.color=Math.abs(diff)<100?'var(--vd)':Math.abs(diff)<200?'var(--am)':'var(--rj)';}
 }
-function renderNutMacros(cliId){
-  // Light refresh of just the macros display without scrolling
-  // Already handled by nutEdit toast
+
+function nutReset(cliId){
+  if(!window._NE)window._NE={};
+  window._NE[cliId]={};
+  setTab('nutricion');
+  toast('Cambios reseteados','');
+}
+
+// Ctrl+Z for nutrition: undo last gram change
+function nutUndo(){
+  if(!_NUT_UNDO.length){toast('Nada que deshacer en nutrición','');return;}
+  const last=_NUT_UNDO.pop();
+  if(!window._NE[last.cliId])window._NE[last.cliId]={};
+  if(!window._NE[last.cliId][last.meal])window._NE[last.cliId][last.meal]={};
+  window._NE[last.cliId][last.meal][last.cat]=last.g;
+  // Update input and trigger live update
+  const inp=document.querySelector(`input[data-cli="${last.cliId}"][data-meal="${last.meal}"][data-cat="${last.cat}"]`);
+  if(inp){inp.value=last.g;nutEditLive(inp);}
+  toast('↩ Deshecho','vd');
 }
 
 // ── ENTRENO (rutinas editor inline) ──
@@ -1112,8 +1177,10 @@ function undoRut(){
 document.addEventListener('keydown',e=>{
   if((e.ctrlKey||e.metaKey)&&e.key==='z'&&!e.shiftKey){
     e.preventDefault();
-    // Global undo: rutinas first, then general
-    if(UNDO.length){undoRut();}
+    // If on nutrition tab, undo nutrition change
+    if(CLI_TAB==='nutricion'&&_NUT_UNDO.length){nutUndo();}
+    // Otherwise undo rutinas
+    else if(UNDO.length){undoRut();}
     else{toast('Nada que deshacer','');}
   }
 });
