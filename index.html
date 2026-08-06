@@ -16,8 +16,8 @@
   --t1:#1A2B5A;--t2:#5A6480;--t3:#9199AD;
   --sb:228px;--r:10px;
 }
-html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-  background:var(--bg);color:var(--t1);font-size:14px;overflow:hidden}
+html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  background:var(--bg);color:var(--t1);font-size:14px}
 
 /* LAYOUT */
 .shell{display:flex;height:100vh}
@@ -29,7 +29,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
   align-items:center;padding:0 18px;gap:10px;flex-shrink:0}
 /* KEY FIX: content scrolls independently */
 .content{flex:1;overflow-y:auto;overflow-x:hidden;padding:16px 18px;
-  -webkit-overflow-scrolling:touch;min-height:0}
+  -webkit-overflow-scrolling:touch;min-height:0;height:0}
 
 /* SIDEBAR */
 .sb-logo{padding:13px 15px;border-bottom:1px solid rgba(255,255,255,.1);flex-shrink:0}
@@ -716,16 +716,21 @@ function rLista(tipo){
 
 // ═══ TAB: RESUMEN ═══
 function tResumen(c){
-  const cambio=(c.pesoAct-c.pesoIni).toFixed(1);
-  const left=(c.pesoAct-c.obj).toFixed(1);
+  // 7-day average weight
+  const now=new Date();
+  const hist=c.histPesos||[];
+  const last7=hist.filter(p=>{const d=new Date(p.f);return(now-d)/(1000*60*60*24)<=7;});
+  const pesoMedio=last7.length?+(last7.reduce((s,p)=>s+p.v,0)/last7.length).toFixed(1):c.pesoAct;
+  const cambio=(pesoMedio-c.pesoIni).toFixed(1);
+  const left=(pesoMedio-c.obj).toFixed(1);
   const sems=Math.max(c.semana-1,1);
-  const bajaSem=((c.pesoIni-c.pesoAct)/sems).toFixed(2);
+  const bajaSem=((c.pesoIni-pesoMedio)/sems).toFixed(2);
   return`<div class="rg">
   <div>
     <div class="sec-t">Peso corporal</div>
     <div class="rs4">
       <div class="rs-box"><div class="rs-v" style="color:var(--az2)">${c.pesoIni}kg</div><div class="rs-l">Peso inicial</div></div>
-      <div class="rs-box"><div class="rs-v" style="color:var(--az)">${c.pesoAct}kg</div><div class="rs-l">Peso actual</div></div>
+      <div class="rs-box"><div class="rs-v" style="color:var(--az)">${pesoMedio}kg</div><div class="rs-l">Peso actual <span style="font-size:8px">(med. 7d)</span></div></div>
       <div class="rs-box"><div class="rs-v" style="color:${parseFloat(cambio)<0?'var(--vd)':'var(--rj)'}">${cambio}kg</div><div class="rs-l">Bajada total</div></div>
       <div class="rs-box"><div class="rs-v" style="color:var(--nr)">${bajaSem}kg</div><div class="rs-l">Media/sem</div></div>
       <div class="rs-box"><div class="rs-v" style="color:var(--vd)">${c.obj}kg</div><div class="rs-l">Objetivo</div></div>
@@ -825,32 +830,36 @@ function tRevision(c){
 
   // FOTOS: cada postura en su fila, S0 vs actual lado a lado
   // object-fit:cover + object-position: permite crop manual
-  const fotosH=`<div class="sec-t" style="margin-bottom:8px">Fotos — S0 vs S${nextRev} <span style="font-weight:400;font-size:9.5px">(hover para ajustar crop)</span></div>
+  // All revision slots for this tipo
+  const allRevSems=c.tipo==='programa'?[0,4,8,12]:[0,3,7,11];
+  const revLabels={0:'S0 Inicio',4:'S4',8:'S8',12:'S12',3:'S3',7:'S7',11:'S11'};
+  const revCols=['#0DBF6F','#2E6DA4','#9B59B6','#E74C3C'];
+  const fotosH=`<div class="sec-t" style="margin-bottom:8px">Comparativa fotos — todas las revisiones <span style="font-weight:400;font-size:9.5px">(hover → ajustar crop)</span></div>
   <div style="margin-bottom:14px">
     ${POSES.map((pos,pi)=>`
     <div class="rev-pose-row">
       <div class="rev-pose-lbl">${pos}</div>
-      <div class="rev-photos-row">
-        <div>
-          <div style="font-size:9px;font-weight:700;color:#fff;background:var(--vd);padding:3px 8px;border-radius:4px;display:inline-block;margin-bottom:4px">S0</div>
-          <div class="photo-slot">
-            <div class="ph-empty"><span style="font-size:20px">📷</span><span>S0 pendiente</span></div>
-          </div>
-        </div>
-        <div>
-          <div style="font-size:9px;font-weight:700;color:#fff;background:var(--az2);padding:3px 8px;border-radius:4px;display:inline-block;margin-bottom:4px">S${nextRev}</div>
-          <div class="photo-slot${rev?.fotos?.['rev_'+pi]?' has':''}">
-            ${rev?.fotos?.['rev_'+pi]
-              ?`<img src="${rev.fotos['rev_'+pi]}" id="ph-${pi}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top center">
-                 <div class="ph-crop-bar">
-                   <button class="ph-crop-btn" onclick="cropAdj('ph-${pi}',-10)" title="Subir encuadre">↑</button>
-                   <button class="ph-crop-btn" onclick="cropAdj('ph-${pi}',10)" title="Bajar encuadre">↓</button>
-                 </div>
-                 <div class="ph-lbl">${pos}</div>`
-              :`<div class="ph-empty"><span style="font-size:20px">📷</span><span>${c.semana===nextRev?'Pendiente':pos}</span></div>`
-            }
-          </div>
-        </div>
+      <div class="rev-photos-row" style="grid-template-columns:repeat(${allRevSems.length},1fr)">
+        ${allRevSems.map((rs,ri)=>{
+          const isActive=rs===c.nextRev;
+          const fotoKey=rs===0?'s0_'+pi:'rev_'+rs+'_'+pi;
+          const hasFoto=rev?.fotos?.[fotoKey];
+          const locked=rs>c.semana&&rs!==0;
+          return`<div>
+            <div style="font-size:9px;font-weight:700;color:#fff;background:${revCols[ri]||'var(--az2)'};padding:3px 8px;border-radius:4px;display:inline-block;margin-bottom:4px;opacity:${locked?.5:1}">${revLabels[rs]||'S'+rs}${isActive?' ●':''}</div>
+            <div class="photo-slot${hasFoto?' has':''}${locked?' locked':''}">
+              ${hasFoto
+                ?`<img src="${hasFoto}" id="ph-${rs}-${pi}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top center">
+                   <div class="ph-crop-bar">
+                     <button class="ph-crop-btn" onclick="cropAdj('ph-${rs}-${pi}',-10)">↑</button>
+                     <button class="ph-crop-btn" onclick="cropAdj('ph-${rs}-${pi}',10)">↓</button>
+                   </div>
+                   <div class="ph-lbl">${revLabels[rs]||'S'+rs}</div>`
+                :`<div class="ph-empty"><span style="font-size:20px">📷</span><span style="font-size:10px">${locked?'🔒':isActive?'Pendiente':revLabels[rs]||'S'+rs}</span></div>`
+              }
+            </div>
+          </div>`;
+        }).join('')}
       </div>
     </div>`).join('')}
   </div>`;
@@ -935,15 +944,25 @@ function tNutricion(c){
   const diffCol=Math.abs(diff)<100?'var(--vd)':Math.abs(diff)<200?'var(--am)':'var(--rj)';
 
   let h=`
-  <div style="font-size:12px;color:var(--t3);margin-bottom:10px">
-    Cambia los gramos → macros se actualizan en tiempo real. Los macros objetivo (Editar) no se modifican. <span style="color:var(--az2)">Ctrl+Z para deshacer.</span>
-  </div>
-  <div class="mac4" id="nut-totals-${c.id}" style="margin-bottom:14px">
-    <div class="mac-box" style="border-color:var(--nr)"><div class="mac-v" style="color:var(--nr)" id="nt-k-${c.id}">${Math.round(totK)}</div><div class="mac-l">kcal día</div></div>
-    <div class="mac-box" style="border-color:var(--az2)"><div class="mac-v" style="color:var(--az2)" id="nt-p-${c.id}">${Math.round(totP)}g</div><div class="mac-l">Proteína</div></div>
-    <div class="mac-box" style="border-color:var(--vd)"><div class="mac-v" style="color:var(--vd)" id="nt-c-${c.id}">${Math.round(totC)}g</div><div class="mac-l">Carbos</div></div>
-    <div class="mac-box" style="border-color:var(--am)"><div class="mac-v" style="color:var(--am)" id="nt-g-${c.id}">${Math.round(totG)}g</div><div class="mac-l">Grasa</div></div>
-    <div class="mac-box" style="border-color:${diffCol}"><div class="mac-v" style="color:${diffCol}" id="nt-d-${c.id}">${diff>0?'+':''}${diff}</div><div class="mac-l">vs obj ${c.macros.kcal}kcal</div></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+    <div style="background:var(--az3);border:2px solid var(--az4);border-radius:10px;padding:11px 13px">
+      <div style="font-size:9px;font-weight:700;color:var(--az2);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px">🎯 Objetivo prescrito</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px">
+        <div style="text-align:center"><div style="font-size:18px;font-weight:800;color:var(--nr)">${c.macros.kcal}</div><div style="font-size:9.5px;color:var(--t3)">kcal</div></div>
+        <div style="text-align:center"><div style="font-size:18px;font-weight:800;color:var(--az2)">${c.macros.p}g</div><div style="font-size:9.5px;color:var(--t3)">prot</div></div>
+        <div style="text-align:center"><div style="font-size:18px;font-weight:800;color:var(--vd)">${c.macros.c}g</div><div style="font-size:9.5px;color:var(--t3)">carbs</div></div>
+        <div style="text-align:center"><div style="font-size:18px;font-weight:800;color:var(--am)">${c.macros.g}g</div><div style="font-size:9.5px;color:var(--t3)">grasa</div></div>
+      </div>
+    </div>
+    <div style="background:#fff;border:2px solid var(--bor);border-radius:10px;padding:11px 13px" id="nut-totals-${c.id}">
+      <div style="font-size:9px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px">📊 Actual seleccionado <span style="font-weight:400;color:var(--t3);text-transform:none;font-size:9px">— Ctrl+Z deshacer</span></div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px">
+        <div style="text-align:center"><div style="font-size:18px;font-weight:800;color:${diffCol}" id="nt-k-${c.id}">${Math.round(totK)}</div><div style="font-size:9.5px;color:var(--t3)">kcal <span id="nt-d-${c.id}" style="color:${diffCol}">(${diff>0?'+':''}${diff})</span></div></div>
+        <div style="text-align:center"><div style="font-size:18px;font-weight:800;color:var(--az2)" id="nt-p-${c.id}">${Math.round(totP)}g</div><div style="font-size:9.5px;color:var(--t3)">prot</div></div>
+        <div style="text-align:center"><div style="font-size:18px;font-weight:800;color:var(--vd)" id="nt-c-${c.id}">${Math.round(totC)}g</div><div style="font-size:9.5px;color:var(--t3)">carbs</div></div>
+        <div style="text-align:center"><div style="font-size:18px;font-weight:800;color:var(--am)" id="nt-g-${c.id}">${Math.round(totG)}g</div><div style="font-size:9.5px;color:var(--t3)">grasa</div></div>
+      </div>
+    </div>
   </div>`;
 
   MEALS.forEach(meal=>{
@@ -1159,8 +1178,15 @@ function rutUndo(){
   const s=UNDO_RUT.pop();
   RUTINAS[s.cli]=JSON.parse(s.data);
   RUT_SEM=s.sem;RUT_DIA=s.dia;
-  toast(`↩ Deshecho (${UNDO_RUT.length} más disponibles)`,'vd');
-  if(VIEW==='client')setTab('entreno');else render();
+  toast(`↩ Deshecho (${UNDO_RUT.length} más)`,'vd');
+  // Patch only the ej-list without full re-render (preserves scroll & focus)
+  const ejList=document.getElementById('ej-list');
+  if(ejList){
+    const ejes=getRut(RUT_CLI,RUT_SEM,RUT_DIA);
+    ejList.innerHTML=ejes.map((ej,ei)=>ejRow(ej,ei)).join('');
+  } else {
+    if(VIEW==='client')setTab('entreno');else render();
+  }
 }
 
 // Global Ctrl+Z: routes to correct undo based on active tab
