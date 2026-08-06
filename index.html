@@ -29,6 +29,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
 .topbar{background:#fff;border-bottom:1px solid var(--bor);height:var(--top);
   display:flex;align-items:center;padding:0 18px;gap:10px;flex-shrink:0;z-index:10}
 .content{flex:1;overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:12px;-webkit-overflow-scrolling:touch}
+.content>*{min-height:0}
 
 /* ── SIDEBAR ── */
 .sb-logo{padding:12px 14px 10px;border-bottom:1px solid rgba(255,255,255,.1);flex-shrink:0}
@@ -459,7 +460,6 @@ function nav(s){
 function render(){
   const ct=document.getElementById('ct');
   if(VIEW==='client'&&CLI_ID){renderClient(ct);return;}
-  ct.style.display=''; // restore flex for list views
   const map={
     ci:rCi,rev1:()=>rRevs('uno'),alertas1:()=>rAlertas('uno'),uno:()=>rLista('uno'),
     revp:()=>rRevs('prog'),alertasp:()=>rAlertas('prog'),prog:()=>rLista('prog'),
@@ -490,7 +490,6 @@ function setTab(t){CLI_TAB=t;if(t!=='editar')EDITING=false;render();}
 
 function renderClient(ct){
   const c=byId(CLI_ID);if(!c)return;
-  ct.style.display='block'; // override flex for fullscreen
   const col=gc(ciIdx(c));
   const tabs=c.tipo==='uno'
     ?['resumen','nutricion','entreno','checkin','revision','editar']
@@ -971,6 +970,7 @@ function tNutricion(c){
             <input type="number" value="${it.cantidad}" step="5" min="0" class="nut-inp"
               data-cli="${c.id}" data-meal="${meal}" data-cat="${cat}"
               data-p100="${it.p_100}" data-c100="${it.c_100}" data-g100="${it.g_100}" data-k100="${it.kcal_100}"
+              data-orig="${it.cantidad}"
               oninput="nutEditLive(this)">
             <span style="font-size:11px;color:var(--t3)">${it.u}</span>
           </div>
@@ -998,14 +998,15 @@ function nutEditLive(inp){
   const p100=parseFloat(inp.dataset.p100), c100=parseFloat(inp.dataset.c100);
   const g100=parseFloat(inp.dataset.g100), k100=parseFloat(inp.dataset.k100);
 
-  // Store undo snapshot
+  // Store undo: save CURRENT value before overwriting
+  if(!window._NE)window._NE={};
   if(!window._NE[cliId])window._NE[cliId]={};
-  const prev=(window._NE[cliId][meal]||{})[cat];
-  _NUT_UNDO.push({cliId,meal,cat,g:prev??g,inp});
-  if(_NUT_UNDO.length>30)_NUT_UNDO.shift();
+  if(!window._NE[cliId][meal])window._NE[cliId][meal]={};
+  const prev=window._NE[cliId][meal][cat]??parseFloat(inp.dataset.orig??g);
+  _NUT_UNDO.push({cliId,meal,cat,g:prev});
+  if(_NUT_UNDO.length>50)_NUT_UNDO.shift();
 
   // Store new value
-  if(!window._NE[cliId][meal])window._NE[cliId][meal]={};
   window._NE[cliId][meal][cat]=g;
 
   // Update this row's cells
@@ -1071,10 +1072,102 @@ function nutUndo(){
   toast('↩ Deshecho','vd');
 }
 
-// ── ENTRENO (rutinas editor inline) ──
+// ── ENTRENO ──
+// Two views: GRID (weekly overview) and EDITOR (per-day detail)
+let ENT_VIEW='grid'; // 'grid' | 'editor'
+
 function tEntreno(c){
   RUT_CLI=c.id;
-  return rRutinas();
+  if(ENT_VIEW==='editor')return`
+    <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
+      <button class="btn btno btns" onclick="ENT_VIEW='grid';setTab('entreno')">← Vista semana</button>
+      <span style="font-size:13px;color:var(--t2)">Editor detallado</span>
+    </div>
+    ${rRutinas()}`;
+  return tEntrenoGrid(c);
+}
+
+function tEntrenoGrid(c){
+  const rs=revSems(c.tipo);
+  const st=c.semTotal;
+  // Semanas strip
+  const semH=Array.from({length:st},(_,i)=>{const s=i+1;const isRev=rs.includes(s);const isCur=s===c.semana;
+    return`<button class="rut-sem${s===RUT_SEM?' on':''}${isRev&&s!==RUT_SEM?' rev':''}${isCur?' cur':''}" onclick="RUT_SEM=${s};setTab('entreno')">S${s}${isRev?'📋':''}${isCur?' 📍':''}</button>`;
+  }).join('');
+
+  // Get training days for this week
+  const trainingDays=DIAS_BASE.filter(d=>!d.rest);
+  const allDays=DIAS_BASE;
+  
+  // Build grid: rows=exercises, cols=training days
+  // Find max exercises across all training days
+  let maxEj=0;
+  const dayData=allDays.map((d,di)=>{
+    if(d.rest)return{dia:d,di,ejes:[],isRest:true};
+    const ejes=getRut(RUT_CLI,RUT_SEM,di);
+    maxEj=Math.max(maxEj,ejes.length);
+    return{dia:d,di,ejes,isRest:false};
+  }).filter(d=>!d.isRest||false);
+  
+  const trainingData=allDays.map((d,di)=>({dia:d,di,ejes:d.rest?[]:getRut(RUT_CLI,RUT_SEM,di),isRest:d.rest}));
+  const trainOnly=trainingData.filter(d=>!d.isRest);
+
+  // Grid HTML
+  let grid=`<div style="overflow-x:auto;margin-bottom:12px">
+    <table style="width:100%;border-collapse:collapse;font-size:12.5px;min-width:${trainOnly.length*160}px">
+      <thead>
+        <tr style="background:var(--az)">
+          <th style="padding:8px 10px;color:rgba(255,255,255,.6);font-size:10px;font-weight:700;text-align:left;white-space:nowrap;width:28px">#</th>
+          ${trainOnly.map(d=>`<th style="padding:8px 10px;color:#fff;font-weight:700;text-align:left;white-space:nowrap">
+            <div>${d.dia.nom}</div>
+            <div style="font-size:10px;opacity:.7;font-weight:400">${d.dia.tipo}</div>
+          </th>`).join('')}
+        </tr>
+      </thead>
+      <tbody>`;
+
+  for(let ei=0;ei<maxEj;ei++){
+    const isEven=ei%2===0;
+    grid+=`<tr style="background:${isEven?'#fff':'var(--bg)'}">
+      <td style="padding:7px 10px;font-size:11px;font-weight:700;color:var(--t3);text-align:center;border-right:1px solid var(--bor)">${ei+1}</td>
+      ${trainOnly.map(d=>{
+        const ej=d.ejes[ei];
+        if(!ej)return`<td style="padding:7px 10px;border-right:1px solid var(--bor2)"></td>`;
+        const hasUrl=ej.url&&ej.url.trim();
+        return`<td style="padding:7px 10px;border-right:1px solid var(--bor2);cursor:pointer" onclick="RUT_DIA=${d.di};ENT_VIEW='editor';setTab('entreno')" title="Click para editar">
+          <div style="font-weight:600;font-size:12.5px;margin-bottom:2px">${ej.nom||'—'}</div>
+          <div style="font-size:11px;color:var(--t3)">${ej.sets}×${ej.reps} · <span style="color:var(--nr)">RIR${ej.rir}</span></div>
+          ${hasUrl?`<a href="${ej.url}" target="_blank" onclick="event.stopPropagation()" style="font-size:10px;color:var(--rj);text-decoration:none">▶ video</a>`:''}
+        </td>`;
+      }).join('')}
+    </tr>`;
+  }
+  grid+=`</tbody></table></div>`;
+
+  // Rest days row
+  const restDays=trainingData.filter(d=>d.isRest);
+  const restH=restDays.length?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+    ${restDays.map(d=>`<div class="badge bgr">😴 ${d.dia.nom}</div>`).join('')}
+  </div>`:'';
+
+  return`
+  <div class="card" style="margin-bottom:10px">
+    <div class="ch">
+      <h2>📅 Semanas</h2>
+      <button class="btn btno btns" onclick="ENT_VIEW='editor';setTab('entreno')">✏️ Editar detalle</button>
+    </div>
+    <div class="cb" style="padding:10px 14px"><div class="rut-sems">${semH}</div></div>
+  </div>
+  ${restH}
+  <div class="card">
+    <div class="ch">
+      <h2>💪 Semana ${RUT_SEM} — Vista completa</h2>
+      <span style="font-size:12px;color:var(--t3)">Click en ejercicio para editar</span>
+    </div>
+    <div class="cb" style="padding:10px 14px 14px">
+      ${grid}
+    </div>
+  </div>`;
 }
 
 // ── EDITAR ──
@@ -1165,14 +1258,19 @@ function getRut(cliId,sem,dia){
 
 function pushUndo(){
   if(!RUT_CLI)return;
-  UNDO.push({cli:RUT_CLI,data:JSON.stringify(RUTINAS[RUT_CLI]||{})});
+  // Deep copy current state
+  UNDO.push({
+    cli:RUT_CLI,sem:RUT_SEM,dia:RUT_DIA,
+    data:JSON.stringify(RUTINAS[RUT_CLI]||{})
+  });
   if(UNDO.length>UNDO_MAX)UNDO.shift();
 }
 function undoRut(){
-  if(!UNDO.length){toast('Nada que deshacer','');return;}
+  if(!UNDO.length){toast('Nada más que deshacer','');return;}
   const s=UNDO.pop();
   RUTINAS[s.cli]=JSON.parse(s.data);
-  toast('↩ Deshecho','vd');
+  RUT_SEM=s.sem;RUT_DIA=s.dia;
+  toast('↩ Deshecho ('+(UNDO.length)+' más disponibles)','vd');
   if(VIEW==='client')setTab('entreno');else render();
 }
 document.addEventListener('keydown',e=>{
