@@ -1169,6 +1169,23 @@ function getRut(cliId,sem,dia){
     RUTINAS[cliId][sem][dia]=JSON.parse(JSON.stringify(EJ_DEF[dia]||[]));
   return RUTINAS[cliId][sem][dia];
 }
+// Patch ej-list DOM directly (no re-render — preserves scroll, focus, undo stack)
+function patchEjList(){
+  const ejList=document.getElementById('ej-list');
+  if(ejList){
+    const ejes=getRut(RUT_CLI,RUT_SEM,RUT_DIA);
+    ejList.innerHTML=ejes.map((ej,ei)=>ejRow(ej,ei)).join('');
+    return true;
+  }
+  return false;
+}
+// Full re-render fallback only when ej-list doesn't exist
+function rutRefresh(){
+  if(!patchEjList()){
+    if(VIEW==='client')setTab('entreno');else render();
+  }
+}
+
 // Log a completed set for an exercise (called from future client app sync)
 function logEj(cliId,ejNom,sem,vals){
   if(!RUTINAS[cliId])RUTINAS[cliId]={};
@@ -1196,14 +1213,7 @@ function rutUndo(){
   RUTINAS[s.cli]=JSON.parse(s.data);
   RUT_SEM=s.sem;RUT_DIA=s.dia;
   toast(`↩ Deshecho (${UNDO_RUT.length} más)`,'vd');
-  // Patch only the ej-list without full re-render (preserves scroll & focus)
-  const ejList=document.getElementById('ej-list');
-  if(ejList){
-    const ejes=getRut(RUT_CLI,RUT_SEM,RUT_DIA);
-    ejList.innerHTML=ejes.map((ej,ei)=>ejRow(ej,ei)).join('');
-  } else {
-    if(VIEW==='client')setTab('entreno');else render();
-  }
+  rutRefresh();
 }
 
 // Global Ctrl+Z: routes to correct undo based on active tab
@@ -1359,6 +1369,7 @@ function acSel(ei,nom){
     ejes[ei].rest=restMap[ej.tipo?.toLowerCase()]||90;
   }
   acHide(ei);
+  // Patch just this row
   const row=document.getElementById('ejr-'+ei);
   if(row)row.outerHTML=ejRow(ejes[ei],ei);
   toast(nom+' ✓','vd');
@@ -1368,14 +1379,17 @@ function addEj(){
   rutPush();
   const ejes=getRut(RUT_CLI,RUT_SEM,RUT_DIA);
   ejes.push({nom:'',sets:3,reps:'8-10',rir:2,rest:120,url:''});
-  if(VIEW==='client')setTab('entreno');else render();
-  setTimeout(()=>{const el=document.querySelector('.ei');if(el)el.focus();},100);
+  rutRefresh();
+  setTimeout(()=>{
+    const inputs=document.querySelectorAll('.ei');
+    if(inputs.length)inputs[inputs.length-1].focus();
+  },50);
 }
 function delEj(ei){
   rutPush();
   const ejes=getRut(RUT_CLI,RUT_SEM,RUT_DIA);
   ejes.splice(ei,1);
-  if(VIEW==='client')setTab('entreno');else render();
+  rutRefresh();
 }
 function convTrain(dia){
   rutPush();
@@ -1383,7 +1397,7 @@ function convTrain(dia){
   if(!RUTINAS[RUT_CLI][RUT_SEM])RUTINAS[RUT_CLI][RUT_SEM]={};
   RUTINAS[RUT_CLI][RUT_SEM][dia]=JSON.parse(JSON.stringify(EJ_DEF[0]||[]));
   DIAS_BASE[dia].rest=false;DIAS_BASE[dia].tipo='Entreno';
-  if(VIEW==='client')setTab('entreno');else render();
+  if(VIEW==='client')setTab('entreno');else render(); // full re-render needed (day structure changed)
 }
 function convRest(dia){
   rutPush();
@@ -1391,7 +1405,7 @@ function convRest(dia){
   if(!RUTINAS[RUT_CLI][RUT_SEM])RUTINAS[RUT_CLI][RUT_SEM]={};
   RUTINAS[RUT_CLI][RUT_SEM][dia]=[];
   DIAS_BASE[dia].rest=true;DIAS_BASE[dia].tipo='Descanso';
-  if(VIEW==='client')setTab('entreno');else render();
+  if(VIEW==='client')setTab('entreno');else render(); // full re-render needed (day structure changed)
 }
 
 function cpSem(sem){
@@ -1412,7 +1426,7 @@ function cpPegar(sem,dia){
   if(CP_MODE==='semana'){Object.keys(CP_DATA.data).forEach(d=>{RUTINAS[RUT_CLI][sem][parseInt(d)]=JSON.parse(JSON.stringify(CP_DATA.data[d]));});}
   else if(CP_MODE==='dia'){RUTINAS[RUT_CLI][sem][dia]=JSON.parse(JSON.stringify(CP_DATA.ejes));}
   toast('Pegado ✓','vd');CP_MODE=null;CP_DATA=null;
-  if(VIEW==='client')setTab('entreno');else render();
+  rutRefresh();
 }
 function cpPegarMulti(){
   const checks=document.querySelectorAll('[style*="az3"] input[type=checkbox]:checked');
@@ -1425,7 +1439,7 @@ function cpPegarMulti(){
   });
   toast('Pegado en '+checks.length+' semanas ✓','vd');
   CP_MODE=null;CP_DATA=null;
-  if(VIEW==='client')setTab('entreno');else render();
+  rutRefresh();
 }
 
 // ═══ TAB: EDITAR ═══
