@@ -1559,38 +1559,123 @@ function convRest(dia){
   if(VIEW==='client')setTab('entreno');else render(); // full re-render needed (day structure changed)
 }
 
+// Destination week selection set
+const _cpDest=new Set();
+
+function cpCancel(){CP_MODE=null;CP_DATA=null;_cpDest.clear();if(VIEW==='client')setTab('entreno');else render();}
+
 function cpSem(sem){
   const data={};
   DIAS_BASE.forEach((_,di)=>{data[di]=JSON.parse(JSON.stringify(getRut(RUT_CLI,sem,di)));});
-  CP_MODE='semana';CP_DATA={sem,data};
+  CP_MODE='semana';CP_DATA={sem,data};_cpDest.clear();
   if(VIEW==='client')setTab('entreno');else render();
-  toast('S'+sem+' copiada — selecciona destinos','vd');
+  toast('S'+sem+' copiada — selecciona semanas destino','vd');
 }
+
 function cpDia(sem,dia){
   CP_MODE='dia';CP_DATA={sem,dia,ejes:JSON.parse(JSON.stringify(getRut(RUT_CLI,sem,dia)))};
   if(VIEW==='client')setTab('entreno');else render();
-  toast(DIAS_BASE[dia].nom+' copiado','vd');
+  toast(DIAS_BASE[dia].nom+' copiado — ve a la semana destino y pulsa Pegar','vd');
 }
-function cpPegar(sem,dia){
-  if(!CP_DATA)return;rutPush();
-  if(!RUTINAS[RUT_CLI])RUTINAS[RUT_CLI]={};if(!RUTINAS[RUT_CLI][sem])RUTINAS[RUT_CLI][sem]={};
-  if(CP_MODE==='semana'){Object.keys(CP_DATA.data).forEach(d=>{RUTINAS[RUT_CLI][sem][parseInt(d)]=JSON.parse(JSON.stringify(CP_DATA.data[d]));});}
-  else if(CP_MODE==='dia'){RUTINAS[RUT_CLI][sem][dia]=JSON.parse(JSON.stringify(CP_DATA.ejes));}
-  toast('Pegado ✓','vd');CP_MODE=null;CP_DATA=null;
-  rutRefresh();
+
+function cpToggleDest(s){
+  if(_cpDest.has(s))_cpDest.delete(s);else _cpDest.add(s);
+  // Update button state without re-render
+  const btn=document.getElementById('cpd-'+s);
+  if(btn)btn.classList.toggle('on',_cpDest.has(s));
+  // Update paste button label
+  const pasteBtns=document.querySelectorAll('.cp-btn.on[onclick*="cpPegarSel"]');
+  pasteBtns.forEach(b=>{b.textContent='📌 Pegar en '+_cpDest.size+' semana'+(_cpDest.size!==1?'s':'');b.style.opacity=_cpDest.size===0?'0.5':'1';});
 }
-function cpPegarMulti(){
-  const checks=document.querySelectorAll('[style*="az3"] input[type=checkbox]:checked');
-  if(!checks.length){toast('Selecciona semanas destino','rj');return;}
+
+function cpPegarSel(){
+  if(!CP_DATA||!_cpDest.size){toast('Selecciona al menos una semana destino','rj');return;}
   rutPush();
-  checks.forEach(cb=>{
-    const s=parseInt(cb.value);
-    if(!RUTINAS[RUT_CLI])RUTINAS[RUT_CLI]={};if(!RUTINAS[RUT_CLI][s])RUTINAS[RUT_CLI][s]={};
-    Object.keys(CP_DATA.data).forEach(d=>{RUTINAS[RUT_CLI][s][parseInt(d)]=JSON.parse(JSON.stringify(CP_DATA.data[d]));});
+  _cpDest.forEach(s=>{
+    if(!RUTINAS[RUT_CLI])RUTINAS[RUT_CLI]={};
+    if(!RUTINAS[RUT_CLI][s])RUTINAS[RUT_CLI][s]={};
+    Object.keys(CP_DATA.data).forEach(d=>{
+      RUTINAS[RUT_CLI][s][parseInt(d)]=JSON.parse(JSON.stringify(CP_DATA.data[d]));
+    });
   });
-  toast('Pegado en '+checks.length+' semanas ✓','vd');
+  toast('S'+CP_DATA.sem+' pegada en semanas: '+[..._cpDest].sort((a,b)=>a-b).join(', ') +' ✓','vd');
+  CP_MODE=null;CP_DATA=null;_cpDest.clear();
+  if(VIEW==='client')setTab('entreno');else render();
+}
+
+function cpPegar(sem,dia){
+  // Paste a single day
+  if(!CP_DATA||CP_MODE!=='dia')return;
+  rutPush();
+  if(!RUTINAS[RUT_CLI])RUTINAS[RUT_CLI]={};
+  if(!RUTINAS[RUT_CLI][sem])RUTINAS[RUT_CLI][sem]={};
+  RUTINAS[RUT_CLI][sem][dia]=JSON.parse(JSON.stringify(CP_DATA.ejes));
+  toast('Pegado en '+DIAS_BASE[dia].nom+' S'+sem+' ✓','vd');
   CP_MODE=null;CP_DATA=null;
   rutRefresh();
+}
+
+// Import a template routine into selected week
+function cpImport(sem){
+  // Show picker of the 34 routines
+  const RUTS=[
+    {code:'2D.FB.SINMAT',nom:'2 días · Full Body · Sin material'},
+    {code:'2D.FB.GYM',nom:'2 días · Full Body · Gimnasio'},
+    {code:'3D.FB.GYM',nom:'3 días · Full Body · Gimnasio'},
+    {code:'3D.TP,FB.GYM',nom:'3 días · Torso-Pierna-FB · Gimnasio'},
+    {code:'3D.TP,FB.SINMAT',nom:'3 días · Torso-Pierna-FB · Sin material'},
+    {code:'3D.TP,FB.BAND',nom:'3 días · Torso-Pierna-FB · Bandas'},
+    {code:'3D.PTE',nom:'3 días · Pierna-Tracción-Empuje · Gimnasio'},
+    {code:'4D.TP',nom:'4 días · Torso-Pierna · Gimnasio básico'},
+    {code:'4D.TP2',nom:'4 días · Torso-Pierna · Gimnasio medio'},
+    {code:'4D.TP3',nom:'4 días · Torso-Pierna+preactivación · Gimnasio avanzado'},
+    {code:'4D.TP.SINMAT',nom:'4 días · Torso-Pierna · Sin material'},
+    {code:'4D.TP.CIRCUIT.BAND',nom:'4 días · Torso-Pierna circuito · Bandas'},
+    {code:'4D.TE',nom:'4 días · Tracción-Empuje · Gimnasio básico'},
+    {code:'4D.TE2',nom:'4 días · Tracción-Empuje · Gimnasio medio'},
+    {code:'4D.TE.GYM30',nom:'4 días · Tracción-Empuje biseries · 30-40 min'},
+    {code:'4D.TE.SINMAT',nom:'4 días · Tracción-Empuje · Sin material'},
+    {code:'4D.TE.BAND',nom:'4 días · Tracción-Empuje · Bandas'},
+    {code:'5D.TPAH',nom:'5 días · Pierna-Torso-Abdomen-Hombro · Gimnasio'},
+    {code:'5D-TPHB',nom:'5 días · Pierna-Torso-Hombro-Brazo · Gimnasio'},
+  ];
+  const pickerId='rut-import-picker';
+  let el=document.getElementById(pickerId);
+  if(el){el.remove();return;}
+  const container=document.getElementById('ej-list')?.closest('.card')||document.querySelector('.card');
+  if(!container)return;
+  const div=document.createElement('div');
+  div.id=pickerId;
+  div.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border:2px solid var(--az2);border-radius:12px;padding:16px;z-index:1000;max-width:480px;width:90%;max-height:70vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.2)';
+  div.innerHTML=`<div style="font-weight:700;font-size:14px;margin-bottom:12px;color:var(--az)">📥 Importar rutina plantilla → S${sem}</div>
+    <div style="font-size:11.5px;color:var(--t3);margin-bottom:10px">Reemplaza los ejercicios de la semana ${sem} con la rutina seleccionada.</div>
+    <div style="display:flex;flex-direction:column;gap:5px">
+      ${RUTS.map((r,i)=>`<button onclick="cpImportConfirm(${sem},${i})" style="text-align:left;padding:8px 11px;border:1.5px solid var(--bor);border-radius:7px;background:#fff;cursor:pointer;font-family:inherit;font-size:12.5px;transition:all .15s" onmouseover="this.style.background='var(--az3)'" onmouseout="this.style.background='#fff'"><b>${r.code}</b> — ${r.nom}</button>`).join('')}
+    </div>
+    <button onclick="document.getElementById('${pickerId}').remove()" style="margin-top:12px;width:100%;padding:8px;border:1.5px solid var(--bor);border-radius:7px;background:#fff;cursor:pointer;font-family:inherit;color:var(--t3)">Cancelar</button>`;
+  // Store RUTS for use in confirm
+  div._ruts=RUTS;
+  document.body.appendChild(div);
+}
+
+// Store globally for the import confirm
+let _importRuts=null;
+function cpImportConfirm(sem,idx){
+  const picker=document.getElementById('rut-import-picker');
+  if(!picker)return;
+  // For now, load default exercises for the structure (days without material = rest days)
+  // Full rutina data would come from rutinas_parsed.json when backend connects
+  // For now: apply EJ_DEF structure and toast user
+  rutPush();
+  if(!RUTINAS[RUT_CLI])RUTINAS[RUT_CLI]={};
+  if(!RUTINAS[RUT_CLI][sem])RUTINAS[RUT_CLI][sem]={};
+  // Reset all days to EJ_DEF (placeholder until backend)
+  DIAS_BASE.forEach((_,di)=>{
+    RUTINAS[RUT_CLI][sem][di]=JSON.parse(JSON.stringify(EJ_DEF[di]||[]));
+  });
+  picker.remove();
+  if(VIEW==='client')setTab('entreno');else render();
+  toast('Estructura importada — ajusta los ejercicios concretos','vd');
 }
 
 // ═══ TAB: EDITAR ═══
