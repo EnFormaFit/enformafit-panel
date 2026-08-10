@@ -995,7 +995,8 @@ function tNutricion(c){
               data-cli="${c.id}" data-meal="${meal}" data-cat="${cat}"
               data-p100="${it.p_100}" data-c100="${it.c_100}" data-g100="${it.g_100}" data-k100="${it.kcal_100}"
               data-orig="${it.cantidad}"
-              oninput="nutLive(this)">
+              oninput="nutLive(this)"
+              onblur="nutSave(this)">
             <span style="font-size:11px;color:var(--t3)">${it.u}</span>
           </div>
         </td>
@@ -1014,18 +1015,28 @@ function tNutricion(c){
   return h;
 }
 
+function nutSave(inp){
+  // Called onblur — saves previous value to undo stack BEFORE committing
+  const cliId=inp.dataset.cli,meal=inp.dataset.meal,cat=inp.dataset.cat;
+  if(!NE[cliId])NE[cliId]={};
+  if(!NE[cliId][meal])NE[cliId][meal]={};
+  const prev=NE[cliId][meal][cat]??parseFloat(inp.dataset.orig??inp.value);
+  const newVal=parseFloat(inp.value)||0;
+  if(prev===newVal)return; // no change, don't pollute stack
+  UNDO_NUT.push({cliId,meal,cat,g:prev});
+  if(UNDO_NUT.length>UNDO_MAX)UNDO_NUT.shift();
+  NE[cliId][meal][cat]=newVal;
+}
+
 function nutLive(inp){
   const cliId=inp.dataset.cli,meal=inp.dataset.meal,cat=inp.dataset.cat;
   const g=parseFloat(inp.value)||0;
   const p100=parseFloat(inp.dataset.p100),c100=parseFloat(inp.dataset.c100);
   const g100=parseFloat(inp.dataset.g100),k100=parseFloat(inp.dataset.k100);
 
-  // Save to undo BEFORE changing
+  // Update in-memory value live (no undo here — undo happens onblur via nutSave)
   if(!NE[cliId])NE[cliId]={};
   if(!NE[cliId][meal])NE[cliId][meal]={};
-  const prev=NE[cliId][meal][cat]??parseFloat(inp.dataset.orig??g);
-  UNDO_NUT.push({cliId,meal,cat,g:prev,inp});
-  if(UNDO_NUT.length>UNDO_MAX)UNDO_NUT.shift();
   NE[cliId][meal][cat]=g;
 
   // Update this row
@@ -1075,9 +1086,13 @@ function nutUndo(){
   if(!NE[last.cliId])NE[last.cliId]={};
   if(!NE[last.cliId][last.meal])NE[last.cliId][last.meal]={};
   NE[last.cliId][last.meal][last.cat]=last.g;
-  // Update input
+  // Update input value and recalc DOM
   const inp=document.querySelector(`input[data-cli="${last.cliId}"][data-meal="${last.meal}"][data-cat="${last.cat}"]`);
-  if(inp){inp.value=last.g;nutLive(inp);}
+  if(inp){
+    inp.value=last.g;
+    inp.dataset.orig=last.g; // reset orig so next nutSave compares correctly
+    nutLive(inp);
+  }
   toast(`↩ Nutrición deshecha (${UNDO_NUT.length} más)`,'vd');
 }
 
