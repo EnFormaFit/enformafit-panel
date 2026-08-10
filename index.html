@@ -1223,17 +1223,8 @@ function nutUndoStructural(last){
 // Override nutUndo to handle structural
 const _nutUndoOrig=nutUndo;
 // Redefine nutUndo to handle both types
-function nutUndo(){
-  if(!UNDO_NUT.length){toast('Nada más que deshacer en nutrición','');return;}
-  const last=UNDO_NUT.pop();
-  if(last.structural){nutUndoStructural(last);return;}
-  const state=getNutState(byId(last.cliId));
-  if(state.meals[last.mi]?.items[last.ii])
-    state.meals[last.mi].items[last.ii].cantidad=last.g;
-  const inp=document.querySelector(`input[data-cli="${last.cliId}"][data-mi="${last.mi}"][data-ii="${last.ii}"]`);
-  if(inp){inp.value=last.g;inp.dataset.orig=String(last.g);nutLive(inp);}
-  toast(`↩ Nutrición deshecha (${UNDO_NUT.length} más)`,'vd');
-}
+// nutUndo defined above
+
 
 function nutReset(cliId){
   if(!confirm('¿Resetear toda la nutrición al plan original?'))return;
@@ -1334,63 +1325,12 @@ function nutReset(cliId){
   return h;
 }
 
-// nutSave defined in JS_NUT block
+// nutLive defined above
 
-function nutLive(inp){
-  const cliId=inp.dataset.cli,meal=inp.dataset.meal,cat=inp.dataset.cat;
-  const g=parseFloat(inp.value)||0;
-  const p100=parseFloat(inp.dataset.p100),c100=parseFloat(inp.dataset.c100);
-  const g100=parseFloat(inp.dataset.g100),k100=parseFloat(inp.dataset.k100);
 
-  // Only update DOM live — NE is updated by nutSave onblur (to keep undo clean)
 
-  // Update this row
-  const r=g/100;
-  const np=+(p100*r).toFixed(1),nc=+(c100*r).toFixed(1),ng=+(g100*r).toFixed(1),nk=Math.round(k100*r);
-  const $=id=>{const el=document.getElementById(id);if(el)return el;};
-  const set=(id,v)=>{const el=$(id);if(el)el.textContent=v;};
-  set(`np-${cliId}-${meal}-${cat}`,np+'g');
-  set(`nc-${cliId}-${meal}-${cat}`,nc+'g');
-  set(`ng-${cliId}-${meal}-${cat}`,ng+'g');
-  set(`nk-${cliId}-${meal}-${cat}`,nk);
+// nutReset defined above
 
-  // Recalc meal totals
-  let mK=0,mP=0,mC=0,mG=0;
-  document.querySelectorAll(`#mr-${cliId}-${meal} tr`).forEach(row=>{
-    const id=row.id.replace(`nr-${cliId}-${meal}-`,'');
-    mK+=parseFloat(document.getElementById(`nk-${cliId}-${meal}-${id}`)?.textContent||0);
-    mP+=parseFloat(document.getElementById(`np-${cliId}-${meal}-${id}`)?.textContent||0);
-    mC+=parseFloat(document.getElementById(`nc-${cliId}-${meal}-${id}`)?.textContent||0);
-    mG+=parseFloat(document.getElementById(`ng-${cliId}-${meal}-${id}`)?.textContent||0);
-  });
-  set(`ms-${cliId}-${meal}`,`${Math.round(mK)} kcal · P:${Math.round(mP)}g C:${Math.round(mC)}g G:${Math.round(mG)}g`);
-
-  // Recalc day totals
-  let dK=0,dP=0,dC=0,dG=0;
-  ['desayuno','comida','cena','snack'].forEach(m=>{
-    ['prot','hidrat','verd','fat','fruta'].forEach(ct=>{
-      dK+=parseFloat(document.getElementById(`nk-${cliId}-${m}-${ct}`)?.textContent||0);
-      dP+=parseFloat(document.getElementById(`np-${cliId}-${m}-${ct}`)?.textContent||0);
-      dC+=parseFloat(document.getElementById(`nc-${cliId}-${m}-${ct}`)?.textContent||0);
-      dG+=parseFloat(document.getElementById(`ng-${cliId}-${m}-${ct}`)?.textContent||0);
-    });
-  });
-  set(`nt-k-${cliId}`,Math.round(dK));
-  set(`nt-p-${cliId}`,Math.round(dP)+'g');
-  set(`nt-c-${cliId}`,Math.round(dC)+'g');
-  set(`nt-g-${cliId}`,Math.round(dG)+'g');
-  const c=byId(cliId);
-  const diff=Math.round(dK-(c?.macros?.kcal||2000));
-  const de=document.getElementById(`nt-d-${cliId}`);
-  if(de){de.textContent=(diff>0?'+':'')+diff;de.style.color=Math.abs(diff)<100?'var(--vd)':Math.abs(diff)<200?'var(--am)':'var(--rj)';}
-}
-
-// nutUndo defined in JS_NUT block
-
-function nutReset(cliId){
-  if(NE[cliId])delete NE[cliId];
-  setTab('nutricion');toast('Cambios reseteados','');
-}
 
 // ═══ TAB: ENTRENO — grid semanal + editor ═══
 function tEntreno(c){
