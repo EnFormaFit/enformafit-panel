@@ -1016,16 +1016,18 @@ function tNutricion(c){
 }
 
 function nutSave(inp){
-  // Called onblur — saves previous value to undo stack BEFORE committing
+  // Called onblur — only save undo when leaving with a REAL value (not empty/0)
+  const newVal=parseFloat(inp.value);
+  if(!inp.value.trim()||isNaN(newVal)||newVal===0)return; // ignore empty/zero states mid-edit
   const cliId=inp.dataset.cli,meal=inp.dataset.meal,cat=inp.dataset.cat;
   if(!NE[cliId])NE[cliId]={};
   if(!NE[cliId][meal])NE[cliId][meal]={};
-  const prev=NE[cliId][meal][cat]??parseFloat(inp.dataset.orig??inp.value);
-  const newVal=parseFloat(inp.value)||0;
-  if(prev===newVal)return; // no change, don't pollute stack
+  const prev=NE[cliId][meal][cat]??parseFloat(inp.dataset.orig??newVal);
+  if(prev===newVal)return; // no change
   UNDO_NUT.push({cliId,meal,cat,g:prev});
   if(UNDO_NUT.length>UNDO_MAX)UNDO_NUT.shift();
   NE[cliId][meal][cat]=newVal;
+  inp.dataset.orig=newVal; // update orig to new committed value
 }
 
 function nutLive(inp){
