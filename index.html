@@ -1199,14 +1199,71 @@ function nutDelMeal(cliId,mi){
 }
 
 function nutAddMeal(cliId){
-  const nom=window.prompt('Nombre de la nueva comida (ej: Post-entreno):');
-  if(!nom||!nom.trim())return;
+  // Show inline panel instead of browser prompt
+  const pickerId='nut-addmeal-picker-'+cliId;
+  let el=document.getElementById(pickerId);
+  if(el){el.remove();return;}
+  const container=document.getElementById('nut-meals-'+cliId);
+  if(!container)return;
+  const MEAL_TEMPLATES=[
+    {id:'desayuno_extra',nom:'☀️ Desayuno extra',tipo:'desayuno',
+      desc:'Hidratos + proteína magra + grasa'},
+    {id:'snack_am',nom:'🍎 Snack mañana',tipo:'snack',
+      desc:'Proteína magra + hidratos (sin grasa)'},
+    {id:'snack_pm',nom:'🍎 Snack tarde',tipo:'snack',
+      desc:'Proteína magra + hidratos (sin grasa)'},
+    {id:'post_entreno',nom:'💪 Post-entreno',tipo:'snack',
+      desc:'Proteína magra + hidratos rápidos'},
+    {id:'comida_extra',nom:'🌞 Comida extra',tipo:'comida',
+      desc:'Hidratos + proteína magra + verdura + grasa'},
+    {id:'cena_extra',nom:'🌙 Cena extra',tipo:'cena',
+      desc:'Proteína magra + verdura + grasa (sin hidratos o mínimos)'},
+    {id:'custom',nom:'✏️ Personalizada',tipo:null,
+      desc:'Comida vacía — añade los grupos manualmente'},
+  ];
+  const div=document.createElement('div');
+  div.id=pickerId;
+  div.style.cssText='background:var(--az3);border:1.5px solid var(--az4);border-radius:10px;padding:12px 14px;margin-top:8px';
+  div.innerHTML=`<div style="font-size:11px;font-weight:700;color:var(--az2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Añadir comida — elige el tipo:</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+      ${MEAL_TEMPLATES.map(t=>`<button onclick="nutAddMealFromTemplate('${cliId}','${t.id}','${t.nom}','${t.tipo||''}')" 
+        style="text-align:left;padding:8px 10px;border:1.5px solid var(--bor);border-radius:7px;background:#fff;cursor:pointer;font-family:inherit;transition:all .15s"
+        onmouseover="this.style.borderColor='var(--az2)'" onmouseout="this.style.borderColor='var(--bor)'">
+        <div style="font-size:12.5px;font-weight:700">${t.nom}</div>
+        <div style="font-size:10.5px;color:var(--t3);margin-top:2px">${t.desc}</div>
+      </button>`).join('')}
+    </div>
+    <button onclick="document.getElementById('${pickerId}').remove()" style="margin-top:8px;width:100%;padding:6px;border:1.5px solid var(--bor);border-radius:7px;background:none;cursor:pointer;font-family:inherit;color:var(--t3);font-size:12px">Cancelar</button>`;
+  container.parentElement.insertBefore(div, container.nextSibling);
+}
+
+function nutAddMealFromTemplate(cliId,templateId,nom,tipo){
   const state=getNutState(byId(cliId));
   UNDO_NUT.push({cliId,structural:true,snap:nutSnapshot(cliId)});
   if(UNDO_NUT.length>UNDO_MAX)UNDO_NUT.shift();
-  state.meals.push({id:'extra_'+Date.now(),nom:'🍽️ '+nom.trim(),items:[]});
+  // Build items from MENU based on tipo
+  let items=[];
+  if(tipo&&MENU[tipo]){
+    const md=MENU[tipo];
+    // Only magras for protein (no grasas proteins), in CAT_ORDER_NUT order
+    const CATS_TO_LOAD = tipo==='snack'
+      ? ['hidrat','prot'] // snack: no fat by default
+      : ['hidrat','prot','verd','fat']; // main meals: hidrat+prot+verd+fat
+    CATS_TO_LOAD.forEach(cat=>{
+      const arr=md[CAT_KEY_NUT[cat]];
+      if(!arr||!arr.length)return;
+      const def=arr[0];
+      items.push({cat,catNom:CAT_NOM_NUT[cat],
+        nom:def.nom||def.alimento||'',cantidad:def.cantidad||100,
+        p100:def.p_100||0,c100:def.c_100||0,g100:def.g_100||0,k100:def.kcal_100||0,
+        u:def.u||'g'});
+    });
+  }
+  state.meals.push({id:templateId+'_'+Date.now(),nom,items});
+  // Close picker
+  document.querySelectorAll('[id^="nut-addmeal-picker-"]').forEach(el=>el.remove());
   nutRepaint(cliId);
-  toast('Comida añadida','vd');
+  toast(nom+' añadida','vd');
 }
 
 function nutRepaint(cliId){
