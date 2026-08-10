@@ -194,20 +194,27 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
   letter-spacing:.5px;margin-bottom:5px}
 .rev-photos-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
 .photo-slot{position:relative;border-radius:8px;overflow:hidden;
-  background:var(--bg);border:1.5px solid var(--bor);cursor:pointer}
+  background:var(--bg);border:1.5px solid var(--bor);cursor:pointer;
+  user-select:none}
 .photo-slot::before{content:'';display:block;padding-top:133%} /* 3:4 ratio */
-.photo-slot img{position:absolute;inset:0;width:100%;height:100%;
-  object-fit:cover;object-position:top center;transition:object-position .3s}
+.photo-slot .ph-img-wrap{position:absolute;inset:0;overflow:hidden;
+  display:flex;align-items:center;justify-content:center}
+.photo-slot img{width:100%;height:100%;object-fit:contain;
+  transform-origin:center center;transition:transform .15s;
+  pointer-events:none}
 .photo-slot .ph-empty{position:absolute;inset:0;display:flex;flex-direction:column;
   align-items:center;justify-content:center;gap:4px;color:var(--t3);font-size:11px}
 .photo-slot .ph-lbl{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.5);
   color:#fff;font-size:10px;font-weight:600;padding:4px;text-align:center}
 .photo-slot.has{border-color:var(--vd)}
-/* Crop adjuster */
-.ph-crop-bar{position:absolute;top:4px;right:4px;display:flex;flex-direction:column;gap:3px;opacity:0;transition:opacity .2s}
-.photo-slot:hover .ph-crop-bar{opacity:1}
-.ph-crop-btn{background:rgba(0,0,0,.6);border:none;border-radius:4px;color:#fff;
-  font-size:12px;cursor:pointer;width:22px;height:22px;display:flex;align-items:center;justify-content:center}
+/* Zoom controls */
+.ph-zoom-bar{position:absolute;top:4px;right:4px;display:flex;flex-direction:column;
+  gap:3px;opacity:0;transition:opacity .2s;z-index:10}
+.photo-slot:hover .ph-zoom-bar{opacity:1}
+.ph-zoom-btn{background:rgba(0,0,0,.65);border:none;border-radius:4px;color:#fff;
+  font-size:13px;cursor:pointer;width:24px;height:24px;display:flex;
+  align-items:center;justify-content:center;font-weight:700}
+.ph-zoom-btn:hover{background:rgba(0,0,0,.9)}
 
 /* ENTRENO GRID */
 .ent-grid-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -776,7 +783,7 @@ function tResumen(c){
         <button class="btn ${c.planPublicado?'bo':'bp'}" onclick="togglePublicar('${c.id}')">
           ${c.planPublicado?'⬇️ Despublicar':'🚀 Publicar al cliente'}
         </button>
-        <a href="${SKOOL[c.tipo==='uno'?'uno':'programa']}" target="_blank" class="btn bo">📚 Skool</a>
+
       </div>
     </div>
   </div>`;
@@ -859,10 +866,17 @@ function tRevision(c){
             <div style="font-size:9px;font-weight:700;color:#fff;background:${revCols[ri]||'var(--az2)'};padding:3px 8px;border-radius:4px;display:inline-block;margin-bottom:4px;opacity:${locked?.5:1}">${revLabels[rs]||'S'+rs}${isActive?' ●':''}</div>
             <div class="photo-slot${hasFoto?' has':''}${locked?' locked':''}">
               ${hasFoto
-                ?`<img src="${hasFoto}" id="ph-${rs}-${pi}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top center">
-                   <div class="ph-crop-bar">
-                     <button class="ph-crop-btn" onclick="cropAdj('ph-${rs}-${pi}',-10)">↑</button>
-                     <button class="ph-crop-btn" onclick="cropAdj('ph-${rs}-${pi}',10)">↓</button>
+                ?`<div class="ph-img-wrap" id="phw-${rs}-${pi}">
+                     <img src="${hasFoto}" id="ph-${rs}-${pi}"
+                       style="transform:scale(${1}) translateX(0px) translateY(0px)"
+                       data-scale="1" data-tx="0" data-ty="0">
+                   </div>
+                   <div class="ph-zoom-bar">
+                     <button class="ph-zoom-btn" onclick="phZoom('ph-${rs}-${pi}',0.15)" title="Zoom +">+</button>
+                     <button class="ph-zoom-btn" onclick="phZoom('ph-${rs}-${pi}',-0.15)" title="Zoom −">−</button>
+                     <button class="ph-zoom-btn" onclick="phZoom('ph-${rs}-${pi}',0,'up')" title="Subir">↑</button>
+                     <button class="ph-zoom-btn" onclick="phZoom('ph-${rs}-${pi}',0,'down')" title="Bajar">↓</button>
+                     <button class="ph-zoom-btn" onclick="phZoom('ph-${rs}-${pi}',0,'reset')" title="Reset" style="font-size:9px">↺</button>
                    </div>
                    <div class="ph-lbl">${revLabels[rs]||'S'+rs}</div>`
                 :`<div class="ph-empty"><span style="font-size:20px">📷</span><span style="font-size:10px">${locked?'🔒':isActive?'Pendiente':revLabels[rs]||'S'+rs}</span></div>`
@@ -912,10 +926,19 @@ function tRevision(c){
   return`${statsH}${fotosH}${medsH}${respsH}${fbH}`;
 }
 
-function cropAdj(id,delta){
+function phZoom(id,delta,dir){
   const img=document.getElementById(id);if(!img)return;
-  const cur=parseInt(img.style.objectPosition?.match(/(\d+)%/)?.[1]||'10');
-  img.style.objectPosition=`center ${Math.max(0,Math.min(100,cur+delta))}%`;
+  let sc=parseFloat(img.dataset.scale)||1;
+  let tx=parseFloat(img.dataset.tx)||0;
+  let ty=parseFloat(img.dataset.ty)||0;
+  if(dir==='reset'){sc=1;tx=0;ty=0;}
+  else if(dir==='up'){ty-=20;}
+  else if(dir==='down'){ty+=20;}
+  else if(dir==='left'){tx-=20;}
+  else if(dir==='right'){tx+=20;}
+  else{sc=Math.max(0.5,Math.min(4,sc+delta));}
+  img.dataset.scale=sc;img.dataset.tx=tx;img.dataset.ty=ty;
+  img.style.transform=`scale(${sc}) translateX(${tx/sc}px) translateY(${ty/sc}px)`;
 }
 
 function guardarFeedback(id){
@@ -1825,7 +1848,11 @@ function tEditar(c){
     <div>
       <div class="sec-t">Macros objetivo <span style="font-size:9px;font-weight:400;color:var(--t3)">(independientes de Nutrición)</span></div>
       <div class="card" style="margin-bottom:12px"><div class="cb" style="padding:0 14px">
-        ${[['kcal','Calorías'],['p','Proteína (g)'],['c','Carbos (g)'],['g','Grasa (g)']].map(([k,l])=>`<div class="dato"><label>${l}</label>${inpM(k,c.macros[k])}</div>`).join('')}
+        <div class="dato">
+        <label>Calorías <span style="font-size:9px;color:var(--vd)">(calculadas automáticamente)</span></label>
+        <span style="font-weight:800;font-size:16px;color:var(--nr)" data-kcal-id="${c.id}">${c.macros.kcal}</span>
+      </div>
+      ${[['p','Proteína (g)'],['c','Carbos (g)'],['g','Grasa (g)']].map(([k,l])=>`<div class="dato"><label>${l}</label>${inpM(k,c.macros[k])}</div>`).join('')}
       </div></div>
       <div class="sec-t">Lesiones y notas</div>
       <div class="card"><div class="cb" style="padding:10px 14px">
@@ -1842,7 +1869,18 @@ function tEditar(c){
   </div></div>`;
 }
 function editC(id,k,v){const c=byId(id);if(c)c[k]=(k==='inicioBloque'||isNaN(+v))?v:parseFloat(v);}
-function editM(id,k,v){const c=byId(id);if(c&&c.macros)c.macros[k]=parseFloat(v)||0;}
+function editM(id,k,v){
+  const c=byId(id);if(!c||!c.macros)return;
+  c.macros[k]=parseFloat(v)||0;
+  // Recalcular kcal automáticamente: P×4 + C×4 + G×9
+  c.macros.kcal=Math.round((c.macros.p||0)*4+(c.macros.c||0)*4+(c.macros.g||0)*9);
+  // Update kcal input if visible
+  const kInp=document.querySelector(`input[onchange*="editM('${id}','kcal'"]`);
+  if(kInp)kInp.value=c.macros.kcal;
+  // Update kcal display
+  const kEl=document.querySelector(`[data-kcal-id="${id}"]`);
+  if(kEl)kEl.textContent=c.macros.kcal;
+}
 
 // ═══ LÓGICAS ═══
 function rLogicas(){
