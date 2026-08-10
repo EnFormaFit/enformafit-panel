@@ -1397,18 +1397,35 @@ function rRutinas(){
     return`<label style="display:inline-flex;align-items:center;gap:3px;font-size:11.5px;cursor:pointer;padding:3px 7px;border:1px solid var(--bor);border-radius:5px;background:#fff"><input type="checkbox" value="${s}" style="margin:0"> S${s}</label>`;
   }).join(''):'';
 
-  let cpBar=`<div class="cp-bar">
-    <button class="cp-btn${CP_MODE==='semana'?'on':''}" onclick="cpSem(${RUT_SEM})">📋 Copiar S${RUT_SEM}</button>
-    ${!dia.rest?`<button class="cp-btn${CP_MODE==='dia'?'on':''}" onclick="cpDia(${RUT_SEM},${RUT_DIA})">Copiar ${dia.nom}</button>`:''}
-    ${CP_MODE&&CP_DATA&&CP_MODE!=='semana'?`<button class="cp-btn on" onclick="cpPegar(${RUT_SEM},${RUT_DIA})">📌 Pegar aquí</button>`:''}
-    ${CP_MODE?`<button class="cp-btn cancel" onclick="CP_MODE=null;CP_DATA=null;${VIEW==='client'?'setTab(\'entreno\')':'render()'}">✕ Cancelar</button>`:''}
-    <span style="margin-left:auto;font-size:11px;color:var(--t3)">Ctrl+Z deshacer</span>
-  </div>`;
-  if(semChecks)cpBar+=`<div style="display:flex;flex-wrap:wrap;gap:5px;padding:8px 12px;background:var(--az3);border-radius:8px;margin-top:6px;align-items:center">
-    <span style="font-size:11px;font-weight:700;color:var(--az2)">Pegar S${CP_DATA?.sem} en:</span>
-    ${semChecks}
-    <button class="cp-btn on" onclick="cpPegarMulti()">📌 Pegar en seleccionadas</button>
-  </div>`;
+  let cpBar='';
+  if(!CP_MODE){
+    cpBar=`<div class="cp-bar">
+      <button class="cp-btn" onclick="cpSem(${RUT_SEM})">📋 Copiar semana S${RUT_SEM}</button>
+      ${!dia.rest?`<button class="cp-btn" onclick="cpDia(${RUT_SEM},${RUT_DIA})">Copiar ${dia.nom}</button>`:''}
+      <button class="cp-btn" onclick="cpImport(${RUT_SEM})">📥 Importar plantilla</button>
+      <span style="margin-left:auto;font-size:11px;color:var(--t3)">Ctrl+Z deshacer</span>
+    </div>`;
+  } else if(CP_MODE==='semana'){
+    const destBtns=Array.from({length:st},(_,i)=>{
+      const s=i+1;
+      if(s===CP_DATA.sem)return`<button class="sem-btn" disabled style="opacity:.35">S${s}</button>`;
+      return`<button class="sem-btn${_cpDest.has(s)?' on':''}" id="cpd-${s}" onclick="cpToggleDest(${s})">S${s}</button>`;
+    }).join('');
+    cpBar=`<div class="cp-bar" style="flex-direction:column;align-items:flex-start;gap:8px">
+      <div style="font-size:12px;font-weight:700;color:var(--az2)">📋 S${CP_DATA.sem} copiada → selecciona semanas destino:</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">${destBtns}</div>
+      <div style="display:flex;gap:6px">
+        <button class="cp-btn on" onclick="cpPegarSel()">📌 Pegar en seleccionadas</button>
+        <button class="cp-btn cancel" onclick="cpCancel()">✕ Cancelar</button>
+      </div>
+    </div>`;
+  } else if(CP_MODE==='dia'){
+    cpBar=`<div class="cp-bar">
+      <span style="font-size:12px;font-weight:700;color:var(--az2)">📋 ${DIAS_BASE[CP_DATA.dia].nom} copiado</span>
+      ${!dia.rest?`<button class="cp-btn on" onclick="cpPegar(${RUT_SEM},${RUT_DIA})">📌 Pegar en ${dia.nom} S${RUT_SEM}</button>`:'<span style="color:var(--t3);font-size:11.5px">Ve a un día de entreno para pegar</span>'}
+      <button class="cp-btn cancel" onclick="cpCancel()">✕ Cancelar</button>
+    </div>`;
+  }
 
   // Day editor
   let dayEditor='';
