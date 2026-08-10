@@ -718,62 +718,69 @@ function rLista(tipo){
 
 // ═══ TAB: RESUMEN ═══
 function tResumen(c){
-  // 7-day average weight
   const now=new Date();
   const hist=c.histPesos||[];
   const last7=hist.filter(p=>{const d=new Date(p.f);return(now-d)/(1000*60*60*24)<=7;});
   const pesoMedio=last7.length?+(last7.reduce((s,p)=>s+p.v,0)/last7.length).toFixed(1):c.pesoAct;
-  const cambio=(pesoMedio-c.pesoIni).toFixed(1);
-  const left=(pesoMedio-c.obj).toFixed(1);
+  const cambio=+(pesoMedio-c.pesoIni).toFixed(1);
+  const left=+(pesoMedio-c.obj).toFixed(1);
   const sems=Math.max(c.semana-1,1);
   const bajaSem=((c.pesoIni-pesoMedio)/sems).toFixed(2);
-  return`<div class="rg">
-  <div>
-    <div class="sec-t">Peso corporal</div>
-    <div class="rs4">
-      <div class="rs-box"><div class="rs-v" style="color:var(--az2)">${c.pesoIni}kg</div><div class="rs-l">Peso inicial</div></div>
-      <div class="rs-box"><div class="rs-v" style="color:var(--az)">${pesoMedio}kg</div><div class="rs-l">Peso actual <span style="font-size:8px">(med. 7d)</span></div></div>
-      <div class="rs-box"><div class="rs-v" style="color:${parseFloat(cambio)<0?'var(--vd)':'var(--rj)'}">${cambio}kg</div><div class="rs-l">Bajada total</div></div>
-      <div class="rs-box"><div class="rs-v" style="color:var(--nr)">${bajaSem}kg</div><div class="rs-l">Media/sem</div></div>
-      <div class="rs-box"><div class="rs-v" style="color:var(--vd)">${c.obj}kg</div><div class="rs-l">Objetivo</div></div>
-      <div class="rs-box"><div class="rs-v" style="color:${parseFloat(left)>0?'var(--nr)':'var(--vd)'}">${parseFloat(left)>0?left+'kg':'✅'}</div><div class="rs-l">Para objetivo</div></div>
-      <div class="rs-box"><div class="rs-v" style="color:var(--az2)">${c.semana}</div><div class="rs-l">Semana actual</div></div>
-      <div class="rs-box"><div class="rs-v" style="color:var(--t2)">${c.nextRev}</div><div class="rs-l">Próx. revisión</div></div>
+  const totalDiff=Math.abs(c.pesoIni-c.obj)||1;
+  const pct=Math.min(100,Math.round(Math.abs(cambio)/totalDiff*100));
+  return`
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+    <div>
+      <div class="sec-t">Peso corporal</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px">
+        <div class="rs-box"><div class="rs-v" style="color:var(--az2);font-size:16px">${c.pesoIni}</div><div class="rs-l">Inicio kg</div></div>
+        <div class="rs-box" style="border:2px solid var(--az)"><div class="rs-v" style="color:var(--az);font-size:18px">${pesoMedio}</div><div class="rs-l">Actual kg<br><span style="font-size:8px;color:var(--t3)">media 7d</span></div></div>
+        <div class="rs-box"><div class="rs-v" style="color:${cambio<0?'var(--vd)':'var(--rj)'};font-size:16px">${cambio}</div><div class="rs-l">Cambio kg</div></div>
+        <div class="rs-box"><div class="rs-v" style="color:var(--vd);font-size:16px">${c.obj}</div><div class="rs-l">Objetivo kg</div></div>
+      </div>
+      <div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--t3);margin-bottom:4px">
+          <span>Progreso hacia objetivo</span>
+          <span style="font-weight:700;color:var(--vd)">${pct}%</span>
+        </div>
+        <div class="pb" style="height:8px"><div class="pf" style="width:${pct}%;background:var(--vd)"></div></div>
+        <div style="font-size:10px;color:var(--t3);margin-top:3px">${left>0?left+' kg restantes':'✅ Objetivo alcanzado'} · ${bajaSem} kg/sem</div>
+      </div>
+      <div style="margin-bottom:12px">${miniChart(c)}</div>
+      <div class="sec-t">Adherencia</div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="font-size:32px;font-weight:800;color:${adhCol(c.adh)}">${Math.round(c.adh*100)}%</div>
+        <div style="flex:1">
+          <div class="pb" style="height:8px"><div class="pf" style="width:${Math.round(c.adh*100)}%;background:${adhCol(c.adh)}"></div></div>
+          <div style="font-size:10px;color:var(--t3);margin-top:3px">${c.adh>=0.8?'🟢 Excelente':c.adh>=0.6?'🟡 Mejorable':'🔴 Baja'}</div>
+        </div>
+      </div>
     </div>
-    <div style="margin-bottom:12px">${miniChart(c)}</div>
-    <div class="sec-t">Adherencia</div>
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-      <div style="font-size:26px;font-weight:800;color:${adhCol(c.adh)}">${Math.round(c.adh*100)}%</div>
-      <div style="flex:1"><div class="pb"><div class="pf" style="width:${Math.round(c.adh*100)}%;background:${adhCol(c.adh)}"></div></div></div>
+    <div>
+      <div class="sec-t">Estado del plan</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px">
+        <div class="rs-box"><div class="rs-v" style="color:var(--az2);font-size:20px">S${c.semana}</div><div class="rs-l">Semana actual</div></div>
+        <div class="rs-box"><div class="rs-v" style="color:var(--t2);font-size:18px">S${c.nextRev}</div><div class="rs-l">Próx. revisión</div></div>
+        <div class="rs-box"><div class="rs-v" style="color:var(--az);font-size:18px">B${c.bloque||1}</div><div class="rs-l">Bloque actual</div></div>
+        <div class="rs-box"><div class="rs-v" style="color:var(--t2);font-size:18px">${c.diasSemana||4}d</div><div class="rs-l">Días entreno</div></div>
+      </div>
+      <div class="sec-t">Objetivos diarios</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px">
+        <div class="rs-box"><div style="font-size:16px;font-weight:800;color:var(--vd)">${c.pasosObj?.toLocaleString('es')||'—'}</div><div class="rs-l">Pasos/día</div></div>
+        <div class="rs-box"><div style="font-size:11px;font-weight:700;color:var(--t2);line-height:1.3">${c.equipamiento?.split(' ').slice(0,4).join(' ')||'—'}</div><div class="rs-l">Material</div></div>
+      </div>
+      ${c.lesiones?`<div style="background:var(--am2);border-left:3px solid var(--am);border-radius:0 8px 8px 0;padding:9px 12px;font-size:12.5px;margin-bottom:8px">🩹 <b>Lesiones:</b> ${c.lesiones}</div>`:''}
+      ${c.intolerancias?`<div style="background:var(--rj2);border-left:3px solid var(--rj);border-radius:0 8px 8px 0;padding:9px 12px;font-size:12.5px;margin-bottom:8px">⚠️ <b>Intolerancias:</b> ${c.intolerancias}</div>`:''}
+      ${c.comentario?`<div style="background:var(--bg);border-left:3px solid var(--az2);border-radius:0 8px 8px 0;padding:9px 12px;font-size:12px;color:var(--t2);margin-bottom:8px;font-style:italic">"${c.comentario}"</div>`:''}
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+        <button class="btn ${c.planPublicado?'bo':'bp'}" onclick="togglePublicar('${c.id}')">
+          ${c.planPublicado?'⬇️ Despublicar':'🚀 Publicar al cliente'}
+        </button>
+        <a href="${SKOOL[c.tipo==='uno'?'uno':'programa']}" target="_blank" class="btn bo">📚 Skool</a>
+      </div>
     </div>
-  </div>
-  <div>
-    <div class="sec-t">Macros objetivo</div>
-    <div class="mac4" style="margin-bottom:12px">
-      <div class="mac-box" style="border-color:var(--nr)"><div class="mac-v" style="color:var(--nr)">${c.macros.kcal}</div><div class="mac-l">kcal</div></div>
-      <div class="mac-box" style="border-color:var(--az2)"><div class="mac-v" style="color:var(--az2)">${c.macros.p}g</div><div class="mac-l">Proteína</div></div>
-      <div class="mac-box" style="border-color:var(--vd)"><div class="mac-v" style="color:var(--vd)">${c.macros.c}g</div><div class="mac-l">Carbos</div></div>
-      <div class="mac-box" style="border-color:var(--am)"><div class="mac-v" style="color:var(--am)">${c.macros.g}g</div><div class="mac-l">Grasa</div></div>
-    </div>
-    <div class="sec-t">Objetivos diarios</div>
-    <div class="rs4" style="margin-bottom:12px">
-      <div class="rs-box"><div class="rs-v" style="color:var(--vd);font-size:15px">${c.pasosObj?.toLocaleString('es')}</div><div class="rs-l">Pasos/día</div></div>
-      <div class="rs-box"><div class="rs-v" style="color:var(--az);font-size:15px">${c.diasSemana||4}</div><div class="rs-l">Días entreno</div></div>
-      <div class="rs-box"><div class="rs-v" style="color:var(--t2);font-size:13px">${c.comidas||'—'}</div><div class="rs-l">Comidas/día</div></div>
-      <div class="rs-box"><div class="rs-v" style="color:var(--t2);font-size:13px">${c.equipamiento?.split(' ').slice(0,2).join(' ')||'—'}</div><div class="rs-l">Equipamiento</div></div>
-    </div>
-    ${c.lesiones?`<div class="sec-t">Lesiones</div><div style="background:var(--am2);border:1px solid var(--am);border-radius:8px;padding:10px 12px;font-size:13px;line-height:1.5;margin-bottom:10px">🩹 ${c.lesiones}</div>`:''}
-    ${c.intolerancias?`<div class="sec-t">Intolerancias</div><div style="background:var(--rj2);border:1px solid #ffbcbc;border-radius:8px;padding:10px 12px;font-size:13px;line-height:1.5;margin-bottom:10px">⚠️ ${c.intolerancias}</div>`:''}
-    ${c.comentario?`<div class="sec-t">Notas del cliente</div><div style="background:var(--bg);border:1px solid var(--bor);border-radius:8px;padding:10px 12px;font-size:13px;line-height:1.6;color:var(--t2);border-left:3px solid var(--az2)">"${c.comentario}"</div>`:''}
-    <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn ${c.planPublicado?'bo':'bp'}" onclick="togglePublicar('${c.id}')">
-        ${c.planPublicado?'⬇️ Despublicar':'🚀 Publicar plan al cliente'}
-      </button>
-      <a href="${SKOOL[c.tipo==='uno'?'uno':'programa']}" target="_blank" class="btn bo">📚 Skool</a>
-    </div>
-  </div></div>`;
+  </div>`;
 }
-
 function togglePublicar(id){
   const c=byId(id);if(!c)return;
   c.planPublicado=!c.planPublicado;
