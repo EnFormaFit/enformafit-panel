@@ -1793,32 +1793,34 @@ function cpImportConfirm(sem,idx){
   const code=RUTS_ALL[idx].code;
   const rutData=RUTINAS_PARSED[code];
   if(!rutData){toast('Rutina no encontrada: '+code,'rj');picker.remove();return;}
+  // RUT_CLI might be null if called from grid view — use CLI_ID
+  const cliId=RUT_CLI||CLI_ID;
+  if(!cliId){toast('No hay cliente seleccionado','rj');picker.remove();return;}
+  RUT_CLI=cliId;
   rutPush();
-  if(!RUTINAS[RUT_CLI])RUTINAS[RUT_CLI]={};
-  if(!RUTINAS[RUT_CLI][sem])RUTINAS[RUT_CLI][sem]={};
-  // Apply each day from rutData
+  if(!RUTINAS[cliId])RUTINAS[cliId]={};
+  if(!RUTINAS[cliId][sem])RUTINAS[cliId][sem]={};
+  // Apply each day — mutate DIAS_BASE in place (no spread)
   DIAS_BASE.forEach((d,di)=>{
     const dayEjs=rutData[String(di)];
-    if(dayEjs===undefined){
-      // Day not in rutina — keep as is
-      return;
-    }
+    if(dayEjs===undefined)return; // day not in rutina, leave as is
     if(!dayEjs||dayEjs.length===0){
-      // Rest day
-      RUTINAS[RUT_CLI][sem][di]=[];
-      DIAS_BASE[di]={...DIAS_BASE[di],rest:true,tipo:'Descanso'};
+      RUTINAS[cliId][sem][di]=[];
+      DIAS_BASE[di].rest=true;
+      DIAS_BASE[di].tipo='Descanso';
     } else {
-      // Training day
-      RUTINAS[RUT_CLI][sem][di]=dayEjs.map(e=>({
-        nom:e.nom,sets:e.sets,reps:e.reps,rir:e.rir,rest:e.rest,url:e.url||'',acl:e.acl||''
+      RUTINAS[cliId][sem][di]=dayEjs.map(e=>({
+        nom:e.nom,sets:e.sets,reps:String(e.reps),
+        rir:e.rir,rest:e.rest,url:e.url||'',acl:e.acl||''
       }));
-      DIAS_BASE[di]={...DIAS_BASE[di],rest:false};
+      DIAS_BASE[di].rest=false;
     }
   });
   picker.remove();
   ENT_VIEW='grid';
+  RUT_SEM=sem;
   if(VIEW==='client')setTab('entreno');else render();
-  toast('✅ Rutina '+code+' importada en S'+sem,'vd');
+  toast('✅ '+code+' importada en S'+sem,'vd');
 }
 
 // ═══ TAB: EDITAR ═══
