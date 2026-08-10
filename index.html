@@ -1016,18 +1016,19 @@ function tNutricion(c){
 }
 
 function nutSave(inp){
-  // Called onblur — only save undo when leaving with a REAL value (not empty/0)
-  const newVal=parseFloat(inp.value);
-  if(!inp.value.trim()||isNaN(newVal)||newVal===0)return; // ignore empty/zero states mid-edit
+  // Called onblur — save undo when leaving with any value (including 0)
+  // Only ignore truly empty string (user deleted all chars and left)
+  if(!inp.value.trim())return;
+  const newVal=parseFloat(inp.value)||0;
   const cliId=inp.dataset.cli,meal=inp.dataset.meal,cat=inp.dataset.cat;
   if(!NE[cliId])NE[cliId]={};
   if(!NE[cliId][meal])NE[cliId][meal]={};
   const prev=NE[cliId][meal][cat]??parseFloat(inp.dataset.orig??newVal);
-  if(prev===newVal)return; // no change
+  if(prev===newVal)return; // no real change
   UNDO_NUT.push({cliId,meal,cat,g:prev});
   if(UNDO_NUT.length>UNDO_MAX)UNDO_NUT.shift();
   NE[cliId][meal][cat]=newVal;
-  inp.dataset.orig=newVal; // update orig to new committed value
+  inp.dataset.orig=String(newVal);
 }
 
 function nutLive(inp){
@@ -1186,6 +1187,9 @@ function getRut(cliId,sem,dia){
     RUTINAS[cliId][sem][dia]=JSON.parse(JSON.stringify(EJ_DEF[dia]||[]));
   return RUTINAS[cliId][sem][dia];
 }
+// Flag to block ejSave briefly after structural changes (add/del)
+let _blockEjSave=false;
+
 // Patch ej-list DOM directly (no re-render — preserves scroll, focus, undo stack)
 function patchEjList(){
   const ejList=document.getElementById('ej-list');
@@ -1237,9 +1241,17 @@ function rutUndo(){
 document.addEventListener('keydown',e=>{
   if((e.ctrlKey||e.metaKey)&&e.key==='z'&&!e.shiftKey){
     e.preventDefault();
-    if(CLI_TAB==='nutricion'&&UNDO_NUT.length)nutUndo();
-    else if(UNDO_RUT.length)rutUndo();
-    else toast('Nada que deshacer','');
+    // Check active tab — if nutricion use NUT stack, else RUT stack
+    // Also: if a nut input was focused before Cmd+Z, save it first
+    const activeNutInp=document.activeElement?.dataset?.cli&&document.activeElement?.dataset?.meal?document.activeElement:null;
+    if(activeNutInp)nutSave(activeNutInp);
+    if(CLI_TAB==='nutricion'||UNDO_NUT.length>0&&!UNDO_RUT.length){
+      if(UNDO_NUT.length)nutUndo();
+      else toast('Nada que deshacer en nutrición','');
+    } else {
+      if(UNDO_RUT.length)rutUndo();
+      else toast('Nada que deshacer','');
+    }
   }
 });
 
@@ -1359,6 +1371,7 @@ function ejUpd(ei,k,v){
 }
 // Save to undo on blur/change (when leaving field)
 function ejSave(ei,k,v){
+  if(_blockEjSave)return; // blocked after add/del to prevent spurious undo entries
   rutPush();
   const ejes=getRut(RUT_CLI,RUT_SEM,RUT_DIA);
   if(ejes[ei])ejes[ei][k]=v;
@@ -1393,6 +1406,8 @@ function acSel(ei,nom){
 }
 
 function addEj(){
+  _blockEjSave=true;
+  setTimeout(()=>{_blockEjSave=false;},200);
   rutPush();
   const ejes=getRut(RUT_CLI,RUT_SEM,RUT_DIA);
   ejes.push({nom:'',sets:3,reps:'8-10',rir:2,rest:120,url:''});
@@ -1403,6 +1418,8 @@ function addEj(){
   },50);
 }
 function delEj(ei){
+  _blockEjSave=true;
+  setTimeout(()=>{_blockEjSave=false;},200);
   rutPush();
   const ejes=getRut(RUT_CLI,RUT_SEM,RUT_DIA);
   ejes.splice(ei,1);
