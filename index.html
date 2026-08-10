@@ -922,7 +922,7 @@ function guardarFeedback(id){
 // Estado: NE[cliId] = { meals: [{id,nom,items:[{cat,catNom,nom,cantidad,p100,c100,g100,k100,u}]}] }
 // Orden fijo de categorías: hidratos → proteina → verd/fruta → grasa
 
-const CAT_ORDER_NUT=['hidrat','prot','verd','fruta','fat'];
+const CAT_ORDER_NUT=['hidrat','prot','verd','fat','fruta'];
 const CAT_NOM_NUT={prot:'Proteína',hidrat:'Hidratos',fat:'Grasa',verd:'Verdura',fruta:'Fruta'};
 const CAT_KEY_NUT={prot:'proteinas_magras',hidrat:'hidratos',fat:'grasas',verd:'verduras',fruta:'frutas'};
 const MEAL_ORDER_NUT=['desayuno','comida','cena','snack'];
@@ -1040,7 +1040,8 @@ function nutItemRow(cliId,mi,ii,it){
       <div style="display:flex;align-items:center;gap:4px;justify-content:center">
         <input type="number" value="${it.cantidad}" step="5" min="0" class="ni"
           data-cli="${cliId}" data-mi="${mi}" data-ii="${ii}" data-orig="${it.cantidad}"
-          oninput="nutLive(this)" onblur="nutSave(this)">
+          oninput="nutLive(this)" onblur="nutSave(this)"
+          onkeydown="if(event.key==='-'||event.key==='e')event.preventDefault()">
         <span style="font-size:11px;color:var(--t3)">${it.u}</span>
       </div>
     </td>
@@ -1289,7 +1290,11 @@ function tEntrenoGrid(c){
   <div class="card">
     <div class="ch">
       <h2>💪 S${RUT_SEM} — Vista completa</h2>
-      <button class="btn bo bs" onclick="ENT_VIEW='editor';RUT_DIA=0;setTab('entreno')">✏️ Editar detalle</button>
+      <div style="display:flex;gap:6px">
+        <button class="btn bo bs" onclick="cpImport(${RUT_SEM})">📥 Importar rutina</button>
+        <button class="btn bo bs" onclick="cpSem(${RUT_SEM})">📋 Copiar semana</button>
+        <button class="btn bp bs" onclick="ENT_VIEW='editor';RUT_DIA=0;setTab('entreno')">✏️ Editar detalle</button>
+      </div>
     </div>
     <div class="cb" style="padding:10px 14px">${grid}</div>
   </div>`;
@@ -1636,25 +1641,40 @@ function cpPegar(sem,dia){
 function cpImport(sem){
   // Show picker of the 34 routines
   const RUTS=[
-    {code:'2D.FB.SINMAT',nom:'2 días · Full Body · Sin material'},
+    {code:'2D.FB.SINMAT',nom:'2 días · Full Body · En casa sin material'},
     {code:'2D.FB.GYM',nom:'2 días · Full Body · Gimnasio'},
+    {code:'3D.FB.SINMAT',nom:'3 días · Full Body · En casa sin material'},
+    {code:'3D.FB.BAND',nom:'3 días · Full Body · En casa con bandas'},
+    {code:'3D.FB.ByM',nom:'3 días · Full Body · En casa con bandas y mancuernas'},
     {code:'3D.FB.GYM',nom:'3 días · Full Body · Gimnasio'},
+    {code:'3D.TP,FB.SINMAT',nom:'3 días · Torso-Pierna-FB · En casa sin material'},
+    {code:'3D.TP,FB.BAND',nom:'3 días · Torso-Pierna-FB · En casa con bandas'},
+    {code:'3D.TP,FB.B,M',nom:'3 días · Torso-Pierna-FB · En casa bandas y mancuernas'},
+    {code:'3D.TP,FB.GYM.C',nom:'3 días · Torso-Pierna-FB · Gimnasio circuito 45 min'},
     {code:'3D.TP,FB.GYM',nom:'3 días · Torso-Pierna-FB · Gimnasio'},
-    {code:'3D.TP,FB.SINMAT',nom:'3 días · Torso-Pierna-FB · Sin material'},
-    {code:'3D.TP,FB.BAND',nom:'3 días · Torso-Pierna-FB · Bandas'},
+    {code:'3D.TP,FB.GYM+',nom:'3 días · Torso-Pierna-FB · Gimnasio avanzado'},
+    {code:'3D.TP,FB.GYM.1h',nom:'3 días · Torso-Pierna-FB · Gimnasio superseries 1h'},
     {code:'3D.PTE',nom:'3 días · Pierna-Tracción-Empuje · Gimnasio'},
+    {code:'3D.PTE2',nom:'3 días · Pierna-Tracción-Empuje · Gimnasio avanzado'},
+    {code:'4D.TP.SINMAT',nom:'4 días · Torso-Pierna · En casa sin material'},
+    {code:'4D.TP.CIRCUIT.BAND',nom:'4 días · Torso-Pierna circuito · En casa bandas'},
+    {code:'4D.TP.B,MyB',nom:'4 días · Torso-Pierna · En casa bandas, mancuernas y barra'},
+    {code:'4D.TP3.B,MyB',nom:'4 días · Torso-Pierna preactivación · En casa bandas, mancuernas y barra'},
     {code:'4D.TP',nom:'4 días · Torso-Pierna · Gimnasio básico'},
     {code:'4D.TP2',nom:'4 días · Torso-Pierna · Gimnasio medio'},
-    {code:'4D.TP3',nom:'4 días · Torso-Pierna+preactivación · Gimnasio avanzado'},
-    {code:'4D.TP.SINMAT',nom:'4 días · Torso-Pierna · Sin material'},
-    {code:'4D.TP.CIRCUIT.BAND',nom:'4 días · Torso-Pierna circuito · Bandas'},
+    {code:'4D.TP3',nom:'4 días · Torso-Pierna preactivación · Gimnasio avanzado'},
+    {code:'4D.TE.SINMAT',nom:'4 días · Tracción-Empuje · En casa sin material'},
+    {code:'4D.TE.BAND',nom:'4 días · Tracción-Empuje · En casa con bandas'},
+    {code:'4D.TE.M,ByTRX',nom:'4 días · Tracción-Empuje · En casa mancuernas, bandas y TRX'},
     {code:'4D.TE',nom:'4 días · Tracción-Empuje · Gimnasio básico'},
     {code:'4D.TE2',nom:'4 días · Tracción-Empuje · Gimnasio medio'},
-    {code:'4D.TE.GYM30',nom:'4 días · Tracción-Empuje biseries · 30-40 min'},
-    {code:'4D.TE.SINMAT',nom:'4 días · Tracción-Empuje · Sin material'},
-    {code:'4D.TE.BAND',nom:'4 días · Tracción-Empuje · Bandas'},
+    {code:'4D.TE.GYM30',nom:'4 días · Tracción-Empuje biseries · Gimnasio 30-40 min'},
+    {code:'4ETP,TB',nom:'4 días · Empuje-Tracción-Pierna-Torso y Brazo · Gimnasio v1'},
+    {code:'4ET,PiernayBrazo.GYM2',nom:'4 días · Empuje-Tracción-Pierna-Torso y Brazo · Gimnasio v2'},
+    {code:'4ETP,TB.CASA',nom:'4 días · Empuje-Tracción-Pierna-Torso y Brazo · En casa'},
     {code:'5D.TPAH',nom:'5 días · Pierna-Torso-Abdomen-Hombro · Gimnasio'},
     {code:'5D-TPHB',nom:'5 días · Pierna-Torso-Hombro-Brazo · Gimnasio'},
+    {code:'5D.TPAH.',nom:'5 días · Pierna-Torso-Abdomen-Hombro · Gimnasio v2'},
   ];
   const pickerId='rut-import-picker';
   let el=document.getElementById(pickerId);
