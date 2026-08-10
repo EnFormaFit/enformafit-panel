@@ -918,55 +918,57 @@ function guardarFeedback(id){
   toast('Feedback guardado ✓','vd');
 }
 
-// ═══ NUTRICIÓN — estado por cliente ═══
-// NE[cliId] = { meals: [{id, nom, items:[{cat,nom,cantidad,p100,c100,g100,k100,u}]}] }
-// Empezamos desde MENU y permitimos añadir/eliminar comidas y grupos
+// ═══ NUTRICIÓN ═══
+// Estado: NE[cliId] = { meals: [{id,nom,items:[{cat,catNom,nom,cantidad,p100,c100,g100,k100,u}]}] }
+// Orden fijo de categorías: hidratos → proteina → verd/fruta → grasa
+
+const CAT_ORDER_NUT=['hidrat','prot','verd','fruta','fat'];
+const CAT_NOM_NUT={prot:'Proteína',hidrat:'Hidratos',fat:'Grasa',verd:'Verdura',fruta:'Fruta'};
+const CAT_KEY_NUT={prot:'proteinas_magras',hidrat:'hidratos',fat:'grasas',verd:'verduras',fruta:'frutas'};
+const MEAL_ORDER_NUT=['desayuno','comida','cena','snack'];
+const MEAL_NOM_NUT={desayuno:'☀️ Desayuno',comida:'🌞 Comida',cena:'🌙 Cena',snack:'🍎 Snack'};
 
 function getNutState(c){
   if(NE[c.id]&&NE[c.id].meals)return NE[c.id];
-  // Build initial state from MENU
-  const MEAL_ORDER=['desayuno','comida','cena','snack'];
-  const MEAL_NOM_={desayuno:'☀️ Desayuno',comida:'🌞 Comida',cena:'🌙 Cena',snack:'🍎 Snack'};
-  const CAT_ORDER=['prot','hidrat','verd','fat','fruta'];
-  const CAT_NOM={prot:'Proteína',hidrat:'Hidratos',verd:'Verdura',fat:'Grasa',fruta:'Fruta'};
-  const CAT_KEY={prot:'proteinas_magras',hidrat:'hidratos',verd:'verduras',fat:'grasas',fruta:'frutas'};
-
-  const meals=MEAL_ORDER.map(mKey=>{
+  const meals=MEAL_ORDER_NUT.map(mKey=>{
     const md=MENU[mKey]||{};
     const items=[];
-    CAT_ORDER.forEach(cat=>{
-      const arr=md[CAT_KEY[cat]];
+    CAT_ORDER_NUT.forEach(cat=>{
+      const arr=md[CAT_KEY_NUT[cat]];
       if(!arr||!arr.length)return;
       const def=arr[0];
-      items.push({cat,catNom:CAT_NOM[cat],nom:def.nom||def.alimento||'',
+      items.push({cat,catNom:CAT_NOM_NUT[cat],
+        nom:def.nom||def.alimento||'',
         cantidad:def.cantidad||100,
         p100:def.p_100||0,c100:def.c_100||0,g100:def.g_100||0,k100:def.kcal_100||0,
         u:def.u||'g'});
     });
-    return{id:mKey,nom:MEAL_NOM_[mKey],items};
+    return{id:mKey,nom:MEAL_NOM_NUT[mKey],items};
   }).filter(m=>m.items.length);
-
   NE[c.id]={meals};
   return NE[c.id];
 }
 
-function nutCalc(item){
-  const r=item.cantidad/100;
-  return{p:+(item.p100*r).toFixed(1),c:+(item.c100*r).toFixed(1),
-    g:+(item.g100*r).toFixed(1),k:Math.round(item.k100*r)};
+function nutCalc(it){
+  const r=it.cantidad/100;
+  return{p:+(it.p100*r).toFixed(1),c:+(it.c100*r).toFixed(1),
+         g:+(it.g100*r).toFixed(1),k:Math.round(it.k100*r)};
 }
 
+function nutSnapshot(cliId){
+  return JSON.stringify(getNutState(byId(cliId)).meals);
+}
+
+// ── RENDER ──
 function tNutricion(c){
   const state=getNutState(c);
-  // Calc totals
   let totK=0,totP=0,totC=0,totG=0;
   state.meals.forEach(m=>m.items.forEach(it=>{
     const r=nutCalc(it);totK+=r.k;totP+=r.p;totC+=r.c;totG+=r.g;
   }));
   const diff=Math.round(totK-c.macros.kcal);
   const diffCol=Math.abs(diff)<100?'var(--vd)':Math.abs(diff)<200?'var(--am)':'var(--rj)';
-
-  let h=`
+  return`
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
     <div style="background:var(--az3);border:2px solid var(--az4);border-radius:10px;padding:11px 13px">
       <div style="font-size:9px;font-weight:700;color:var(--az2);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px">🎯 Objetivo prescrito</div>
@@ -977,10 +979,10 @@ function tNutricion(c){
         <div style="text-align:center"><div style="font-size:18px;font-weight:800;color:var(--am)">${c.macros.g}g</div><div style="font-size:9.5px;color:var(--t3)">grasa</div></div>
       </div>
     </div>
-    <div style="background:#fff;border:2px solid var(--bor);border-radius:10px;padding:11px 13px" id="nut-totals-${c.id}">
-      <div style="font-size:9px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px">📊 Actual <span style="font-weight:400;font-size:9px">Ctrl+Z deshacer</span></div>
+    <div style="background:#fff;border:2px solid var(--bor);border-radius:10px;padding:11px 13px">
+      <div style="font-size:9px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px">📊 Actual <span style="font-weight:400;font-size:9px">· Ctrl+Z deshacer</span></div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px">
-        <div style="text-align:center"><div style="font-size:18px;font-weight:800;color:${diffCol}" id="nt-k-${c.id}">${Math.round(totK)}</div><div style="font-size:9.5px;color:var(--t3)">kcal <span id="nt-d-${c.id}">(${diff>0?'+':''}${diff})</span></div></div>
+        <div style="text-align:center"><div style="font-size:18px;font-weight:800;color:${diffCol}" id="nt-k-${c.id}">${Math.round(totK)}</div><div style="font-size:9.5px;color:var(--t3)">kcal <span id="nt-d-${c.id}" style="color:${diffCol}">(${diff>0?'+':''}${diff})</span></div></div>
         <div style="text-align:center"><div style="font-size:18px;font-weight:800;color:var(--az2)" id="nt-p-${c.id}">${Math.round(totP)}g</div><div style="font-size:9.5px;color:var(--t3)">prot</div></div>
         <div style="text-align:center"><div style="font-size:18px;font-weight:800;color:var(--vd)" id="nt-c-${c.id}">${Math.round(totC)}g</div><div style="font-size:9.5px;color:var(--t3)">carbs</div></div>
         <div style="text-align:center"><div style="font-size:18px;font-weight:800;color:var(--am)" id="nt-g-${c.id}">${Math.round(totG)}g</div><div style="font-size:9.5px;color:var(--t3)">grasa</div></div>
@@ -988,46 +990,46 @@ function tNutricion(c){
     </div>
   </div>
   <div id="nut-meals-${c.id}">${nutMealsHTML(c)}</div>
-  <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+  <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center">
     <button class="btn bo bs" onclick="nutAddMeal('${c.id}')">+ Comida</button>
+    <span style="font-size:11px;color:var(--t3);margin-left:4px">Ctrl+Z deshace cualquier cambio</span>
     <button class="btn bo bs" style="margin-left:auto;color:var(--t3)" onclick="nutReset('${c.id}')">↺ Resetear</button>
   </div>`;
-  return h;
 }
 
 function nutMealsHTML(c){
   const state=getNutState(c);
-  return state.meals.map((meal,mi)=>`
-    <div class="card" style="margin-bottom:10px" id="nutm-${c.id}-${mi}">
-      <div class="meal-hd">
-        <input value="${meal.nom}" style="border:none;outline:none;font-weight:700;font-size:13.5px;font-family:inherit;background:transparent;width:180px"
-          onblur="nutSaveMealNom('${c.id}',${mi},this.value)">
-        <div style="display:flex;gap:6px;align-items:center">
-          <span id="ms-${c.id}-${mi}" style="font-size:12px;color:var(--t3)">${nutMealSummary(meal)}</span>
-          <button onclick="nutDelMeal('${c.id}',${mi})" style="background:none;border:none;cursor:pointer;color:var(--t3);font-size:16px;padding:2px 5px;border-radius:4px" title="Eliminar comida">✕</button>
-        </div>
+  return state.meals.map((meal,mi)=>nutMealHTML(c.id,meal,mi)).join('');
+}
+
+function nutMealHTML(cliId,meal,mi){
+  let mK=0,mP=0,mC=0,mG=0;
+  meal.items.forEach(it=>{const r=nutCalc(it);mK+=r.k;mP+=r.p;mC+=r.c;mG+=r.g;});
+  return`<div class="card" style="margin-bottom:10px">
+    <div class="meal-hd">
+      <span style="font-weight:700;font-size:13.5px">${meal.nom}</span>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span id="ms-${cliId}-${mi}" style="font-size:12px;color:var(--t3)">${Math.round(mK)} kcal · P:${Math.round(mP)}g C:${Math.round(mC)}g G:${Math.round(mG)}g</span>
+        <button onclick="nutDelMeal('${cliId}',${mi})" class="edel" title="Eliminar comida">✕</button>
       </div>
-      <div style="overflow-x:auto">
-      <table class="nut-tbl"><thead><tr>
-        <th style="min-width:160px">Alimento</th>
-        <th style="text-align:center;min-width:90px">Cantidad</th>
-        <th style="text-align:center;color:var(--az2)">Prot</th>
-        <th style="text-align:center;color:var(--vd)">Carbs</th>
-        <th style="text-align:center;color:var(--am)">Grasa</th>
-        <th style="text-align:center;color:var(--nr)">Kcal</th>
-        <th style="width:28px"></th>
-      </tr></thead>
-      <tbody id="nutb-${c.id}-${mi}">
-        ${meal.items.map((it,ii)=>nutItemRow(c.id,mi,ii,it)).join('')}
-      </tbody></table></div>
-      <div style="padding:8px 14px;border-top:1px solid var(--bor2);display:flex;gap:6px;flex-wrap:wrap">
-        <button class="btn bo bs" onclick="nutAddItem('${c.id}',${mi},'prot')">+ Proteína</button>
-        <button class="btn bo bs" onclick="nutAddItem('${c.id}',${mi},'hidrat')">+ Hidrato</button>
-        <button class="btn bo bs" onclick="nutAddItem('${c.id}',${mi},'fat')">+ Grasa</button>
-        <button class="btn bo bs" onclick="nutAddItem('${c.id}',${mi},'verd')">+ Verdura</button>
-        <button class="btn bo bs" onclick="nutAddItem('${c.id}',${mi},'fruta')">+ Fruta</button>
-      </div>
-    </div>`).join('');
+    </div>
+    <div style="overflow-x:auto">
+    <table class="nut-tbl"><thead><tr>
+      <th style="min-width:160px">Alimento</th>
+      <th style="text-align:center;min-width:90px">Cantidad</th>
+      <th style="text-align:center;color:var(--az2)">Prot</th>
+      <th style="text-align:center;color:var(--vd)">Carbs</th>
+      <th style="text-align:center;color:var(--am)">Grasa</th>
+      <th style="text-align:center;color:var(--nr)">Kcal</th>
+      <th style="width:28px"></th>
+    </tr></thead>
+    <tbody id="nutb-${cliId}-${mi}">
+      ${meal.items.map((it,ii)=>nutItemRow(cliId,mi,ii,it)).join('')}
+    </tbody></table></div>
+    <div style="padding:8px 14px;border-top:1px solid var(--bor2);display:flex;gap:5px;flex-wrap:wrap">
+      ${CAT_ORDER_NUT.map(cat=>`<button class="btn bo bs" style="font-size:11px" onclick="nutShowPicker('${cliId}',${mi},'${cat}')">+ ${CAT_NOM_NUT[cat]}</button>`).join('')}
+    </div>
+  </div>`;
 }
 
 function nutItemRow(cliId,mi,ii,it){
@@ -1037,10 +1039,8 @@ function nutItemRow(cliId,mi,ii,it){
     <td style="text-align:center">
       <div style="display:flex;align-items:center;gap:4px;justify-content:center">
         <input type="number" value="${it.cantidad}" step="5" min="0" class="ni"
-          data-cli="${cliId}" data-mi="${mi}" data-ii="${ii}"
-          data-orig="${it.cantidad}"
-          oninput="nutLive(this)"
-          onblur="nutSave(this)">
+          data-cli="${cliId}" data-mi="${mi}" data-ii="${ii}" data-orig="${it.cantidad}"
+          oninput="nutLive(this)" onblur="nutSave(this)">
         <span style="font-size:11px;color:var(--t3)">${it.u}</span>
       </div>
     </td>
@@ -1048,62 +1048,90 @@ function nutItemRow(cliId,mi,ii,it){
     <td style="text-align:center;color:var(--vd);font-weight:600" id="nc-${cliId}-${mi}-${ii}">${r.c}g</td>
     <td style="text-align:center;color:var(--am);font-weight:600" id="ng-${cliId}-${mi}-${ii}">${r.g}g</td>
     <td style="text-align:center;color:var(--nr);font-weight:600" id="nk-${cliId}-${mi}-${ii}">${r.k}</td>
-    <td><button class="edel" onclick="nutDelItem('${cliId}',${mi},${ii})" title="Eliminar">✕</button></td>
+    <td><button class="edel" onclick="nutDelItem('${cliId}',${mi},${ii})">✕</button></td>
   </tr>`;
 }
 
-function nutMealSummary(meal){
-  let k=0,p=0,c=0,g=0;
-  meal.items.forEach(it=>{const r=nutCalc(it);k+=r.k;p+=r.p;c+=r.c;g+=r.g;});
-  return`${Math.round(k)} kcal · P:${Math.round(p)}g C:${Math.round(c)}g G:${Math.round(g)}g`;
+// ── PICKER (inline en el panel, sin prompt del navegador) ──
+function nutShowPicker(cliId,mi,cat){
+  // Get options sorted and deduplicated from MENU
+  const opts=[];
+  MEAL_ORDER_NUT.forEach(mk=>{
+    (MENU[mk]?.[CAT_KEY_NUT[cat]]||[]).forEach(it=>{
+      if(!opts.find(o=>o.nom===(it.nom||it.alimento)))
+        opts.push({nom:it.nom||it.alimento||'',cantidad:it.cantidad||100,
+          p100:it.p_100||0,c100:it.c_100||0,g100:it.g_100||0,k100:it.kcal_100||0,u:it.u||'g'});
+    });
+  });
+  // Show inline picker below the button row
+  const pickerId=`nut-picker-${cliId}-${mi}`;
+  let el=document.getElementById(pickerId);
+  if(el){el.remove();return;} // toggle off
+  const card=document.getElementById(`nutb-${cliId}-${mi}`)?.closest('.card');
+  if(!card)return;
+  const div=document.createElement('div');
+  div.id=pickerId;
+  div.style.cssText='padding:10px 14px;border-top:1px solid var(--bor2);background:var(--az3)';
+  div.innerHTML=`<div style="font-size:11px;font-weight:700;color:var(--az2);margin-bottom:8px">Añadir ${CAT_NOM_NUT[cat]} — elige:</div>
+    <div style="display:flex;flex-wrap:wrap;gap:5px">
+      ${opts.map((o,oi)=>`<button class="btn bo bs" style="font-size:11px" onclick="nutPickItem('${cliId}',${mi},'${cat}',${oi},'${(o.nom||'').replace(/'/g,"\\'")}',${o.cantidad},${o.p100},${o.c100},${o.g100},${o.k100},'${o.u||'g'}')">${o.nom}</button>`).join('')}
+    </div>
+    <button class="btn bo bs" style="margin-top:8px;color:var(--t3)" onclick="document.getElementById('${pickerId}').remove()">Cancelar</button>`;
+  card.appendChild(div);
 }
 
-// ── NUT LIVE (DOM only, no state) ──
+function nutPickItem(cliId,mi,cat,oi,nom,cantidad,p100,c100,g100,k100,u){
+  const state=getNutState(byId(cliId));
+  if(!state.meals[mi])return;
+  UNDO_NUT.push({cliId,structural:true,snap:nutSnapshot(cliId)});
+  if(UNDO_NUT.length>UNDO_MAX)UNDO_NUT.shift();
+  // Insert in correct position per CAT_ORDER_NUT
+  const catIdx=CAT_ORDER_NUT.indexOf(cat);
+  const insertAfter=state.meals[mi].items.reduce((last,it,i)=>{
+    return CAT_ORDER_NUT.indexOf(it.cat)<=catIdx?i:last;
+  },-1);
+  state.meals[mi].items.splice(insertAfter+1,0,
+    {cat,catNom:CAT_NOM_NUT[cat],nom,cantidad,p100,c100,g100,k100,u});
+  // Close picker
+  const pickerId=`nut-picker-${cliId}-${mi}`;
+  document.getElementById(pickerId)?.remove();
+  nutRepaint(cliId);
+  toast(nom+' añadido ✓','vd');
+}
+
+// ── LIVE UPDATE (DOM only) ──
 function nutLive(inp){
   const cliId=inp.dataset.cli,mi=+inp.dataset.mi,ii=+inp.dataset.ii;
   const g=parseFloat(inp.value)||0;
   const state=getNutState(byId(cliId));
   const it=state.meals[mi]?.items[ii];if(!it)return;
-  // Temp calc for display only
-  const tmp={...it,cantidad:g};
-  const r=nutCalc(tmp);
+  const r=nutCalc({...it,cantidad:g});
   const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
   set(`np-${cliId}-${mi}-${ii}`,r.p+'g');
   set(`nc-${cliId}-${mi}-${ii}`,r.c+'g');
   set(`ng-${cliId}-${mi}-${ii}`,r.g+'g');
   set(`nk-${cliId}-${mi}-${ii}`,r.k);
-  // Update meal summary
-  // Calc meal using current DOM values
-  const c=byId(cliId);if(!c)return;
-  const mealEl=document.getElementById(`nutb-${cliId}-${mi}`);
-  if(mealEl){
-    let mk=0,mp=0,mc=0,mg=0;
-    mealEl.querySelectorAll('tr').forEach(row=>{
-      const id=row.id.replace(`nutr-${cliId}-${mi}-`,'');
-      mk+=parseFloat(document.getElementById(`nk-${cliId}-${mi}-${id}`)?.textContent||0);
-      mp+=parseFloat(document.getElementById(`np-${cliId}-${mi}-${id}`)?.textContent||0);
-      mc+=parseFloat(document.getElementById(`nc-${cliId}-${mi}-${id}`)?.textContent||0);
-      mg+=parseFloat(document.getElementById(`ng-${cliId}-${mi}-${id}`)?.textContent||0);
-    });
-    set(`ms-${cliId}-${mi}`,`${Math.round(mk)} kcal · P:${Math.round(mp)}g C:${Math.round(mc)}g G:${Math.round(mg)}g`);
-    // Update day totals from all meal summaries
-    nutUpdateTotals(cliId,c.macros.kcal);
-  }
+  nutUpdateTotals(cliId);
 }
 
-function nutUpdateTotals(cliId,kcalObj){
-  const state=getNutState(byId(cliId));
+function nutUpdateTotals(cliId){
+  const c=byId(cliId);if(!c)return;
+  const state=getNutState(c);
   let totK=0,totP=0,totC=0,totG=0;
+  // Use DOM values where available (unsaved live edits)
   state.meals.forEach((meal,mi)=>{
+    let mK=0,mP=0,mC=0,mG=0;
     meal.items.forEach((it,ii)=>{
-      // Use DOM value if available (may have unsaved changes)
       const inp=document.querySelector(`input[data-cli="${cliId}"][data-mi="${mi}"][data-ii="${ii}"]`);
       const g=inp?parseFloat(inp.value)||0:it.cantidad;
-      const tmp={...it,cantidad:g};const r=nutCalc(tmp);
+      const r=nutCalc({...it,cantidad:g});
       totK+=r.k;totP+=r.p;totC+=r.c;totG+=r.g;
+      mK+=r.k;mP+=r.p;mC+=r.c;mG+=r.g;
     });
+    const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+    set(`ms-${cliId}-${mi}`,`${Math.round(mK)} kcal · P:${Math.round(mP)}g C:${Math.round(mC)}g G:${Math.round(mG)}g`);
   });
-  const diff=Math.round(totK-kcalObj);
+  const diff=Math.round(totK-c.macros.kcal);
   const diffCol=Math.abs(diff)<100?'var(--vd)':Math.abs(diff)<200?'var(--am)':'var(--rj)';
   const set=(id,v,col)=>{const el=document.getElementById(id);if(el){el.textContent=v;if(col)el.style.color=col;}};
   set(`nt-k-${cliId}`,Math.round(totK),diffCol);
@@ -1113,57 +1141,56 @@ function nutUpdateTotals(cliId,kcalObj){
   set(`nt-d-${cliId}`,'('+(diff>0?'+':'')+diff+')',diffCol);
 }
 
-// ── NUT SAVE (state + undo, called onblur) ──
+// ── SAVE (state + undo, onblur) ──
 function nutSave(inp){
   if(!inp.value.trim())return;
   const newVal=parseFloat(inp.value)||0;
   const prev=parseFloat(inp.dataset.orig??newVal);
   if(prev===newVal)return;
   const cliId=inp.dataset.cli,mi=+inp.dataset.mi,ii=+inp.dataset.ii;
-  // Push undo BEFORE changing state
   UNDO_NUT.push({cliId,mi,ii,g:prev});
   if(UNDO_NUT.length>UNDO_MAX)UNDO_NUT.shift();
-  // Commit to state
   const state=getNutState(byId(cliId));
   if(state.meals[mi]?.items[ii])state.meals[mi].items[ii].cantidad=newVal;
   inp.dataset.orig=String(newVal);
 }
 
-// ── NUT UNDO ──
+// ── UNDO (handles both quantity changes and structural) ──
 function nutUndo(){
   if(!UNDO_NUT.length){toast('Nada más que deshacer en nutrición','');return;}
   const last=UNDO_NUT.pop();
+  if(last.structural){
+    // Restore full meals snapshot
+    const state=getNutState(byId(last.cliId));
+    state.meals=JSON.parse(last.snap);
+    nutRepaint(last.cliId);
+    toast(`↩ Restaurado (${UNDO_NUT.length} más)`,'vd');
+    return;
+  }
+  // Quantity change
   const state=getNutState(byId(last.cliId));
   if(state.meals[last.mi]?.items[last.ii])
     state.meals[last.mi].items[last.ii].cantidad=last.g;
   const inp=document.querySelector(`input[data-cli="${last.cliId}"][data-mi="${last.mi}"][data-ii="${last.ii}"]`);
   if(inp){inp.value=last.g;inp.dataset.orig=String(last.g);nutLive(inp);}
-  toast(`↩ Nutrición deshecha (${UNDO_NUT.length} más)`,'vd');
+  toast(`↩ Deshecho (${UNDO_NUT.length} más)`,'vd');
 }
 
-// ── NUT STRUCTURAL CHANGES (add/del — full repaint of meals div) ──
-function nutRepaint(cliId){
-  const el=document.getElementById(`nut-meals-${cliId}`);
-  const c=byId(cliId);
-  if(el&&c)el.innerHTML=nutMealsHTML(c);
-  if(c)nutUpdateTotals(cliId,c.macros.kcal);
-}
-
+// ── STRUCTURAL CHANGES ──
 function nutDelItem(cliId,mi,ii){
   const state=getNutState(byId(cliId));
   if(!state.meals[mi])return;
-  // Save undo as structural snapshot
-  UNDO_NUT.push({cliId,structural:true,snapshot:JSON.stringify(state.meals)});
+  UNDO_NUT.push({cliId,structural:true,snap:nutSnapshot(cliId)});
   if(UNDO_NUT.length>UNDO_MAX)UNDO_NUT.shift();
   state.meals[mi].items.splice(ii,1);
   nutRepaint(cliId);
-  toast('Alimento eliminado — Ctrl+Z para deshacer','');
+  toast('Eliminado — Ctrl+Z para deshacer','');
 }
 
 function nutDelMeal(cliId,mi){
-  if(!confirm('¿Eliminar esta comida completa?'))return;
   const state=getNutState(byId(cliId));
-  UNDO_NUT.push({cliId,structural:true,snapshot:JSON.stringify(state.meals)});
+  if(!state.meals[mi])return;
+  UNDO_NUT.push({cliId,structural:true,snap:nutSnapshot(cliId)});
   if(UNDO_NUT.length>UNDO_MAX)UNDO_NUT.shift();
   state.meals.splice(mi,1);
   nutRepaint(cliId);
@@ -1171,76 +1198,28 @@ function nutDelMeal(cliId,mi){
 }
 
 function nutAddMeal(cliId){
+  const nom=window.prompt('Nombre de la nueva comida (ej: Post-entreno):');
+  if(!nom||!nom.trim())return;
   const state=getNutState(byId(cliId));
-  UNDO_NUT.push({cliId,structural:true,snapshot:JSON.stringify(state.meals)});
-  const nom=prompt('Nombre de la nueva comida (ej: Post-entreno):');
-  if(!nom)return;
-  state.meals.push({id:'extra_'+Date.now(),nom:'🍽️ '+nom,items:[]});
+  UNDO_NUT.push({cliId,structural:true,snap:nutSnapshot(cliId)});
+  if(UNDO_NUT.length>UNDO_MAX)UNDO_NUT.shift();
+  state.meals.push({id:'extra_'+Date.now(),nom:'🍽️ '+nom.trim(),items:[]});
   nutRepaint(cliId);
+  toast('Comida añadida','vd');
 }
 
-function nutAddItem(cliId,mi,cat){
-  const state=getNutState(byId(cliId));
-  if(!state.meals[mi])return;
-  const CAT_KEY={prot:'proteinas_magras',hidrat:'hidratos',fat:'grasas',verd:'verduras',fruta:'frutas'};
-  const CAT_NOM={prot:'Proteína',hidrat:'Hidratos',fat:'Grasa',verd:'Verdura',fruta:'Fruta'};
-  // Build menu search from MENU
-  const mealId=state.meals[mi].id;
-  const menuKey=CAT_KEY[cat];
-  // Get options from all meals in MENU
-  const opts=[];
-  ['desayuno','comida','cena','snack'].forEach(mk=>{
-    (MENU[mk]?.[menuKey]||[]).forEach(it=>{
-      if(!opts.find(o=>o.nom===it.nom))
-        opts.push({nom:it.nom||it.alimento,cantidad:it.cantidad||100,
-          p100:it.p_100||0,c100:it.c_100||0,g100:it.g_100||0,k100:it.kcal_100||0,u:it.u||'g'});
-    });
-  });
-  if(!opts.length){toast('No hay alimentos de este tipo en la BD','rj');return;}
-  // Simple picker via prompt (select would need more UI)
-  const list=opts.map((o,i)=>`${i+1}. ${o.nom} (${o.cantidad}${o.u})`).join('\n');
-  const sel=parseInt(prompt(`Elige alimento para ${CAT_NOM[cat]}:\n${list}`));
-  if(!sel||sel<1||sel>opts.length)return;
-  UNDO_NUT.push({cliId,structural:true,snapshot:JSON.stringify(state.meals)});
-  const chosen=opts[sel-1];
-  state.meals[mi].items.push({cat,catNom:CAT_NOM[cat],...chosen});
-  nutRepaint(cliId);
+function nutRepaint(cliId){
+  const el=document.getElementById(`nut-meals-${cliId}`);
+  const c=byId(cliId);
+  if(el&&c){el.innerHTML=nutMealsHTML(c);nutUpdateTotals(cliId);}
 }
-
-function nutSaveMealNom(cliId,mi,nom){
-  const state=getNutState(byId(cliId));
-  if(state.meals[mi])state.meals[mi].nom=nom;
-}
-
-// Undo structural changes
-function nutUndoStructural(last){
-  const state=getNutState(byId(last.cliId));
-  state.meals=JSON.parse(last.snapshot);
-  nutRepaint(last.cliId);
-  toast(`↩ Deshecho (${UNDO_NUT.length} más)`,'vd');
-}
-
-// Override nutUndo to handle structural
-const _nutUndoOrig=nutUndo;
-// Redefine nutUndo to handle both types
-// nutUndo defined above
-
 
 function nutReset(cliId){
   if(!confirm('¿Resetear toda la nutrición al plan original?'))return;
-  if(NE[cliId])delete NE[cliId];
-  setTab('nutricion');toast('Resetado al plan original','');
+  delete NE[cliId];
+  setTab('nutricion');
+  toast('Reseteado al plan original','');
 }
-  const MEALS=['desayuno','comida','cena','snack'];
-
-
-// nutLive defined above
-
-
-
-
-// nutReset defined above
-
 
 // ═══ TAB: ENTRENO — grid semanal + editor ═══
 function tEntreno(c){
