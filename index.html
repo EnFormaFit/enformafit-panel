@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>EnFormaFit Panel</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
 :root{
   --az:#1A2B5A;--az2:#2E6DA4;--az3:#EEF3FA;--az4:#D6E8F5;
   --vd:#0DBF6F;--vd2:#D4F7E8;--vd3:#7BE8B4;
@@ -16,20 +15,20 @@
   --t1:#1A2B5A;--t2:#5A6480;--t3:#9199AD;
   --sb:228px;--r:10px;
 }
-html,body{height:100%;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   background:var(--bg);color:var(--t1);font-size:14px}
 
-/* LAYOUT */
-.shell{display:flex;height:100vh}
+/* LAYOUT — position:fixed shell garantiza altura real en Mac */
+.shell{position:fixed;inset:0;display:flex;overflow:hidden}
 .sb{width:var(--sb);background:var(--az);flex-shrink:0;display:flex;flex-direction:column;
   overflow-y:auto;overflow-x:hidden;scrollbar-width:none}
 .sb::-webkit-scrollbar{display:none}
-.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;min-height:0}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
 .topbar{height:52px;background:#fff;border-bottom:1px solid var(--bor);display:flex;
   align-items:center;padding:0 18px;gap:10px;flex-shrink:0}
-/* KEY FIX: content scrolls independently */
-.content{flex:1;overflow-y:auto;overflow-x:hidden;padding:16px 18px;
-  -webkit-overflow-scrolling:touch;min-height:0;height:0}
+.content{flex:1;overflow-y:scroll;overflow-x:hidden;padding:16px 18px;
+  -webkit-overflow-scrolling:touch}
 
 /* SIDEBAR */
 .sb-logo{padding:13px 15px;border-bottom:1px solid rgba(255,255,255,.1);flex-shrink:0}
@@ -409,7 +408,9 @@ const MEAL_NOM={desayuno:'☀️ Desayuno',comida:'🌞 Comida',cena:'🌙 Cena'
 const MEAL_CATS={prot:'proteinas_magras',hidrat:'hidratos',verd:'verduras',fat:'grasas',fruta:'frutas'};
 const POSES=['Frente','Perfil D.','Perfil I.','Espalda'];
 const PP_UNO=['¿Qué tal estás?','¿Cuáles han sido tus éxitos en estas semanas?','¿Cómo te has sentido con los éxitos que has conseguido?','¿Qué tal van tus entrenamientos?','¿Qué tal va tu nutrición?','¿Qué es lo que te gustaría mejorar durante el siguiente bloque de semanas?','¿Hay algo que te gustaría comentarme?'];
+const PP_UNO_FINAL=['¿Qué tal estás?','¿Cuáles han sido tus éxitos en estas semanas?','¿Cómo te has sentido con los éxitos que has conseguido?','¿Qué tal van tus entrenamientos?','¿Qué tal va tu nutrición?','¿Qué es lo que te gustaría mejorar durante el siguiente bloque de semanas?','¿Hay algo que te gustaría comentarme?','¿Qué le ha faltado al servicio para ser excelente?'];
 const PP_PROG=['¿Cómo ha ido el entrenamiento estas semanas?','¿Cómo ha ido la nutrición y el seguimiento del plan?','¿Has tenido alguna dificultad o problema con el plan?','¿Qué es lo que mejor ha funcionado para ti?','¿Qué cambiarías o mejorarías de cara al próximo ciclo?'];
+const PP_PROG_FINAL=['¿Cómo ha ido el entrenamiento estas semanas?','¿Cómo ha ido la nutrición y el seguimiento del plan?','¿Has tenido alguna dificultad o problema con el plan?','¿Qué es lo que mejor ha funcionado para ti?','¿Qué cambiarías o mejorarías de cara al próximo ciclo?','¿Qué le ha faltado al servicio para ser excelente?'];
 const SKOOL={uno:'https://www.skool.com/enformafit-1214',programa:'https://www.skool.com/enformafit-programa-7253'};
 
 // ═══ STATE ═══
@@ -524,7 +525,8 @@ function renderClient(ct){
   const tabs=c.tipo==='uno'?['resumen','nutricion','entreno','checkin','revision','editar']:['resumen','nutricion','entreno','revision','editar'];
   const TNOM={resumen:'Resumen',nutricion:'Nutrición',entreno:'Entreno',checkin:'Check-in',revision:'Revisión',editar:'Editar'};
   const tabsH=tabs.map(t=>`<button class="fs-tab${t===CLI_TAB?' on':''}" onclick="setTab('${t}')">${TNOM[t]}</button>`).join('');
-  const PP=c.tipo==='programa'?PP_PROG:PP_UNO;
+  const isFinalRev=(c.tipo==='programa'&&c.nextRev===12)||(c.tipo==='uno'&&c.nextRev===11);
+  const PP=c.tipo==='programa'?(isFinalRev?PP_PROG_FINAL:PP_PROG):(isFinalRev?PP_UNO_FINAL:PP_UNO);
   const fns={resumen:tResumen,nutricion:tNutricion,entreno:tEntreno,checkin:tCheckin,revision:tRevision,editar:tEditar};
   ct.innerHTML=`<div class="fs">
     <div class="fs-hd">
@@ -817,7 +819,8 @@ function tRevision(c){
   const sems=Math.max(c.semana-1,1);
   const bajaTot=(c.pesoIni-c.pesoAct).toFixed(1);
   const bajaSem=((c.pesoIni-c.pesoAct)/sems).toFixed(2);
-  const PP=c.tipo==='programa'?PP_PROG:PP_UNO;
+  const isFinalRev=(c.tipo==='programa'&&c.nextRev===12)||(c.tipo==='uno'&&c.nextRev===11);
+  const PP=c.tipo==='programa'?(isFinalRev?PP_PROG_FINAL:PP_PROG):(isFinalRev?PP_UNO_FINAL:PP_UNO);
 
   const statsH=`<div class="rs4" style="margin-bottom:14px">
     <div class="rs-box"><div class="rs-v" style="color:var(--az2)">${c.pesoIni}kg</div><div class="rs-l">Peso inicial</div></div>
@@ -1160,10 +1163,24 @@ function tEntrenoGrid(c){
 // ═══ RUTINAS EDITOR ═══
 function getRut(cliId,sem,dia){
   if(!RUTINAS[cliId])RUTINAS[cliId]={};
+  if(!RUTINAS[cliId].__logs)RUTINAS[cliId].__logs={};
   if(!RUTINAS[cliId][sem])RUTINAS[cliId][sem]={};
   if(RUTINAS[cliId][sem][dia]===undefined)
     RUTINAS[cliId][sem][dia]=JSON.parse(JSON.stringify(EJ_DEF[dia]||[]));
   return RUTINAS[cliId][sem][dia];
+}
+// Log a completed set for an exercise (called from future client app sync)
+function logEj(cliId,ejNom,sem,vals){
+  if(!RUTINAS[cliId])RUTINAS[cliId]={};
+  if(!RUTINAS[cliId].__logs)RUTINAS[cliId].__logs={};
+  if(!RUTINAS[cliId].__logs[ejNom])RUTINAS[cliId].__logs[ejNom]=[];
+  const logs=RUTINAS[cliId].__logs[ejNom];
+  // Replace if same sem, else add
+  const idx=logs.findIndex(l=>l.sem===sem);
+  if(idx>=0)logs[idx].vals=vals;
+  else logs.push({sem,vals});
+  // Keep last 12 sessions only
+  if(logs.length>12)logs.shift();
 }
 
 // UNDO: push snapshot before ANY change
@@ -1279,6 +1296,11 @@ function rRutinas(){
 
 function ejRow(ej,ei){
   const restOpts=REST_OPTS.map(s=>`<option value="${s}" ${ej.rest===s?'selected':''}>${REST_LABEL[s]}</option>`).join('');
+  // Find last log for this exercise by name (not position)
+  const allLogs=RUTINAS[RUT_CLI]?.__logs||{};
+  const ejLogs=allLogs[ej.nom]||[];
+  const lastLog=ejLogs.length?ejLogs[ejLogs.length-1]:null;
+  const lastLogH=lastLog?`<div style="font-size:9.5px;color:var(--vd);margin-top:2px">▶ S${lastLog.sem}: ${lastLog.vals}</div>`:'';
   return`<div class="ej-row" id="ejr-${ei}">
     <span class="ej-num">${ei+1}</span>
     <div class="ac-wrap">
@@ -1287,6 +1309,7 @@ function ejRow(ej,ei){
         onfocus="acSearch(this,${ei})"
         onblur="setTimeout(()=>acHide(${ei}),160);ejSave(${ei},'nom',this.value)">
       <div class="ac-list" id="ac-${ei}" style="display:none"></div>
+      ${lastLogH}
     </div>
     <input class="ei" type="number" value="${ej.sets}" placeholder="4" style="text-align:center"
       oninput="ejUpd(${ei},'sets',parseInt(this.value)||3)"
