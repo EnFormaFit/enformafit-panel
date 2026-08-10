@@ -1016,19 +1016,18 @@ function tNutricion(c){
 }
 
 function nutSave(inp){
-  // Called onblur — save undo when leaving with any value (including 0)
-  // Only ignore truly empty string (user deleted all chars and left)
   if(!inp.value.trim())return;
   const newVal=parseFloat(inp.value)||0;
+  // prev = last COMMITTED value (dataset.orig), not NE which nutLive already updated
+  const prev=parseFloat(inp.dataset.orig??newVal);
+  if(prev===newVal)return;
   const cliId=inp.dataset.cli,meal=inp.dataset.meal,cat=inp.dataset.cat;
-  if(!NE[cliId])NE[cliId]={};
-  if(!NE[cliId][meal])NE[cliId][meal]={};
-  const prev=NE[cliId][meal][cat]??parseFloat(inp.dataset.orig??newVal);
-  if(prev===newVal)return; // no real change
   UNDO_NUT.push({cliId,meal,cat,g:prev});
   if(UNDO_NUT.length>UNDO_MAX)UNDO_NUT.shift();
+  if(!NE[cliId])NE[cliId]={};
+  if(!NE[cliId][meal])NE[cliId][meal]={};
   NE[cliId][meal][cat]=newVal;
-  inp.dataset.orig=String(newVal);
+  inp.dataset.orig=String(newVal); // update committed value
 }
 
 function nutLive(inp){
@@ -1037,10 +1036,7 @@ function nutLive(inp){
   const p100=parseFloat(inp.dataset.p100),c100=parseFloat(inp.dataset.c100);
   const g100=parseFloat(inp.dataset.g100),k100=parseFloat(inp.dataset.k100);
 
-  // Update in-memory value live (no undo here — undo happens onblur via nutSave)
-  if(!NE[cliId])NE[cliId]={};
-  if(!NE[cliId][meal])NE[cliId][meal]={};
-  NE[cliId][meal][cat]=g;
+  // Only update DOM live — NE is updated by nutSave onblur (to keep undo clean)
 
   // Update this row
   const r=g/100;
@@ -1093,7 +1089,7 @@ function nutUndo(){
   const inp=document.querySelector(`input[data-cli="${last.cliId}"][data-meal="${last.meal}"][data-cat="${last.cat}"]`);
   if(inp){
     inp.value=last.g;
-    inp.dataset.orig=last.g; // reset orig so next nutSave compares correctly
+    inp.dataset.orig=String(last.g); // reset committed value
     nutLive(inp);
   }
   toast(`↩ Nutrición deshecha (${UNDO_NUT.length} más)`,'vd');
