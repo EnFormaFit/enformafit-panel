@@ -1235,97 +1235,9 @@ function nutReset(cliId){
 
   function buildPlan(){
     const plan={};
-    MEALS.forEach(meal=>{
-      const md=MENU[meal]; plan[meal]={};
-      Object.entries(MEAL_CATS).forEach(([key,mdKey])=>{
-        if(!md[mdKey]?.length)return;
-        const def=md[mdKey][0];
-        const g=(NE[c.id][meal]||{})[key]??def.cantidad;
-        const r=g/100;
-        plan[meal][key]={...def,cantidad:g,
-          p:+(def.p_100*r).toFixed(1),c:+(def.c_100*r).toFixed(1),
-          g:+(def.g_100*r).toFixed(1),kcal:Math.round(def.kcal_100*r)};
-      });
-    });
-    return plan;
-  }
-
-  const plan=buildPlan();
-  let totK=0,totP=0,totC=0,totG=0;
-  MEALS.forEach(m=>Object.values(plan[m]).forEach(it=>{totK+=it.kcal;totP+=it.p;totC+=it.c;totG+=it.g;}));
-  const diff=Math.round(totK-c.macros.kcal);
-  const diffCol=Math.abs(diff)<100?'var(--vd)':Math.abs(diff)<200?'var(--am)':'var(--rj)';
-
-  let h=`
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-    <div style="background:var(--az3);border:2px solid var(--az4);border-radius:10px;padding:11px 13px">
-      <div style="font-size:9px;font-weight:700;color:var(--az2);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px">🎯 Objetivo prescrito</div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px">
-        <div style="text-align:center"><div style="font-size:18px;font-weight:800;color:var(--nr)">${c.macros.kcal}</div><div style="font-size:9.5px;color:var(--t3)">kcal</div></div>
-        <div style="text-align:center"><div style="font-size:18px;font-weight:800;color:var(--az2)">${c.macros.p}g</div><div style="font-size:9.5px;color:var(--t3)">prot</div></div>
-        <div style="text-align:center"><div style="font-size:18px;font-weight:800;color:var(--vd)">${c.macros.c}g</div><div style="font-size:9.5px;color:var(--t3)">carbs</div></div>
-        <div style="text-align:center"><div style="font-size:18px;font-weight:800;color:var(--am)">${c.macros.g}g</div><div style="font-size:9.5px;color:var(--t3)">grasa</div></div>
-      </div>
-    </div>
-    <div style="background:#fff;border:2px solid var(--bor);border-radius:10px;padding:11px 13px" id="nut-totals-${c.id}">
-      <div style="font-size:9px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px">📊 Actual seleccionado <span style="font-weight:400;color:var(--t3);text-transform:none;font-size:9px">— Ctrl+Z deshacer</span></div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px">
-        <div style="text-align:center"><div style="font-size:18px;font-weight:800;color:${diffCol}" id="nt-k-${c.id}">${Math.round(totK)}</div><div style="font-size:9.5px;color:var(--t3)">kcal <span id="nt-d-${c.id}" style="color:${diffCol}">(${diff>0?'+':''}${diff})</span></div></div>
-        <div style="text-align:center"><div style="font-size:18px;font-weight:800;color:var(--az2)" id="nt-p-${c.id}">${Math.round(totP)}g</div><div style="font-size:9.5px;color:var(--t3)">prot</div></div>
-        <div style="text-align:center"><div style="font-size:18px;font-weight:800;color:var(--vd)" id="nt-c-${c.id}">${Math.round(totC)}g</div><div style="font-size:9.5px;color:var(--t3)">carbs</div></div>
-        <div style="text-align:center"><div style="font-size:18px;font-weight:800;color:var(--am)" id="nt-g-${c.id}">${Math.round(totG)}g</div><div style="font-size:9.5px;color:var(--t3)">grasa</div></div>
-      </div>
-    </div>
-  </div>`;
-
-  MEALS.forEach(meal=>{
-    const items=Object.entries(plan[meal]);
-    let mK=0,mP=0,mC=0,mG=0;
-    items.forEach(([,it])=>{mK+=it.kcal;mP+=it.p;mC+=it.c;mG+=it.g;});
-    h+=`<div class="card" style="margin-bottom:10px">
-      <div class="meal-hd">
-        <span style="font-weight:700;font-size:13.5px">${MEAL_NOM[meal]}</span>
-        <span id="ms-${c.id}-${meal}" style="font-size:12px;color:var(--t3)">${Math.round(mK)} kcal · P:${Math.round(mP)}g C:${Math.round(mC)}g G:${Math.round(mG)}g</span>
-      </div>
-      <div style="overflow-x:auto">
-      <table class="nut-tbl"><thead><tr>
-        <th>Alimento <span style="opacity:.5">(crudo)</span></th>
-        <th style="text-align:center">Cantidad</th>
-        <th style="text-align:center;color:var(--az2)">Prot</th>
-        <th style="text-align:center;color:var(--vd)">Carbs</th>
-        <th style="text-align:center;color:var(--am)">Grasa</th>
-        <th style="text-align:center;color:var(--nr)">Kcal</th>
-      </tr></thead>
-      <tbody id="mr-${c.id}-${meal}">
-      ${items.map(([cat,it])=>`<tr id="nr-${c.id}-${meal}-${cat}">
-        <td style="font-weight:600">${it.nom}</td>
-        <td style="text-align:center">
-          <div style="display:flex;align-items:center;gap:4px;justify-content:center">
-            <input type="number" value="${it.cantidad}" step="5" min="0" class="ni"
-              data-cli="${c.id}" data-meal="${meal}" data-cat="${cat}"
-              data-p100="${it.p_100}" data-c100="${it.c_100}" data-g100="${it.g_100}" data-k100="${it.kcal_100}"
-              data-orig="${it.cantidad}"
-              oninput="nutLive(this)"
-              onblur="nutSave(this)">
-            <span style="font-size:11px;color:var(--t3)">${it.u}</span>
-          </div>
-        </td>
-        <td style="text-align:center;color:var(--az2);font-weight:600" id="np-${c.id}-${meal}-${cat}">${it.p}g</td>
-        <td style="text-align:center;color:var(--vd);font-weight:600" id="nc-${c.id}-${meal}-${cat}">${it.c}g</td>
-        <td style="text-align:center;color:var(--am);font-weight:600" id="ng-${c.id}-${meal}-${cat}">${it.g}g</td>
-        <td style="text-align:center;color:var(--nr);font-weight:600" id="nk-${c.id}-${meal}-${cat}">${it.kcal}</td>
-      </tr>`).join('')}
-      </tbody></table></div>
-    </div>`;
-  });
-  h+=`<div style="display:flex;align-items:center;gap:10px">
-    <div style="font-size:12px;color:var(--vd)">✅ Auto-guardado</div>
-    <button class="btn bo bs" style="margin-left:auto" onclick="nutReset('${c.id}')">↺ Resetear</button>
-  </div>`;
-  return h;
-}
-
+  
 // nutLive defined above
+
 
 
 
