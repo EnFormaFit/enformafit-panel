@@ -486,18 +486,100 @@ async function doLogin(){
 
 async function loadClientesFromAPI(){
   try{
-    // Load both types
-    const [unos,progs]=await Promise.all([
-      apiCall('GET','/api/clientes?tipo=1a1'),
-      apiCall('GET','/api/clientes?tipo=programa'),
-    ]);
-    // Merge into C array format (keep existing structure, update with DB data)
-    console.log('[API] Clientes cargados:',unos.length+progs.length);
-    // Will sync with panel_data.json format when backend is fully wired
-    toast('Clientes sincronizados desde BD','vd');
+    // Load all clientes from BD
+    const rows=await apiCall('GET','/api/clientes');
+    if(!rows||!rows.length)return;
+
+    // Map BD format to panel format
+    const mapped=rows.map(r=>{
+      const nom=r.nombre||'';
+      const partes=nom.trim().split(' ');
+      const init=((partes[0]?.[0]||'')+(partes[1]?.[0]||'')).toUpperCase()||'CL';
+      const semRev=r.semanas_revision||[4,8,12];
+      const semana=r.semana_actual||1;
+      const nextRev=semRev.find(s=>s>=semana)||semRev[semRev.length-1];
+      return{
+        id:r.id,
+        nom:r.nombre,
+        init,
+        tipo:r.tipo==='1a1'?'uno':'programa',
+        email:r.email,
+        fechaNac:r.fecha_nacimiento?.split('T')[0]||'',
+        pesoIni:parseFloat(r.peso_inicial)||80,
+        pesoAct:parseFloat(r.peso_actual||r.peso_inicial)||80,
+        obj:parseFloat(r.objetivo_peso||r.peso_inicial*0.9)||75,
+        altura:r.altura||175,
+        semana,
+        semTotal:r.semanas_bloque||14,
+        nextRev,
+        diasSemana:r.dias_entreno||4,
+        pasosObj:r.pasos_obj||8000,
+        equipamiento:r.lugar==='gym'?'Gimnasio completo':'Casa',
+        lesiones:r.lesiones||'',
+        intolerancias:r.intolerancias||'',
+        comentario:r.notas||'',
+        adh:r.adherencia||0,
+        checkInDone:false,
+        revDone:false,
+        diasSinPeso:0,
+        macros:{
+          kcal:r.kcal_asignadas||2000,
+          p:r.proteina_g||160,
+          c:r.carbos_g||200,
+          g:r.grasas_g||60
+        },
+        planPublicado:r.plan_publicado||false,
+        bloque:r.bloque_actual||1,
+        bloqueHistorial:[],
+        histPesos:[],
+        checkIn:null,
+        revision:null,
+        inicioBloque:r.fecha_inicio?.split('T')[0]||'',
+        entrenador:'alvaro',
+        nivel:r.nivel||1,
+        rutina:r.rutina_actual||'4D.TP',
+      };
+    });
+
+    // Replace C array contents
+    C.length=0;
+    mapped.forEach(c=>C.push(c));
+
+    // Load pesos for each client in background
+    loadPesosBackground(mapped.slice(0,10)); // first 10 to avoid rate limiting
+
+    updateBadges();
+    render();
+    toast(`✅ ${mapped.length} clientes cargados desde BD`,'vd');
+    console.log('[API] Clientes cargados:',mapped.length);
   }catch(e){
     console.warn('[API] Error cargando clientes:',e.message);
+    // Keep panel_data.json as fallback
   }
+}
+
+async function loadPesosBackground(clientes){
+  // Load peso history for clients in background
+  for(const c of clientes){
+    try{
+      // We'd need an entrenador endpoint to get client pesos
+      // For now, pesos come from the initial data
+    }catch(e){}
+  }
+}
+
+// Toggle plan publicado via API
+async function togglePublicarAPI(id){
+  const c=byId(id);if(!c)return;
+  c.planPublicado=!c.planPublicado;
+  // Call API to update
+  try{
+    await apiCall('PATCH',`/api/clientes/${id}`,{plan_publicado:c.planPublicado});
+  }catch(e){
+    console.warn('[API] togglePublicar error:',e.message);
+  }
+  toast(c.planPublicado?'✅ Plan publicado':'Plan despublicado',c.planPublicado?'vd':'');
+  render();
 }
 
 async function apiPublicarPlan(clienteId, bloqueId, publicado){
@@ -892,6 +974,8 @@ function togglePublicar(id){
   const c=byId(id);if(!c)return;
   c.planPublicado=!c.planPublicado;
   toast(c.planPublicado?'✅ Plan publicado — el cliente ya puede verlo':'Plan despublicado',c.planPublicado?'vd':'');
+  // Sync to API
+  if(API_TOKEN)apiCall('PATCH',`/api/clientes/${id}`,{plan_publicado:c.planPublicado}).catch(e=>console.warn('[API] toggle:',e));
   render();
 }
 
@@ -2079,6 +2163,19 @@ function crearCliente(){
     planPublicado:false,
   };
   C.push(nuevo);updateBadges();
+  // Also create in BD
+  if(API_TOKEN){
+    apiCall('POST','/api/clientes',{
+      nombre:nom,email:email,tipo:tipo==='uno'?'1a1':'programa',
+      peso:peso,altura:parseInt(g('nc-altura'))||175,
+      objetivo:'def',actividad:1.375,comidas:3,
+      dias_entreno:dias,lugar:g('nc-equip')||'gym',nivel:1,
+      lesiones:g('nc-lesiones')||'',
+      fecha_inicio:g('nc-inicio')||new Date().toISOString().split('T')[0],
+      semanas_bloque:tipo==='uno'?13:14,
+    }).then(r=>toast('✅ '+nom+' creado en BD también','vd'))
+      .catch(e=>console.warn('[API] crear cliente:',e.message));
+  }
   toast('✅ '+nom+' añadido','vd');
   nav(tipo==='uno'?'uno':'prog');
 }
