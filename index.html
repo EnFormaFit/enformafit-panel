@@ -487,7 +487,22 @@ async function doLogin(){
 async function loadClientesFromAPI(){
   try{
     // Load all clientes from BD
+    // Get all clients with their latest peso and macros
     const rows=await apiCall('GET','/api/clientes');
+    // Enrich with peso_actual from a second call
+    try{
+      const pesosRes=await apiCall('GET','/api/clientes/pesos-actuales');
+      if(pesosRes&&pesosRes.length){
+        const pesosMap={};
+        pesosRes.forEach(p=>{pesosMap[p.cliente_id]={peso:p.peso,pesos:p.historial||[]};});
+        rows.forEach(r=>{
+          if(pesosMap[r.id]){
+            r.peso_actual=pesosMap[r.id].peso;
+            r.pesos=pesosMap[r.id].pesos;
+          }
+        });
+      }
+    }catch(e){console.warn('[API] pesos-actuales no disponible');}
     if(!rows||!rows.length)return;
 
     // Map BD format to panel format
@@ -495,48 +510,55 @@ async function loadClientesFromAPI(){
       const nom=r.nombre||'';
       const partes=nom.trim().split(' ');
       const init=((partes[0]?.[0]||'')+(partes[1]?.[0]||'')).toUpperCase()||'CL';
-      const semRev=r.semanas_revision||[4,8,12];
-      const semana=r.semana_actual||1;
+      const semRev=Array.isArray(r.semanas_revision)?r.semanas_revision:[4,8,12];
+      const semana=parseInt(r.semana_actual)||1;
       const nextRev=semRev.find(s=>s>=semana)||semRev[semRev.length-1];
+      // fechas: BD devuelve Date objects, convertir a string YYYY-MM-DD
+      const toDate=d=>d?new Date(d).toISOString().split('T')[0]:'';
+      // Peso actual = ultimo peso registrado (viene de subquery en el endpoint)
+      const pesoAct=parseFloat(r.peso_actual||r.peso_inicial)||80;
+      const pesoIni=parseFloat(r.peso_inicial)||80;
+      // historial de pesos desde BD
+      const histPesos=r.pesos||[];
       return{
         id:r.id,
-        nom:r.nombre,
+        nom,
         init,
         tipo:r.tipo==='1a1'?'uno':'programa',
-        email:r.email,
-        fechaNac:r.fecha_nacimiento?.split('T')[0]||'',
-        pesoIni:parseFloat(r.peso_inicial)||80,
-        pesoAct:parseFloat(r.peso_actual||r.peso_inicial)||80,
-        obj:parseFloat(r.objetivo_peso||r.peso_inicial*0.9)||75,
-        altura:r.altura||175,
+        email:r.email||'',
+        fechaNac:toDate(r.fecha_nacimiento),
+        pesoIni,
+        pesoAct,
+        obj:parseFloat(r.objetivo_kg||r.objetivo_peso)||(pesoIni*0.9),
+        altura:parseInt(r.altura)||175,
         semana,
-        semTotal:r.semanas_bloque||14,
+        semTotal:parseInt(r.semanas_bloque)||14,
         nextRev,
-        diasSemana:r.dias_entreno||4,
-        pasosObj:r.pasos_obj||8000,
-        equipamiento:r.lugar==='gym'?'Gimnasio completo':'Casa',
+        diasSemana:parseInt(r.dias_entreno)||4,
+        pasosObj:parseInt(r.pasos_obj)||8000,
+        equipamiento:r.lugar==='gym'?'Gimnasio completo':r.lugar||'Gimnasio completo',
         lesiones:r.lesiones||'',
         intolerancias:r.intolerancias||'',
         comentario:r.notas||'',
-        adh:r.adherencia||0,
+        adh:parseFloat(r.adherencia)||0,
         checkInDone:false,
         revDone:false,
         diasSinPeso:0,
         macros:{
-          kcal:r.kcal_asignadas||2000,
-          p:r.proteina_g||160,
-          c:r.carbos_g||200,
-          g:r.grasas_g||60
+          kcal:parseInt(r.kcal_asignadas)||2000,
+          p:parseInt(r.proteina_g)||160,
+          c:parseInt(r.carbos_g)||200,
+          g:parseInt(r.grasas_g)||60
         },
         planPublicado:r.plan_publicado||false,
-        bloque:r.bloque_actual||1,
+        bloque:parseInt(r.bloque_actual)||1,
         bloqueHistorial:[],
-        histPesos:[],
+        histPesos,
         checkIn:null,
         revision:null,
-        inicioBloque:r.fecha_inicio?.split('T')[0]||'',
+        inicioBloque:toDate(r.fecha_inicio),
         entrenador:'alvaro',
-        nivel:r.nivel||1,
+        nivel:parseInt(r.nivel)||1,
         rutina:r.rutina_actual||'4D.TP',
       };
     });
