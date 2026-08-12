@@ -490,53 +490,59 @@ async function doLogin(){
 }
 
 async function loadClientesFromAPI(){
+  console.log('[API] Cargando clientes desde BD...');
   try{
-    // Load all clientes from BD
-    // Get all clients with their latest peso and macros
     const rows=await apiCall('GET','/api/clientes');
-    // Enrich with peso_actual from a second call
-    try{
-      const pesosRes=await apiCall('GET','/api/clientes/pesos-actuales');
-      if(pesosRes&&pesosRes.length){
-        const pesosMap={};
-        pesosRes.forEach(p=>{pesosMap[p.cliente_id]={peso:p.peso,pesos:p.historial||[]};});
-        rows.forEach(r=>{
-          if(pesosMap[r.id]){
-            r.peso_actual=pesosMap[r.id].peso;
-            r.pesos=pesosMap[r.id].pesos;
-          }
-        });
-      }
-    }catch(e){console.warn('[API] pesos-actuales no disponible');}
+    console.log('[API] Respuesta BD:',rows?.length,'clientes');
     if(!rows||!rows.length)return;
 
-    // Map BD format to panel format
     const mapped=rows.map(r=>{
       const nom=r.nombre||'';
       const partes=nom.trim().split(' ');
       const init=((partes[0]?.[0]||'')+(partes[1]?.[0]||'')).toUpperCase()||'CL';
+      const toDate=d=>d?new Date(d).toISOString().split('T')[0]:'';
+      
+      // Semanas revision
       const semRev=Array.isArray(r.semanas_revision)?r.semanas_revision:[4,8,12];
       const semana=parseInt(r.semana_actual)||1;
       const nextRev=semRev.find(s=>s>=semana)||semRev[semRev.length-1];
-      // fechas: BD devuelve Date objects, convertir a string YYYY-MM-DD
-      const toDate=d=>d?new Date(d).toISOString().split('T')[0]:'';
-      // Peso actual = ultimo peso registrado (viene de subquery en el endpoint)
+      
+      // Pesos from historial
       const pesoAct=parseFloat(r.peso_actual||r.peso_inicial)||80;
       const pesoIni=parseFloat(r.peso_inicial)||80;
-      // historial de pesos desde BD
-      const histPesos=r.pesos||[];
+      
+      // Macros — from planes_nutricion if available, else kcal_asignadas
+      const kcal=parseInt(r.kcal_total||r.kcal_asignadas)||2000;
+      const prot=parseInt(r.proteina_g)||160;
+      const carbs=parseInt(r.carbos_g)||200;
+      const grasa=parseInt(r.grasas_g)||60;
+      
+      // Rutina dias and objetivo_kg from notas_entrenador JSON
+      let rutinaDias={}, objetivoKg=null, semanaActual=semana;
+      try{
+        if(r.notas_entrenador){
+          const notas=JSON.parse(r.notas_entrenador);
+          rutinaDias=notas.rutina_dias||{};
+          objetivoKg=notas.objetivo_kg||null;
+          semanaActual=notas.semana_actual||semana;
+        }
+      }catch(e){}
+      
+      // Alimentos from distribucion
+      let alimentos={};
+      try{if(r.distribucion)alimentos=typeof r.distribucion==='string'?JSON.parse(r.distribucion):r.distribucion;}catch(e){}
+      
       return{
         id:r.id,
-        nom,
-        init,
+        nom,init,
         tipo:r.tipo==='1a1'?'uno':'programa',
         email:r.email||'',
         fechaNac:toDate(r.fecha_nacimiento),
         pesoIni,
         pesoAct,
-        obj:parseFloat(r.objetivo_kg||r.objetivo_peso)||(pesoIni*0.9),
+        obj:objetivoKg||(pesoIni*0.9),
         altura:parseInt(r.altura)||175,
-        semana,
+        semana:semanaActual,
         semTotal:parseInt(r.semanas_bloque)||14,
         nextRev,
         diasSemana:parseInt(r.dias_entreno)||4,
@@ -549,31 +555,36 @@ async function loadClientesFromAPI(){
         checkInDone:false,
         revDone:false,
         diasSinPeso:0,
-        macros:{
-          kcal:parseInt(r.kcal_asignadas)||2000,
-          p:parseInt(r.proteina_g)||160,
-          c:parseInt(r.carbos_g)||200,
-          g:parseInt(r.grasas_g)||60
-        },
-        planPublicado:r.plan_publicado||false,
-        bloque:parseInt(r.bloque_actual)||1,
+        macros:{kcal,p:prot,c:carbs,g:grasa},
+        planPublicado:r.plan_publicado||r.visible_cliente||false,
+        bloque:parseInt(r.numero_bloque)||1,
         bloqueHistorial:[],
-        histPesos,
+        histPesos:[],
         checkIn:null,
         revision:null,
-        inicioBloque:toDate(r.fecha_inicio),
+        inicioBloque:toDate(r.bloque_inicio||r.fecha_inicio),
         entrenador:'alvaro',
         nivel:parseInt(r.nivel)||1,
-        rutina:r.rutina_actual||'4D.TP',
+        rutina:r.rutina_cod||r.rutina_actual||'4D.TP',
+        rutinaDias,
+        alimentos,
       };
     });
 
-    // Replace C array contents
+    // Replace C array
     C.length=0;
     mapped.forEach(c=>C.push(c));
 
-    // Load pesos for each client in background
-    loadPesosBackground(mapped.slice(0,10)); // first 10 to avoid rate limiting
+    // Also load RUTINAS from rutina_dias
+    mapped.forEach(c=>{
+      if(c.rutinaDias&&Object.keys(c.rutinaDias).length>0){
+        if(!RUTINAS[c.id])RUTINAS[c.id]={};
+        Object.entries(c.rutinaDias).forEach(([dia,ejes])=>{
+          if(!RUTINAS[c.id][1])RUTINAS[c.id][1]={};
+          RUTINAS[c.id][1][parseInt(dia)]=ejes;
+        });
+      }
+    });
 
     updateBadges();
     render();
@@ -581,11 +592,9 @@ async function loadClientesFromAPI(){
     console.log('[API] Clientes cargados:',mapped.length);
   }catch(e){
     console.error('[API] Error cargando clientes:',e.message,e);
-    toast('No se pudo conectar con BD: '+e.message,'rj');
-    // Keep panel_data.json as fallback
+    toast('Error cargando clientes: '+e.message,'rj');
   }
 }
-
 async function loadPesosBackground(clientes){
   // Load peso history for clients in background
   for(const c of clientes){
