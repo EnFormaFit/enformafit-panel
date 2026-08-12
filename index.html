@@ -575,14 +575,17 @@ async function loadClientesFromAPI(){
     C.length=0;
     mapped.forEach(c=>C.push(c));
 
-    // Also load RUTINAS from rutina_dias
+    // Load RUTINAS from rutinaDias for ALL semanas
     mapped.forEach(c=>{
       if(c.rutinaDias&&Object.keys(c.rutinaDias).length>0){
-        if(!RUTINAS[c.id])RUTINAS[c.id]={};
-        Object.entries(c.rutinaDias).forEach(([dia,ejes])=>{
-          if(!RUTINAS[c.id][1])RUTINAS[c.id][1]={};
-          RUTINAS[c.id][1][parseInt(dia)]=ejes;
-        });
+        if(!RUTINAS[c.id])RUTINAS[c.id]={__logs:{}};
+        // Apply same rutina to all semanas 1-14
+        for(let sem=1;sem<=14;sem++){
+          if(!RUTINAS[c.id][sem])RUTINAS[c.id][sem]={};
+          Object.entries(c.rutinaDias).forEach(([dia,ejes])=>{
+            RUTINAS[c.id][sem][parseInt(dia)]=JSON.parse(JSON.stringify(ejes));
+          });
+        }
       }
     });
 
@@ -735,7 +738,19 @@ function setRol(r){
 // ═══ CLIENT FULLSCREEN ═══
 function openC(id,tab='resumen'){
   CLI_ID=id;CLI_TAB=tab;VIEW='client';EDITING=false;
-  if(byId(id))RUT_CLI=id;
+  RUT_CLI=id;
+  ENT_VIEW='grid';
+  // Update DIAS_BASE rest days based on client's rutinaDias
+  const c=byId(id);
+  if(c&&c.rutinaDias&&Object.keys(c.rutinaDias).length>0){
+    const trainDays=Object.keys(c.rutinaDias).map(Number);
+    DIAS_BASE.forEach((d,i)=>{
+      d.rest=!trainDays.includes(i);
+      if(!d.rest&&c.rutinaDias[String(i)]?.length>0){
+        // Keep existing tipo or use generic
+      }
+    });
+  }
   render();
 }
 function closeC(){VIEW='list';CLI_ID=null;render();}
@@ -1196,6 +1211,35 @@ function getNutState(c){
     });
     return{id:mKey,nom:MEAL_NOM_NUT[mKey],items};
   }).filter(m=>m.items.length);
+  // If client has alimentos from BD plan, use those instead of MENU defaults
+  if(c.alimentos&&Object.keys(c.alimentos).length>0){
+    const bdMeals=[];
+    const mealOrder=['desayuno','comida','cena','snack'];
+    const mealNoms={desayuno:'☀️ Desayuno',comida:'🌞 Comida',cena:'🌙 Cena',snack:'🍎 Snack'};
+    mealOrder.forEach(mKey=>{
+      const items=c.alimentos[mKey];
+      if(!items||!items.length)return;
+      // Need p100,c100,g100,k100 for each item - get from MENU
+      const enriched=items.map(it=>{
+        // Find nutritional values from MENU
+        let p100=0,c100=0,g100=0,k100=0;
+        for(const mealKey of Object.keys(MENU)){
+          for(const catKey of Object.values(CAT_KEY_NUT)){
+            const found=(MENU[mealKey][catKey]||[]).find(m=>(m.nom||m.alimento||'').toLowerCase()===it.nom.toLowerCase());
+            if(found){p100=found.p_100||0;c100=found.c_100||0;g100=found.g_100||0;k100=found.kcal_100||0;break;}
+          }
+          if(k100>0)break;
+        }
+        return{...it,p100,c100,g100,k100,catNom:CAT_NOM_NUT[it.cat]||it.cat};
+      });
+      bdMeals.push({id:mKey,nom:mealNoms[mKey]||mKey,items:enriched});
+    });
+    if(bdMeals.length>0){
+      NE[c.id]={meals:bdMeals};
+      return NE[c.id];
+    }
+  }
+  
   NE[c.id]={meals};
   return NE[c.id];
 }
@@ -1613,8 +1657,15 @@ function getRut(cliId,sem,dia){
   if(!RUTINAS[cliId])RUTINAS[cliId]={};
   if(!RUTINAS[cliId].__logs)RUTINAS[cliId].__logs={};
   if(!RUTINAS[cliId][sem])RUTINAS[cliId][sem]={};
-  if(RUTINAS[cliId][sem][dia]===undefined)
-    RUTINAS[cliId][sem][dia]=JSON.parse(JSON.stringify(EJ_DEF[dia]||[]));
+  if(RUTINAS[cliId][sem][dia]===undefined){
+    // Try to get from client's rutinaDias first
+    const c=byId(cliId);
+    if(c&&c.rutinaDias&&c.rutinaDias[String(dia)]){
+      RUTINAS[cliId][sem][dia]=JSON.parse(JSON.stringify(c.rutinaDias[String(dia)]));
+    } else {
+      RUTINAS[cliId][sem][dia]=JSON.parse(JSON.stringify(EJ_DEF[dia]||[]));
+    }
+  }
   return RUTINAS[cliId][sem][dia];
 }
 // Flag to block ejSave briefly after structural changes (add/del)
