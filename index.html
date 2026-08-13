@@ -1642,7 +1642,7 @@ function tEntrenoHistorial(c){
   if(!ejNames.length){
     // Try to load from API
     if(API_TOKEN){
-      apiCall('GET',\`/api/entreno/historial/\${c.id}\`)
+      apiCall('GET','/api/entreno/historial/'+c.id)
         .then(rows=>{
           if(!rows||!rows.length){document.getElementById('hist-body').innerHTML='<div style="padding:20px;color:var(--t3);text-align:center">Sin registros de entrenamiento</div>';return;}
           // Group by ejercicio
@@ -1721,13 +1721,19 @@ function tEntrenoHistorial(c){
   return\`<div>
     <div style="display:flex;gap:8px;margin-bottom:12px">
       <button class="btn bo bs" onclick="ENT_VIEW='grid';setTab('entreno')">← Vista semana</button>
-      <button class="btn bp bs" onclick="apiCall('GET','/api/entreno/historial/\${c.id}').then(d=>loadHistorialAPI(d,'\${c.id}')).catch(e=>toast(e.message,'rj'))">🔄 Cargar desde BD</button>
+      <button class="btn bp bs" onclick="loadHistorialFromBD('${c.id}')">🔄 Cargar desde BD</button>
     </div>
     <div class="card"><div class="ch"><h2>📊 Historial — \${c.nom.split(' ')[0]}</h2>
       <span style="font-size:11px;color:var(--t3)">\${ejNames.length} ejercicios registrados</span>
     </div>
     <div class="cb" style="padding:14px">\${html||'<div style="color:var(--t3)">Sin registros locales — pulsa "Cargar desde BD"</div>'}</div></div>
   </div>\`;
+}
+
+function loadHistorialFromBD(cliId){
+  apiCall('GET','/api/entreno/historial/'+cliId)
+    .then(d=>loadHistorialAPI(d,cliId))
+    .catch(e=>toast(e.message,'rj'));
 }
 
 function loadHistorialAPI(rows, cliId){
