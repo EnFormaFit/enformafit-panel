@@ -1074,28 +1074,7 @@ function tRevision(c){
 
   // Build peso table from histPesos
   const pesoRows=c.histPesos&&c.histPesos.length?c.histPesos:[];
-  const pesoTableHTML=pesoRows.length?`
-    <div style="overflow-x:auto;margin-bottom:12px">
-      <table style="border-collapse:collapse;font-size:12px;min-width:100%">
-        <thead><tr style="background:var(--az)">
-          <th style="padding:5px 10px;color:rgba(255,255,255,.7);font-size:10px;text-align:left">Fecha</th>
-          <th style="padding:5px 10px;color:#fff;font-size:10px;text-align:center">Peso</th>
-          <th style="padding:5px 10px;color:rgba(255,255,255,.7);font-size:10px;text-align:center">Cambio</th>
-        </tr></thead>
-        <tbody>${pesoRows.slice().reverse().map((p,i,arr)=>{
-          const prev=arr[i+1];
-          const diff=prev?+(p.v-prev.v).toFixed(1):null;
-          const diffStr=diff===null?'—':(diff>0?'+':'')+diff+'kg';
-          const diffCol=diff===null?'var(--t3)':diff<0?'var(--vd)':diff>0?'var(--rj)':'var(--t3)';
-          return\`<tr style="border-bottom:1px solid var(--bor2)">
-            <td style="padding:5px 10px;color:var(--t2)">\${p.f}</td>
-            <td style="padding:5px 10px;text-align:center;font-weight:700">\${p.v}kg</td>
-            <td style="padding:5px 10px;text-align:center;font-weight:600;color:\${diffCol}">\${diffStr}</td>
-          </tr>\`;
-        }).join('')}
-        </tbody>
-      </table>
-    </div>`:'<div style="color:var(--t3);font-size:12px;margin-bottom:12px">Sin registros de peso</div>';
+  '<div style="color:var(--t3);font-size:12px;margin-bottom:12px">Sin registros de peso</div>';
 
   const statsH=`<div class="rs4" style="margin-bottom:10px">
     <div class="rs-box"><div class="rs-v" style="color:var(--az2)">${c.pesoIni}kg</div><div class="rs-l">Peso inicial</div></div>
