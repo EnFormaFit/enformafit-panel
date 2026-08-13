@@ -2041,10 +2041,24 @@ function cpImport(sem){
   const container=document.getElementById('ej-list')?.closest('.card')||document.querySelector('.card');
   if(!container)return;
   const div=document.createElement('div');
+  // Overlay to close on click outside
+  const overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:999';
+  overlay.onclick=()=>{overlay.remove();div.remove();};
+  document.body.appendChild(overlay);
+  
   div.id=pickerId;
-  div.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border:2px solid var(--az2);border-radius:12px;padding:16px;z-index:1000;max-width:480px;width:90%;max-height:70vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.2)';
-  div.innerHTML=`<div style="font-weight:700;font-size:14px;margin-bottom:12px;color:var(--az)">📥 Importar rutina plantilla → S${sem}</div>
-    <div style="font-size:11.5px;color:var(--t3);margin-bottom:10px">Reemplaza los ejercicios de la semana ${sem} con la rutina seleccionada.</div>
+  div.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border:2px solid var(--az2);border-radius:12px;padding:16px;z-index:1000;max-width:520px;width:90%;max-height:75vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.2)';
+  div.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="font-weight:700;font-size:14px;color:var(--az)">📥 Importar rutina plantilla</div>
+      <button onclick="this.closest('[id=rut-import-picker]')?.remove();document.querySelector('[style*=rgba]')?.remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--t3)">✕</button>
+    </div>
+    <div style="font-size:11.5px;color:var(--t3);margin-bottom:8px">Aplicar a:</div>
+    <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+      <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="radio" name="imp-target" value="sem" checked> Solo S${sem}</label>
+      <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="radio" name="imp-target" value="all"> Todas las semanas</label>
+      <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer"><input type="radio" name="imp-target" value="from"> Desde S${sem} hasta el final</label>
+    </div>
     <div style="display:flex;flex-direction:column;gap:5px">
       ${RUTS.map((r,i)=>`<button onclick="cpImportConfirm(${sem},${i})" style="text-align:left;padding:8px 11px;border:1.5px solid var(--bor);border-radius:7px;background:#fff;cursor:pointer;font-family:inherit;font-size:12.5px;transition:all .15s" onmouseover="this.style.background='var(--az3)'" onmouseout="this.style.background='#fff'"><b>${r.code}</b> — ${r.nom}</button>`).join('')}
     </div>
