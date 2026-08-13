@@ -1667,37 +1667,67 @@ function tEntrenoHistorial(c){
 }
 
 function buildHistTable(rows){
-  // Group by ejercicio
-  var byEj={};
+  if(!rows||!rows.length)return'<div style="padding:20px;color:var(--t3);text-align:center">Sin registros</div>';
+  
+  // Get all semanas present (for column headers)
+  var allSems=[...new Set(rows.map(function(r){return r.semana;}))].sort(function(a,b){return a-b;});
+  
+  // Group by dia then by ejercicio (preserving order)
+  var byDia={};
   rows.forEach(function(r){
-    if(!byEj[r.ejercicio])byEj[r.ejercicio]=[];
-    byEj[r.ejercicio].push(r);
+    var dia=r.dia!=null?r.dia:0;
+    if(!byDia[dia])byDia[dia]=[];
+    if(!byDia[dia].find(function(x){return x===r.ejercicio;}))
+      byDia[dia].push(r.ejercicio);
   });
+  
+  var DIAS=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
   var html='<div style="padding:14px">';
-  Object.keys(byEj).sort().forEach(function(ej){
-    var regs=byEj[ej];
-    var semanas=[...new Set(regs.map(function(r){return r.semana;}))].sort(function(a,b){return a-b;});
-    var maxSeries=Math.max.apply(null,regs.map(function(r){return r.serie;}));
-    html+='<div style="margin-bottom:16px">';
-    html+='<div style="font-weight:700;font-size:13px;color:var(--az);padding:6px 0;border-bottom:2px solid var(--az4);margin-bottom:6px">'+ej+'</div>';
-    html+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">';
-    html+='<thead><tr style="background:var(--bg)">';
-    html+='<th style="padding:5px 8px;text-align:left;color:var(--t3)">Serie</th>';
-    semanas.forEach(function(s){
-      html+='<th style="padding:5px 8px;text-align:center;color:var(--az2)">S'+s+'</th>';
-    });
-    html+='</tr></thead><tbody>';
-    for(var si=1;si<=maxSeries;si++){
-      html+='<tr style="border-bottom:1px solid var(--bor2)">';
-      html+='<td style="padding:5px 8px;font-weight:600;color:var(--t3)">'+si+'ª</td>';
-      semanas.forEach(function(s){
-        var reg=regs.find(function(r){return r.semana===s&&r.serie===si;});
-        if(!reg){html+='<td style="padding:5px 8px;text-align:center;color:var(--bor)">—</td>';}
-        else{html+='<td style="padding:5px 8px;text-align:center"><b>'+reg.kg+'kg</b> <span style="color:var(--t3);font-size:10px">×'+reg.reps_reales+'</span></td>';}
+  
+  // Column header explanation
+  html+='<div style="font-size:10px;color:var(--t3);margin-bottom:12px">Formato: <b>kg</b> × reps · — = sin registro</div>';
+  
+  Object.keys(byDia).sort(function(a,b){return parseInt(a)-parseInt(b);}).forEach(function(diaStr){
+    var dia=parseInt(diaStr);
+    var ejsInDia=byDia[diaStr];
+    
+    html+='<div style="margin-bottom:20px">';
+    html+='<div style="background:var(--az);color:#fff;font-weight:700;font-size:12px;padding:7px 12px;border-radius:7px 7px 0 0">'+(DIAS[dia]||'Día '+dia)+'</div>';
+    
+    ejsInDia.forEach(function(ej){
+      var ejRows=rows.filter(function(r){return r.ejercicio===ej&&(r.dia==dia||r.dia==null);});
+      var maxSeries=Math.max.apply(null,ejRows.map(function(r){return r.serie;}));
+      
+      html+='<div style="border:1px solid var(--bor);border-top:none;padding:8px 12px;background:#fff">';
+      html+='<div style="font-weight:600;font-size:12.5px;color:var(--t1);margin-bottom:6px">'+ej+'</div>';
+      html+='<div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:11.5px;width:100%">';
+      html+='<thead><tr>';
+      html+='<th style="padding:4px 6px;text-align:left;color:var(--t3);font-weight:600;font-size:10px;white-space:nowrap">Serie</th>';
+      allSems.forEach(function(s){
+        html+='<th style="padding:4px 8px;text-align:center;color:var(--az2);font-size:10px;white-space:nowrap">S'+s+'</th>';
       });
-      html+='</tr>';
-    }
-    html+='</tbody></table></div></div>';
+      html+='</tr></thead><tbody>';
+      
+      for(var si=1;si<=maxSeries;si++){
+        html+='<tr style="border-top:1px solid var(--bor2)">';
+        html+='<td style="padding:4px 6px;color:var(--t3);font-size:10px">'+si+'ª</td>';
+        allSems.forEach(function(s){
+          var reg=ejRows.find(function(r){return r.semana===s&&r.serie===si;});
+          if(!reg){
+            html+='<td style="padding:4px 8px;text-align:center;color:var(--bor2)">—</td>';
+          } else {
+            // Format kg: remove decimals if .00
+            var kg=parseFloat(reg.kg);
+            var kgStr=kg===Math.floor(kg)?Math.floor(kg)+'':kg+'';
+            var reps=reg.reps_reales;
+            html+='<td style="padding:4px 8px;text-align:center"><b>'+kgStr+'</b><span style="color:var(--t3);font-size:9px">×'+reps+'</span></td>';
+          }
+        });
+        html+='</tr>';
+      }
+      html+='</tbody></table></div></div>';
+    });
+    html+='</div>';
   });
   html+='</div>';
   return html;
@@ -2233,28 +2263,41 @@ function cpImportConfirm(sem,idx){
   else if(target==='from'){semsToApply=Array.from({length:totalSems-sem+1},(_,i)=>sem+i);}
   else{semsToApply=[sem];}
 
+  // Save full state for undo (all affected semanas)
+  const preImportState=JSON.parse(JSON.stringify(RUTINAS[cliId]||{}));
+  UNDO_RUT.push({cli:cliId,sem:RUT_SEM,dia:RUT_DIA,
+    data:JSON.stringify(RUTINAS[cliId]||{})});
+  if(UNDO_RUT.length>UNDO_MAX)UNDO_RUT.shift();
+
   semsToApply.forEach(s=>{
+    if(!RUTINAS[cliId])RUTINAS[cliId]={};
     if(!RUTINAS[cliId][s])RUTINAS[cliId][s]={};
-    DIAS_BASE.forEach((d,di)=>{
-      const dayEjs=rutData[String(di)];
-      if(dayEjs===undefined)return;
+    // Apply only days that exist in rutData — don't touch DIAS_BASE (global state)
+    Object.entries(rutData).forEach(([diStr,dayEjs])=>{
+      const di=parseInt(diStr);
       if(!dayEjs||dayEjs.length===0){
         RUTINAS[cliId][s][di]=[];
-        if(s===sem){DIAS_BASE[di].rest=true;DIAS_BASE[di].tipo='Descanso';}
       } else {
         RUTINAS[cliId][s][di]=dayEjs.map(e=>({
           nom:e.nom,sets:e.sets,reps:String(e.reps),
           rir:e.rir,rest:e.rest,url:e.url||'',acl:e.acl||''
         }));
-        if(s===sem)DIAS_BASE[di].rest=false;
       }
     });
   });
+
+  // Update DIAS_BASE only for the currently viewed semana
+  Object.entries(rutData).forEach(([diStr,dayEjs])=>{
+    const di=parseInt(diStr);
+    DIAS_BASE[di].rest=(!dayEjs||dayEjs.length===0);
+    if(DIAS_BASE[di].rest)DIAS_BASE[di].tipo='Descanso';
+  });
+
   picker.remove();
   document.querySelectorAll('[style*="rgba(0,0,0,.4)"]').forEach(el=>el.remove());
   ENT_VIEW='grid';RUT_SEM=sem;
   if(VIEW==='client')setTab('entreno');else render();
-  toast('✅ '+code+' aplicada en '+(semsToApply.length>1?semsToApply.length+' semanas':'S'+sem),'vd');
+  toast('✅ '+code+' aplicada en '+(semsToApply.length>1?semsToApply.length+' semanas':'S'+sem)+' — Ctrl+Z para deshacer','vd');
 }
 
 // ═══ TAB: EDITAR ═══
