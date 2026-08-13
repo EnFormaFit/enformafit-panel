@@ -1072,12 +1072,41 @@ function tRevision(c){
   const isFinalRev=(c.tipo==='programa'&&c.nextRev===12)||(c.tipo==='uno'&&c.nextRev===11);
   const PP=c.tipo==='programa'?(isFinalRev?PP_PROG_FINAL:PP_PROG):(isFinalRev?PP_UNO_FINAL:PP_UNO);
 
-  const statsH=`<div class="rs4" style="margin-bottom:14px">
+  // Build peso table from histPesos
+  const pesoRows=c.histPesos&&c.histPesos.length?c.histPesos:[];
+  const pesoTableHTML=pesoRows.length?`
+    <div style="overflow-x:auto;margin-bottom:12px">
+      <table style="border-collapse:collapse;font-size:12px;min-width:100%">
+        <thead><tr style="background:var(--az)">
+          <th style="padding:5px 10px;color:rgba(255,255,255,.7);font-size:10px;text-align:left">Fecha</th>
+          <th style="padding:5px 10px;color:#fff;font-size:10px;text-align:center">Peso</th>
+          <th style="padding:5px 10px;color:rgba(255,255,255,.7);font-size:10px;text-align:center">Cambio</th>
+        </tr></thead>
+        <tbody>${pesoRows.slice().reverse().map((p,i,arr)=>{
+          const prev=arr[i+1];
+          const diff=prev?+(p.v-prev.v).toFixed(1):null;
+          const diffStr=diff===null?'—':(diff>0?'+':'')+diff+'kg';
+          const diffCol=diff===null?'var(--t3)':diff<0?'var(--vd)':diff>0?'var(--rj)':'var(--t3)';
+          return\`<tr style="border-bottom:1px solid var(--bor2)">
+            <td style="padding:5px 10px;color:var(--t2)">\${p.f}</td>
+            <td style="padding:5px 10px;text-align:center;font-weight:700">\${p.v}kg</td>
+            <td style="padding:5px 10px;text-align:center;font-weight:600;color:\${diffCol}">\${diffStr}</td>
+          </tr>\`;
+        }).join('')}
+        </tbody>
+      </table>
+    </div>`:'<div style="color:var(--t3);font-size:12px;margin-bottom:12px">Sin registros de peso</div>';
+
+  const statsH=`<div class="rs4" style="margin-bottom:10px">
     <div class="rs-box"><div class="rs-v" style="color:var(--az2)">${c.pesoIni}kg</div><div class="rs-l">Peso inicial</div></div>
     <div class="rs-box"><div class="rs-v" style="color:var(--vd)">${bajaTot}kg</div><div class="rs-l">Bajada total</div></div>
     <div class="rs-box"><div class="rs-v" style="color:var(--nr)">${bajaSem}kg</div><div class="rs-l">Media/semana</div></div>
     <div class="rs-box"><div class="rs-v" style="color:var(--az)">${sems}</div><div class="rs-l">Semanas</div></div>
-  </div>`;
+  </div>
+  <div class="sec-t">Evolución del peso</div>
+  <div style="margin-bottom:10px">${miniChart(c)}</div>
+  <div class="sec-t" style="margin-bottom:6px">Registro de pesos <button class="btn bo bs" style="float:right;margin-top:-4px" onclick="loadPesosCliente('${c.id}')">🔄 Actualizar</button></div>
+  ${pesoTableHTML}`;
 
   if(!rev&&c.semana!==nextRev)return`${statsH}<div style="text-align:center;padding:30px;color:var(--t3)"><div style="font-size:48px;margin-bottom:12px">📅</div><div style="font-size:16px;font-weight:700">Próxima revisión: S${nextRev}</div><div style="font-size:13px;margin-top:6px">Semana actual: S${c.semana}</div></div>`;
 
@@ -1115,7 +1144,7 @@ function tRevision(c){
                      <button class="ph-zoom-btn" onclick="phZoom('ph-${rs}-${pi}',0,'reset')" title="Reset" style="font-size:9px">↺</button>
                    </div>
                    <div class="ph-lbl">${revLabels[rs]||'S'+rs}</div>`
-                :`<div class="ph-empty"><span style="font-size:20px">📷</span><span style="font-size:10px">${locked?'🔒':isActive?'Pendiente':revLabels[rs]||'S'+rs}</span></div>`
+                :`<div class="ph-empty" ${!locked&&isActive?`onclick="uploadRevPhoto('${c.id}','${rs}',${pi})" style="cursor:pointer" title="Click para subir foto"`:''}><span style="font-size:20px">📷</span><span style="font-size:10px">${locked?'🔒':isActive?'📤 Subir foto':revLabels[rs]||'S'+rs}</span></div>`
               }
             </div>
           </div>`;
@@ -1162,6 +1191,30 @@ function tRevision(c){
   return`${statsH}${fotosH}${medsH}${respsH}${fbH}`;
 }
 
+function uploadRevPhoto(cliId, rev, pose){
+  // Create hidden file input
+  const inp=document.createElement('input');
+  inp.type='file';inp.accept='image/*';
+  inp.onchange=async(e)=>{
+    const file=e.target.files[0];if(!file)return;
+    // Read as base64
+    const reader=new FileReader();
+    reader.onload=async(ev)=>{
+      const b64=ev.target.result; // data:image/jpeg;base64,...
+      // For now store in client revision data
+      const c=byId(cliId);if(!c)return;
+      if(!c.revision)c.revision={fotos:{}};
+      if(!c.revision.fotos)c.revision.fotos={};
+      const key=rev===0?'s0_'+pose:'rev_'+rev+'_'+pose;
+      c.revision.fotos[key]=b64;
+      toast('Foto guardada ✓','vd');
+      setTab('revision');
+    };
+    reader.readAsDataURL(file);
+  };
+  inp.click();
+}
+
 function phZoom(id,delta,dir){
   const img=document.getElementById(id);if(!img)return;
   let sc=parseFloat(img.dataset.scale)||1;
@@ -1175,6 +1228,16 @@ function phZoom(id,delta,dir){
   else{sc=Math.max(0.5,Math.min(4,sc+delta));}
   img.dataset.scale=sc;img.dataset.tx=tx;img.dataset.ty=ty;
   img.style.transform=`scale(${sc}) translateX(${tx/sc}px) translateY(${ty/sc}px)`;
+}
+
+function loadPesosCliente(cliId){
+  apiCall('GET',`/api/entreno/pesos/${cliId}`)
+    .then(rows=>{
+      const c=byId(cliId);if(!c)return;
+      c.histPesos=rows.map(r=>({f:new Date(r.fecha).toISOString().split('T')[0],v:parseFloat(r.peso)}));
+      setTab('revision');
+      toast('Pesos actualizados','vd');
+    }).catch(e=>toast('Error: '+e.message,'rj'));
 }
 
 function guardarFeedback(id){
@@ -1579,11 +1642,129 @@ function tEntreno(c){
   RUT_CLI=c.id;
   if(ENT_VIEW==='editor'){
     return`<div>
-      <button class="btn bo bs" style="margin-bottom:12px" onclick="ENT_VIEW='grid';setTab('entreno')">← Vista semana completa</button>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button class="btn bo bs" onclick="ENT_VIEW='grid';setTab('entreno')">← Vista semana</button>
+        <button class="btn bo bs" onclick="ENT_VIEW='historial';setTab('entreno')">📊 Historial completo</button>
+      </div>
       ${rRutinas()}
     </div>`;
   }
+  if(ENT_VIEW==='historial') return tEntrenoHistorial(c);
   return tEntrenoGrid(c);
+}
+
+function tEntrenoHistorial(c){
+  // Build historial table from RUTINAS logs + API data
+  const histData=RUTINAS[c.id]?.__logs||{};
+  
+  // Group by ejercicio
+  const ejNames=Object.keys(histData).sort();
+  
+  if(!ejNames.length){
+    // Try to load from API
+    if(API_TOKEN){
+      apiCall('GET',\`/api/entreno/historial/\${c.id}\`)
+        .then(rows=>{
+          if(!rows||!rows.length){document.getElementById('hist-body').innerHTML='<div style="padding:20px;color:var(--t3);text-align:center">Sin registros de entrenamiento</div>';return;}
+          // Group by ejercicio
+          const byEj={};
+          rows.forEach(r=>{
+            if(!byEj[r.ejercicio])byEj[r.ejercicio]=[];
+            byEj[r.ejercicio].push(r);
+          });
+          // Build table
+          let html='';
+          Object.entries(byEj).forEach(([ej,regs])=>{
+            const semanas=[...new Set(regs.map(r=>r.semana))].sort((a,b)=>a-b);
+            html+=\`<div style="margin-bottom:14px">
+              <div style="font-weight:700;font-size:13px;color:var(--az);padding:6px 0;border-bottom:2px solid var(--az4);margin-bottom:6px">\${ej}</div>
+              <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
+                <thead><tr style="background:var(--bg)">
+                  <th style="padding:5px 8px;text-align:left">Serie</th>
+                  \${semanas.map(s=>\`<th style="padding:5px 8px;text-align:center;color:var(--az2)">S\${s}</th>\`).join('')}
+                </tr></thead>
+                <tbody>\`;
+            const maxSeries=Math.max(...regs.map(r=>r.serie));
+            for(let si=1;si<=maxSeries;si++){
+              html+=\`<tr style="border-bottom:1px solid var(--bor2)">
+                <td style="padding:5px 8px;font-weight:600;color:var(--t3)">\${si}ª</td>
+                \${semanas.map(s=>{
+                  const reg=regs.find(r=>r.semana===s&&r.serie===si);
+                  if(!reg)return'<td style="padding:5px 8px;text-align:center;color:var(--bor)">—</td>';
+                  return\`<td style="padding:5px 8px;text-align:center"><b>\${reg.kg}kg</b><span style="color:var(--t3);font-size:10px">×\${reg.reps_reales}</span></td>\`;
+                }).join('')}
+              </tr>\`;
+            }
+            html+=\`</tbody></table></div></div>\`;
+          });
+          document.getElementById('hist-body').innerHTML=html;
+        }).catch(e=>{
+          document.getElementById('hist-body').innerHTML=\`<div style="padding:20px;color:var(--rj)">Error: \${e.message}</div>\`;
+        });
+    }
+    return\`<div>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button class="btn bo bs" onclick="ENT_VIEW='grid';setTab('entreno')">← Vista semana</button>
+      </div>
+      <div class="card"><div class="ch"><h2>📊 Historial de entrenamiento — \${c.nom.split(' ')[0]}</h2></div>
+      <div class="cb" id="hist-body"><div style="text-align:center;padding:20px;color:var(--t3)">Cargando...</div></div></div>
+    </div>\`;
+  }
+  
+  // Build from local logs
+  let html='';
+  ejNames.forEach(ej=>{
+    const logs=histData[ej];
+    const semanas=Object.keys(logs.semanas||{}).map(Number).sort((a,b)=>a-b);
+    if(!semanas.length)return;
+    const maxSeries=Math.max(...semanas.flatMap(s=>(logs.semanas[s]?.series||[]).map((_,i)=>i+1)),0);
+    html+=\`<div style="margin-bottom:14px">
+      <div style="font-weight:700;font-size:13px;color:var(--az);padding:6px 0;border-bottom:2px solid var(--az4);margin-bottom:6px">\${ej}</div>
+      <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="background:var(--bg)">
+          <th style="padding:5px 8px;text-align:left;color:var(--t3)">Serie</th>
+          \${semanas.map(s=>\`<th style="padding:5px 8px;text-align:center;color:var(--az2)">S\${s}</th>\`).join('')}
+        </tr></thead>
+        <tbody>\`;
+    for(let si=0;si<maxSeries;si++){
+      html+=\`<tr style="border-bottom:1px solid var(--bor2)">
+        <td style="padding:5px 8px;font-weight:600;color:var(--t3)">\${si+1}ª</td>
+        \${semanas.map(s=>{
+          const ser=(logs.semanas[s]?.series||[])[si];
+          if(!ser)return'<td style="padding:5px 8px;text-align:center;color:var(--bor)">—</td>';
+          return\`<td style="padding:5px 8px;text-align:center"><b>\${ser.kg}kg</b><span style="color:var(--t3);font-size:10px">×\${ser.reps}</span></td>\`;
+        }).join('')}
+      </tr>\`;
+    }
+    html+=\`</tbody></table></div></div>\`;
+  });
+  
+  return\`<div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button class="btn bo bs" onclick="ENT_VIEW='grid';setTab('entreno')">← Vista semana</button>
+      <button class="btn bp bs" onclick="apiCall('GET','/api/entreno/historial/\${c.id}').then(d=>loadHistorialAPI(d,'\${c.id}')).catch(e=>toast(e.message,'rj'))">🔄 Cargar desde BD</button>
+    </div>
+    <div class="card"><div class="ch"><h2>📊 Historial — \${c.nom.split(' ')[0]}</h2>
+      <span style="font-size:11px;color:var(--t3)">\${ejNames.length} ejercicios registrados</span>
+    </div>
+    <div class="cb" style="padding:14px">\${html||'<div style="color:var(--t3)">Sin registros locales — pulsa "Cargar desde BD"</div>'}</div></div>
+  </div>\`;
+}
+
+function loadHistorialAPI(rows, cliId){
+  if(!rows||!rows.length){toast('Sin registros en BD','');return;}
+  if(!RUTINAS[cliId])RUTINAS[cliId]={};
+  if(!RUTINAS[cliId].__logs)RUTINAS[cliId].__logs={};
+  rows.forEach(r=>{
+    const logs=RUTINAS[cliId].__logs;
+    if(!logs[r.ejercicio])logs[r.ejercicio]={semanas:{}};
+    const sem=String(r.semana);
+    if(!logs[r.ejercicio].semanas[sem])logs[r.ejercicio].semanas[sem]={series:[]};
+    const series=logs[r.ejercicio].semanas[sem].series;
+    if(!series[r.serie-1])series[r.serie-1]={kg:String(r.kg),reps:String(r.reps_reales),done:r.completada};
+  });
+  toast('✅ '+rows.length+' registros cargados','vd');
+  setTab('entreno');
 }
 
 function tEntrenoGrid(c){
