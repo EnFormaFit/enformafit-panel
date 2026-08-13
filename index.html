@@ -1072,18 +1072,9 @@ function tRevision(c){
   const isFinalRev=(c.tipo==='programa'&&c.nextRev===12)||(c.tipo==='uno'&&c.nextRev===11);
   const PP=c.tipo==='programa'?(isFinalRev?PP_PROG_FINAL:PP_PROG):(isFinalRev?PP_UNO_FINAL:PP_UNO);
 
-  // Build peso table from histPesos
+  // Build peso grid table: días en filas, semanas en columnas
   const pesoRows=c.histPesos&&c.histPesos.length?c.histPesos:[];
-  let pesoRowsHTML='';
-  const pesoReversed=pesoRows.slice().reverse();
-  pesoReversed.forEach(function(p,i){
-    const prev=pesoReversed[i+1];
-    const diff=prev?+(p.v-prev.v).toFixed(1):null;
-    const diffStr=diff===null?'—':(diff>0?'+':'')+diff+'kg';
-    const diffCol=diff===null?'var(--t3)':diff<0?'var(--vd)':diff>0?'var(--rj)':'var(--t3)';
-    pesoRowsHTML+='<tr style="border-bottom:1px solid var(--bor2)"><td style="padding:5px 10px;color:var(--t2)">'+p.f+'</td><td style="padding:5px 10px;text-align:center;font-weight:700">'+p.v+'kg</td><td style="padding:5px 10px;text-align:center;font-weight:600;color:'+diffCol+'">'+diffStr+'</td></tr>';
-  });
-  const pesoTableHTML=pesoRows.length?'<div style="overflow-x:auto;margin-bottom:12px"><table style="border-collapse:collapse;font-size:12px;min-width:100%"><thead><tr style="background:var(--az)"><th style="padding:5px 10px;color:rgba(255,255,255,.7);font-size:10px;text-align:left">Fecha</th><th style="padding:5px 10px;color:#fff;font-size:10px;text-align:center">Peso</th><th style="padding:5px 10px;color:rgba(255,255,255,.7);font-size:10px;text-align:center">Cambio</th></tr></thead><tbody>'+pesoRowsHTML+'</tbody></table></div>':'<div style="color:var(--t3);font-size:12px;margin-bottom:12px">Sin registros de peso</div>';
+  const pesoTableHTML=buildPesoGrid(pesoRows,c.inicioBloque);
 
   const statsH=`<div class="rs4" style="margin-bottom:10px">
     <div class="rs-box"><div class="rs-v" style="color:var(--az2)">${c.pesoIni}kg</div><div class="rs-l">Peso inicial</div></div>
@@ -1216,6 +1207,110 @@ function phZoom(id,delta,dir){
   else{sc=Math.max(0.5,Math.min(4,sc+delta));}
   img.dataset.scale=sc;img.dataset.tx=tx;img.dataset.ty=ty;
   img.style.transform=`scale(${sc}) translateX(${tx/sc}px) translateY(${ty/sc}px)`;
+}
+
+function buildPesoGrid(pesoRows, inicioBloque){
+  if(!pesoRows||!pesoRows.length){
+    return'<div style="color:var(--t3);font-size:12px;margin-bottom:8px;text-align:center">Sin registros de peso — pulsa "🔄 Actualizar"</div>';
+  }
+  
+  const DIAS=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+  
+  // Build a map: {semana: {diaSemana: peso}}
+  // Calculate semana from fecha
+  const fechaInicio=inicioBloque?new Date(inicioBloque):null;
+  const pesoMap={}; // {semana: {0:peso,1:peso,...}}
+  let semanas=new Set();
+  
+  pesoRows.forEach(function(p){
+    const d=new Date(p.f);
+    let sem=1;
+    if(fechaInicio){
+      const diff=Math.floor((d-fechaInicio)/(7*24*60*60*1000));
+      sem=Math.max(1,diff+1);
+    } else {
+      // Estimate semana from order
+      sem=Math.ceil((pesoRows.indexOf(p)+1)/7)||1;
+    }
+    const dow=d.getDay(); // 0=Dom,1=Lun,...6=Sáb
+    const diaSem=dow===0?6:dow-1; // Convert to 0=Lun,...6=Dom
+    if(!pesoMap[sem])pesoMap[sem]={};
+    pesoMap[sem][diaSem]=p.v;
+    semanas.add(sem);
+  });
+  
+  semanas=[...semanas].sort(function(a,b){return a-b;});
+  
+  // Calculate weekly averages and changes
+  const medias={};
+  semanas.forEach(function(sem){
+    const vals=Object.values(pesoMap[sem]||{}).filter(v=>v>0);
+    medias[sem]=vals.length?+(vals.reduce(function(a,b){return a+b;},0)/vals.length).toFixed(1):null;
+  });
+  
+  // Build table
+  var html='<div style="overflow-x:auto;margin-bottom:12px">';
+  html+='<table style="border-collapse:collapse;font-size:11.5px;min-width:600px;width:100%">';
+  
+  // Header row: días + semanas
+  html+='<thead>';
+  html+='<tr style="background:var(--az)">';
+  html+='<th style="padding:5px 8px;text-align:left;color:rgba(255,255,255,.8);font-size:10px;min-width:40px;position:sticky;left:0;background:var(--az)">Día</th>';
+  semanas.forEach(function(sem){
+    html+='<th style="padding:5px 10px;text-align:center;color:#fff;font-size:10px;min-width:65px">S'+sem+'</th>';
+  });
+  html+='</tr></thead>';
+  
+  // Body: one row per day of week
+  html+='<tbody>';
+  DIAS.forEach(function(dia,di){
+    html+='<tr style="border-bottom:1px solid var(--bor2)">';
+    html+='<td style="padding:5px 8px;font-weight:700;font-size:11px;color:var(--t2);background:var(--bg);position:sticky;left:0">'+dia+'</td>';
+    semanas.forEach(function(sem){
+      const peso=pesoMap[sem]&&pesoMap[sem][di]!=null?pesoMap[sem][di]:null;
+      const media=medias[sem];
+      let bg='transparent', color='var(--t1)', fw='400';
+      if(peso!=null){
+        fw='700';
+        // Color based on deviation from weekly average
+        if(media&&Math.abs(peso-media)<0.2){bg='rgba(13,191,111,.1)';color='var(--vd)';}
+        else if(media&&peso>media){bg='rgba(255,26,26,.08)';color='var(--rj)';}
+        else if(media&&peso<media){bg='rgba(13,191,111,.08)';color='var(--vd)';}
+      }
+      html+='<td style="padding:5px 8px;text-align:center;background:'+bg+';color:'+color+';font-weight:'+fw+'">';
+      html+=peso!=null?peso+'':'<span style="color:var(--bor)">—</span>';
+      html+='</td>';
+    });
+    html+='</tr>';
+  });
+  
+  // Media semanal row
+  html+='<tr style="background:var(--az3);border-top:2px solid var(--az4)">';
+  html+='<td style="padding:5px 8px;font-weight:700;font-size:10px;color:var(--az);background:var(--az3);position:sticky;left:0">Media</td>';
+  semanas.forEach(function(sem){
+    const m=medias[sem];
+    html+='<td style="padding:5px 8px;text-align:center;font-weight:800;font-size:12px;color:var(--az)">'+(m!=null?m+'':'—')+'</td>';
+  });
+  html+='</tr>';
+  
+  // Cambio semanal row
+  html+='<tr style="background:#fff">';
+  html+='<td style="padding:5px 8px;font-weight:700;font-size:10px;color:var(--t3);background:#fff;position:sticky;left:0">Cambio</td>';
+  semanas.forEach(function(sem,i){
+    const curr=medias[sem];
+    const prev=i>0?medias[semanas[i-1]]:null;
+    let cambioStr='—', col='var(--t3)';
+    if(curr!=null&&prev!=null){
+      const diff=+(curr-prev).toFixed(1);
+      cambioStr=(diff>0?'+':'')+diff;
+      col=diff<0?'var(--vd)':diff>0?'var(--rj)':'var(--t3)';
+    }
+    html+='<td style="padding:5px 8px;text-align:center;font-weight:700;font-size:11px;color:'+col+'">'+cambioStr+'</td>';
+  });
+  html+='</tr>';
+  
+  html+='</tbody></table></div>';
+  return html;
 }
 
 function buildMedidasHTML(c){
