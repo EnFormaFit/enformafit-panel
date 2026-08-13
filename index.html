@@ -2085,27 +2085,37 @@ function cpImportConfirm(sem,idx){
   rutPush();
   if(!RUTINAS[cliId])RUTINAS[cliId]={};
   if(!RUTINAS[cliId][sem])RUTINAS[cliId][sem]={};
-  // Apply each day — mutate DIAS_BASE in place (no spread)
-  DIAS_BASE.forEach((d,di)=>{
-    const dayEjs=rutData[String(di)];
-    if(dayEjs===undefined)return; // day not in rutina, leave as is
-    if(!dayEjs||dayEjs.length===0){
-      RUTINAS[cliId][sem][di]=[];
-      DIAS_BASE[di].rest=true;
-      DIAS_BASE[di].tipo='Descanso';
-    } else {
-      RUTINAS[cliId][sem][di]=dayEjs.map(e=>({
-        nom:e.nom,sets:e.sets,reps:String(e.reps),
-        rir:e.rir,rest:e.rest,url:e.url||'',acl:e.acl||''
-      }));
-      DIAS_BASE[di].rest=false;
-    }
+  // Determine target semanas from radio selection
+  const targetRadio=document.querySelector('input[name="imp-target"]:checked');
+  const target=targetRadio?targetRadio.value:'sem';
+  const totalSems=byId(cliId)?.semTotal||14;
+  let semsToApply=[];
+  if(target==='all'){semsToApply=Array.from({length:totalSems},(_,i)=>i+1);}
+  else if(target==='from'){semsToApply=Array.from({length:totalSems-sem+1},(_,i)=>sem+i);}
+  else{semsToApply=[sem];}
+
+  semsToApply.forEach(s=>{
+    if(!RUTINAS[cliId][s])RUTINAS[cliId][s]={};
+    DIAS_BASE.forEach((d,di)=>{
+      const dayEjs=rutData[String(di)];
+      if(dayEjs===undefined)return;
+      if(!dayEjs||dayEjs.length===0){
+        RUTINAS[cliId][s][di]=[];
+        if(s===sem){DIAS_BASE[di].rest=true;DIAS_BASE[di].tipo='Descanso';}
+      } else {
+        RUTINAS[cliId][s][di]=dayEjs.map(e=>({
+          nom:e.nom,sets:e.sets,reps:String(e.reps),
+          rir:e.rir,rest:e.rest,url:e.url||'',acl:e.acl||''
+        }));
+        if(s===sem)DIAS_BASE[di].rest=false;
+      }
+    });
   });
   picker.remove();
-  ENT_VIEW='grid';
-  RUT_SEM=sem;
+  document.querySelectorAll('[style*="rgba(0,0,0,.4)"]').forEach(el=>el.remove());
+  ENT_VIEW='grid';RUT_SEM=sem;
   if(VIEW==='client')setTab('entreno');else render();
-  toast('✅ '+code+' importada en S'+sem,'vd');
+  toast('✅ '+code+' aplicada en '+(semsToApply.length>1?semsToApply.length+' semanas':'S'+sem),'vd');
 }
 
 // ═══ TAB: EDITAR ═══
