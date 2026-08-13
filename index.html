@@ -1218,6 +1218,74 @@ function phZoom(id,delta,dir){
   img.style.transform=`scale(${sc}) translateX(${tx/sc}px) translateY(${ty/sc}px)`;
 }
 
+function buildMedidasHTML(c){
+  // Try to get medidas from revision data or from API
+  const rev=c.revision;
+  const medidas=rev?.medidas||c.medidasS0||null;
+  
+  // Load from API if not available
+  if(!medidas&&API_TOKEN){
+    apiCall('GET','/api/entreno/revisiones/'+c.id)
+      .then(rows=>{
+        if(!rows||!rows.length)return;
+        // Find S0 revision
+        const s0=rows.find(r=>r.semana===0);
+        if(!s0||!s0.medidas)return;
+        const el=document.getElementById('medidas-'+c.id);
+        if(el)el.outerHTML=renderMedidasTable(s0.medidas, rows);
+      }).catch(()=>{});
+  }
+  
+  return'<div id="medidas-'+c.id+'">'+(medidas?renderMedidasTable(medidas,null):'<div style="text-align:right;margin-bottom:8px"><button class="btn bo bs" onclick="loadMedidasCliente(''+c.id+'')">📏 Cargar medidas desde BD</button></div>')+'</div>';
+}
+
+function renderMedidasTable(medidas, allRevs){
+  if(!medidas||typeof medidas!=='object')return'';
+  // Get semana keys
+  const semanas=new Set();
+  Object.values(medidas).forEach(v=>{if(typeof v==='object')Object.keys(v).forEach(k=>semanas.add(k));});
+  const semArr=[...semanas].sort();
+  if(!semArr.length)return'';
+  
+  let html='<div class="sec-t" style="margin-bottom:6px">Medidas corporales (cm)</div>';
+  html+='<div style="overflow-x:auto;margin-bottom:12px"><table style="border-collapse:collapse;font-size:12px;width:100%">';
+  html+='<thead><tr style="background:var(--az)"><th style="padding:5px 10px;text-align:left;color:rgba(255,255,255,.8);font-size:10px">Medida</th>';
+  semArr.forEach(s=>{html+='<th style="padding:5px 10px;text-align:center;color:#fff;font-size:10px">'+s+'</th>';});
+  html+='<th style="padding:5px 10px;text-align:center;color:rgba(255,255,255,.8);font-size:10px">Cambio</th></tr></thead><tbody>';
+  
+  Object.entries(medidas).forEach(function([nom,vals],i){
+    const bg=i%2===0?'#fff':'var(--bg)';
+    html+='<tr style="border-bottom:1px solid var(--bor2);background:'+bg+'">';
+    html+='<td style="padding:5px 10px;font-size:11.5px;color:var(--t2)">'+nom+'</td>';
+    const numVals=semArr.map(s=>typeof vals==='object'&&vals[s]!=null?vals[s]:null);
+    numVals.forEach(v=>{
+      html+='<td style="padding:5px 10px;text-align:center;font-weight:600">'+(v!=null?v+'cm':'—')+'</td>';
+    });
+    // Cambio total
+    const first=numVals.find(v=>v!=null);
+    const last=[...numVals].reverse().find(v=>v!=null);
+    const cambio=first!=null&&last!=null&&first!==last?+(last-first).toFixed(1):null;
+    const col=cambio===null?'var(--t3)':cambio<0?'var(--vd)':cambio>0?'var(--rj)':'var(--t3)';
+    html+='<td style="padding:5px 10px;text-align:center;font-weight:700;color:'+col+'">'+(cambio!==null?(cambio>0?'+':'')+cambio+'cm':'—')+'</td>';
+    html+='</tr>';
+  });
+  html+='</tbody></table></div>';
+  return html;
+}
+
+function loadMedidasCliente(cliId){
+  apiCall('GET','/api/entreno/revisiones/'+cliId)
+    .then(rows=>{
+      if(!rows||!rows.length){toast('Sin medidas en BD','');return;}
+      const s0=rows.find(r=>r.semana===0);
+      if(!s0||!s0.medidas){toast('Sin medidas S0','');return;}
+      const el=document.getElementById('medidas-'+cliId);
+      if(el)el.innerHTML=renderMedidasTable(
+        typeof s0.medidas==='string'?JSON.parse(s0.medidas):s0.medidas, rows);
+      toast('Medidas cargadas','vd');
+    }).catch(e=>toast('Error: '+e.message,'rj'));
+}
+
 function loadPesosCliente(cliId){
   apiCall('GET',`/api/entreno/pesos/${cliId}`)
     .then(rows=>{
