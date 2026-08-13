@@ -1236,7 +1236,8 @@ function buildMedidasHTML(c){
       }).catch(()=>{});
   }
   
-  return'<div id="medidas-'+c.id+'">'+(medidas?renderMedidasTable(medidas,null):'<div style="text-align:right;margin-bottom:8px"><button class="btn bo bs" onclick="loadMedidasCliente(''+c.id+'')">📏 Cargar medidas desde BD</button></div>')+'</div>';
+  const btnHTML='<div style="text-align:right;margin-bottom:8px"><button class="btn bo bs" onclick="loadMedidasCliente(this.dataset.id)" data-id="'+c.id+'">📏 Cargar medidas desde BD</button></div>';
+  return'<div id="medidas-'+c.id+'">'+(medidas?renderMedidasTable(medidas,null):btnHTML)+'</div>';
 }
 
 function renderMedidasTable(medidas, allRevs){
