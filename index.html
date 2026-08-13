@@ -1450,6 +1450,18 @@ function getNutState(c){
       bdMeals.push({id:mKey,nom:mealNoms[mKey]||mKey,items:enriched});
     });
     if(bdMeals.length>0){
+      // Add fruta option to desayuno, comida, cena — reduce hidrat by 20g
+      ['desayuno','comida','cena'].forEach(function(mKey){
+        var meal=bdMeals.find(function(m){return m.id===mKey;});
+        if(!meal)return;
+        var hasFruta=meal.items.some(function(it){return it.cat==='fruta';});
+        var hidratItem=meal.items.find(function(it){return it.cat==='hidrat';});
+        if(!hasFruta&&hidratItem){
+          if(hidratItem.cantidad>20)hidratItem.cantidad=+(hidratItem.cantidad-20).toFixed(0);
+          meal.items.push({cat:'fruta',catNom:'Fruta',nom:'Manzana (o equivalente)',
+            cantidad:210,u:'g',p100:0.3,c100:13,g100:0.2,k100:52});
+        }
+      });
       NE[c.id]={meals:bdMeals};
       return NE[c.id];
     }
