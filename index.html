@@ -1906,12 +1906,17 @@ function tEntrenoGrid(c){
   // so that different semanas can have different day structures
   const semRutData=RUTINAS[RUT_CLI]?.[RUT_SEM];
   const trainingDays=DIAS_BASE.map((d,di)=>{
-    // If this semana has explicit data, use it
     if(semRutData&&semRutData[di]!==undefined){
+      // This semana has explicit data for this day
       const ejes=semRutData[di];
       return{...d,di,rest:ejes.length===0,ejes};
     }
-    // Otherwise fall back to getRut (which uses rutinaDias or EJ_DEF)
+    // No explicit data: use client's rutinaDias or DIAS_BASE
+    const c=byId(RUT_CLI);
+    if(c&&c.rutinaDias&&c.rutinaDias[String(di)]!==undefined){
+      const ejes=c.rutinaDias[String(di)];
+      return{...d,di,rest:ejes.length===0,ejes:ejes.length===0?[]:getRut(RUT_CLI,RUT_SEM,di)};
+    }
     const ejes=d.rest?[]:getRut(RUT_CLI,RUT_SEM,di);
     return{...d,di,ejes};
   });
@@ -2436,14 +2441,21 @@ function cpImportConfirm(sem,idx){
   else{semsToApply=[sem];}
 
   // Apply rutina ONLY to selected semanas
+  // Write ALL 7 days explicitly so tEntrenoGrid knows which are rest days
   semsToApply.forEach(s=>{
-    if(!RUTINAS[cliId][s])RUTINAS[cliId][s]={};
-    Object.entries(rutData).forEach(([diStr,dayEjs])=>{
-      const di=parseInt(diStr);
-      RUTINAS[cliId][s][di]=(!dayEjs||dayEjs.length===0)?[]:
-        dayEjs.map(e=>({nom:e.nom,sets:e.sets,reps:String(e.reps),
-          rir:e.rir,rest:e.rest,url:e.url||'',acl:e.acl||''}));
-    });
+    RUTINAS[cliId][s]={};
+    for(let di=0;di<7;di++){
+      const dayEjs=rutData[String(di)];
+      if(!dayEjs||dayEjs.length===0){
+        // Not in rutina or empty = rest day
+        RUTINAS[cliId][s][di]=[];
+      } else {
+        RUTINAS[cliId][s][di]=dayEjs.map(e=>({
+          nom:e.nom,sets:e.sets,reps:String(e.reps),
+          rir:e.rir,rest:e.rest,url:e.url||'',acl:e.acl||''
+        }));
+      }
+    }
   });
 
   // Update DIAS_BASE ONLY for the semana currently being viewed
