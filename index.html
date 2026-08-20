@@ -210,7 +210,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
 /* Zoom controls */
 .ph-zoom-bar{position:absolute;top:4px;right:4px;display:flex;flex-direction:column;
   gap:3px;opacity:0;transition:opacity .2s;z-index:10}
-.photo-slot:hover .ph-zoom-bar{opacity:1}
+.photo-slot:hover .ph-zoom-bar{opacity:1}.photo-slot:hover .ph-del-btn{opacity:1}
 .ph-zoom-btn{background:rgba(0,0,0,.65);border:none;border-radius:4px;color:#fff;
   font-size:13px;cursor:pointer;width:24px;height:24px;display:flex;
   align-items:center;justify-content:center;font-weight:700}
@@ -1196,10 +1196,8 @@ function tRevision(c){
                      <button class="ph-zoom-btn" onclick="phZoom('ph-${rs}-${pi}',0,'down')" title="Bajar">↓</button>
                      <button class="ph-zoom-btn" onclick="phZoom('ph-${rs}-${pi}',0,'reset')" title="Reset" style="font-size:9px">↺</button>
                    </div>
-                   <div style="display:flex;justify-content:space-between;align-items:center;padding:2px 4px">
-                     <div class="ph-lbl" style="margin:0">${revLabels[rs]||'S'+rs}</div>
-                     <button onclick="deleteRevPhoto('${c.id}',${rs},${pi})" style="background:none;border:none;cursor:pointer;color:var(--rj);font-size:13px;padding:2px 4px" title="Eliminar">🗑</button>
-                   </div>`
+                   <div class="ph-lbl">${revLabels[rs]||'S'+rs}</div>
+                   <button onclick="deleteRevPhoto('${c.id}',${rs},${pi})" style="position:absolute;top:4px;left:4px;background:rgba(220,50,50,.85);border:none;border-radius:4px;color:#fff;font-size:11px;cursor:pointer;padding:2px 5px;z-index:20;opacity:0;transition:opacity .2s" class="ph-del-btn" title="Eliminar foto">🗑</button>`
                 :`<div class="ph-empty" ${!locked?`onclick="uploadRevPhoto('${c.id}','${rs}',${pi})" style="cursor:pointer" title="Click para subir foto"`:''}><span style="font-size:20px">📷</span><span style="font-size:10px">${locked?'🔒':'📤 Subir'}</span></div>`
               }
             </div>
@@ -1694,6 +1692,7 @@ function nutSave(inp){
 }
 
 // ── UNDO (handles both quantity changes and structural) ──
+function nutRedo(){toast('Rehacer nutrición próximamente','');}
 function nutUndo(){
   if(!UNDO_NUT.length){toast('Nada más que deshacer en nutrición','');return;}
   const last=UNDO_NUT.pop();
@@ -2059,6 +2058,16 @@ function patchEjList(){
   return false;
 }
 // Full re-render fallback only when ej-list doesn't exist
+function rutRedo(){
+  if(!REDO_RUT.length){toast('Nada que rehacer','');return;}
+  const s=REDO_RUT.pop();
+  if(RUT_CLI)UNDO_RUT.push({cli:RUT_CLI,sem:RUT_SEM,dia:RUT_DIA,data:JSON.stringify(RUTINAS[RUT_CLI]||{})});
+  RUTINAS[s.cli]=JSON.parse(s.data);
+  RUT_SEM=s.sem;RUT_DIA=s.dia;
+  toast('↪ Rehecho ('+(REDO_RUT.length)+' más)','vd');
+  rutRefresh();
+}
+
 function rutRefresh(){
   if(!patchEjList()){
     if(VIEW==='client')setTab('entreno');else render();
@@ -2085,10 +2094,13 @@ function rutPush(){
   UNDO_RUT.push({cli:RUT_CLI,sem:RUT_SEM,dia:RUT_DIA,
     data:JSON.stringify(RUTINAS[RUT_CLI]||{})});
   if(UNDO_RUT.length>UNDO_MAX)UNDO_RUT.shift();
+  REDO_RUT.length=0; // clear redo on new action
 }
 function rutUndo(){
   if(!UNDO_RUT.length){toast('Nada más que deshacer','');return;}
   const s=UNDO_RUT.pop();
+  // Save current state to redo
+  if(RUT_CLI)REDO_RUT.push({cli:RUT_CLI,sem:RUT_SEM,dia:RUT_DIA,data:JSON.stringify(RUTINAS[RUT_CLI]||{})});
   const restored=JSON.parse(s.data);
   // Clean up semanas where ALL days are empty arrays (artifacts from old pre-population)
   Object.keys(restored).forEach(k=>{
@@ -2110,16 +2122,23 @@ function rutUndo(){
 document.addEventListener('keydown',e=>{
   if((e.ctrlKey||e.metaKey)&&e.key==='z'&&!e.shiftKey){
     e.preventDefault();
-    // Check active tab — if nutricion use NUT stack, else RUT stack
-    // Also: if a nut input was focused before Cmd+Z, save it first
     const activeNutInp=document.activeElement?.dataset?.cli&&document.activeElement?.dataset?.meal?document.activeElement:null;
     if(activeNutInp)nutSave(activeNutInp);
-    if(CLI_TAB==='nutricion'||UNDO_NUT.length>0&&!UNDO_RUT.length){
-      if(UNDO_NUT.length)nutUndo();
-      else toast('Nada que deshacer en nutrición','');
+    if(CLI_TAB==='editar')editUndo();
+    else if(CLI_TAB==='nutricion'||UNDO_NUT.length>0&&!UNDO_RUT.length){
+      if(UNDO_NUT.length)nutUndo();else toast('Nada que deshacer','');
     } else {
-      if(UNDO_RUT.length)rutUndo();
-      else toast('Nada que deshacer','');
+      if(UNDO_RUT.length)rutUndo();else toast('Nada que deshacer','');
+    }
+  }
+  // Ctrl+Y or Ctrl+Shift+Z = redo
+  if((e.ctrlKey||e.metaKey)&&(e.key==='y'||(e.key==='z'&&e.shiftKey))){
+    e.preventDefault();
+    if(CLI_TAB==='editar')editRedo();
+    else if(CLI_TAB==='nutricion'){
+      if(REDO_NUT&&REDO_NUT.length)nutRedo();else toast('Nada que rehacer','');
+    } else {
+      if(REDO_RUT.length)rutRedo();else toast('Nada que rehacer','');
     }
   }
 });
@@ -2614,16 +2633,61 @@ function cancelEditar(id){
   EDITING=false;
   setTab('editar');
 }
+function editUndo(){
+  if(!UNDO_EDIT.length){toast('Nada que deshacer en editar','');return;}
+  const s=UNDO_EDIT.pop();
+  const c=byId(s.id);if(!c)return;
+  if(s.k.startsWith('macros.')){
+    const mk=s.k.replace('macros.','');
+    REDO_EDIT.push({id:s.id,k:s.k,v:c.macros[mk]});
+    c.macros[mk]=s.v;
+    c.macros.kcal=Math.round((c.macros.p||0)*4+(c.macros.c||0)*4+(c.macros.g||0)*9);
+  } else {
+    REDO_EDIT.push({id:s.id,k:s.k,v:c[s.k]});
+    c[s.k]=s.v;
+  }
+  toast('↩ Deshecho','vd');
+  setTab('editar');
+}
+function editRedo(){
+  if(!REDO_EDIT.length){toast('Nada que rehacer en editar','');return;}
+  const s=REDO_EDIT.pop();
+  const c=byId(s.id);if(!c)return;
+  if(s.k.startsWith('macros.')){
+    const mk=s.k.replace('macros.','');
+    UNDO_EDIT.push({id:s.id,k:s.k,v:c.macros[mk]});
+    c.macros[mk]=s.v;
+    c.macros.kcal=Math.round((c.macros.p||0)*4+(c.macros.c||0)*4+(c.macros.g||0)*9);
+  } else {
+    UNDO_EDIT.push({id:s.id,k:s.k,v:c[s.k]});
+    c[s.k]=s.v;
+  }
+  toast('↪ Rehecho','vd');
+  setTab('editar');
+}
 function guardarEditar(id){
   window._editSnapshot=null;
   EDITING=false;
   setTab('editar');
   toast('Cambios guardados ✓','vd');
 }
-function editC(id,k,v){const c=byId(id);if(c)c[k]=(k==='inicioBloque'||isNaN(+v))?v:parseFloat(v);}
+function editC(id,k,v){
+  const c=byId(id);if(!c)return;
+  const prev=c[k];
+  const newVal=(k==='inicioBloque'||isNaN(+v))?v:parseFloat(v);
+  if(prev===newVal)return;
+  UNDO_EDIT.push({id,k,v:prev});REDO_EDIT.length=0;
+  if(UNDO_EDIT.length>UNDO_MAX)UNDO_EDIT.shift();
+  c[k]=newVal;
+}
 function editM(id,k,v){
   const c=byId(id);if(!c||!c.macros)return;
-  c.macros[k]=parseFloat(v)||0;
+  const prev=c.macros[k];
+  const newVal=parseFloat(v)||0;
+  if(prev===newVal)return;
+  UNDO_EDIT.push({id,k:'macros.'+k,v:prev});REDO_EDIT.length=0;
+  if(UNDO_EDIT.length>UNDO_MAX)UNDO_EDIT.shift();
+  c.macros[k]=newVal;
   // Recalcular kcal automáticamente: P×4 + C×4 + G×9
   c.macros.kcal=Math.round((c.macros.p||0)*4+(c.macros.c||0)*4+(c.macros.g||0)*9);
   // Update kcal input if visible
