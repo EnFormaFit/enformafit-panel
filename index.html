@@ -1902,7 +1902,19 @@ function tEntrenoGrid(c){
     return`<button class="sem-btn${s===RUT_SEM?' on':''}${isRev&&s!==RUT_SEM?' rev':''}${isCur?' cur':''}" onclick="RUT_SEM=${s};setTab('entreno')">S${s}${isRev?'📋':''}${isCur?' 📍':''}</button>`;
   }).join('');
 
-  const trainingDays=DIAS_BASE.map((d,di)=>({...d,di,ejes:d.rest?[]:getRut(RUT_CLI,RUT_SEM,di)}));
+  // Derive training days from RUTINAS for this specific semana
+  // so that different semanas can have different day structures
+  const semRutData=RUTINAS[RUT_CLI]?.[RUT_SEM];
+  const trainingDays=DIAS_BASE.map((d,di)=>{
+    // If this semana has explicit data, use it
+    if(semRutData&&semRutData[di]!==undefined){
+      const ejes=semRutData[di];
+      return{...d,di,rest:ejes.length===0,ejes};
+    }
+    // Otherwise fall back to getRut (which uses rutinaDias or EJ_DEF)
+    const ejes=d.rest?[]:getRut(RUT_CLI,RUT_SEM,di);
+    return{...d,di,ejes};
+  });
   const trainOnly=trainingDays.filter(d=>!d.rest);
   const restOnly=trainingDays.filter(d=>d.rest);
   const maxEj=Math.max(...trainOnly.map(d=>d.ejes.length),0);
@@ -2024,12 +2036,7 @@ function rutUndo(){
   const s=UNDO_RUT.pop();
   RUTINAS[s.cli]=JSON.parse(s.data);
   RUT_SEM=s.sem;RUT_DIA=s.dia;
-  // Restore DIAS_BASE for the restored semana
-  const semData=RUTINAS[s.cli][s.sem]||{};
-  DIAS_BASE.forEach((d,di)=>{
-    const ejes=semData[di];
-    if(ejes!==undefined){d.rest=ejes.length===0;if(d.rest)d.tipo='Descanso';}
-  });
+  // Don't touch DIAS_BASE — tEntrenoGrid derives days from RUTINAS directly
   toast('↩ Deshecho ('+(UNDO_RUT.length)+' más)','vd');
   rutRefresh();
 }
