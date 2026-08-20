@@ -2039,9 +2039,19 @@ function rutPush(){
 function rutUndo(){
   if(!UNDO_RUT.length){toast('Nada más que deshacer','');return;}
   const s=UNDO_RUT.pop();
-  RUTINAS[s.cli]=JSON.parse(s.data);
+  const restored=JSON.parse(s.data);
+  // Clean up semanas where ALL days are empty arrays (artifacts from old pre-population)
+  Object.keys(restored).forEach(k=>{
+    if(k==='__logs')return;
+    const sem=restored[k];
+    if(typeof sem==='object'&&!Array.isArray(sem)){
+      const days=Object.values(sem);
+      const allEmpty=days.length>0&&days.every(d=>Array.isArray(d)&&d.length===0);
+      if(allEmpty)delete restored[k];
+    }
+  });
+  RUTINAS[s.cli]=restored;
   RUT_SEM=s.sem;RUT_DIA=s.dia;
-  // Don't touch DIAS_BASE — tEntrenoGrid derives days from RUTINAS directly
   toast('↩ Deshecho ('+(UNDO_RUT.length)+' más)','vd');
   rutRefresh();
 }
