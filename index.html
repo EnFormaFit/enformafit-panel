@@ -650,6 +650,7 @@ let EDITING=false;
 
 // ═══ UNDO STACKS (module-level, persist through re-renders) ═══
 const UNDO_RUT=[];   // rutinas undo stack
+function fmt(n,dec){if(n==null||isNaN(parseFloat(n)))return'—';return Number(n).toFixed(dec!=null?dec:1).replace('.',',');}
 const UNDO_NUT=[];   // nutrition undo stack
 const UNDO_MAX=50;
 
@@ -807,7 +808,10 @@ function renderClient(ct){
   const fns={resumen:tResumen,nutricion:tNutricion,entreno:tEntreno,checkin:tCheckin,revision:tRevision,editar:tEditar};
   ct.innerHTML=`<div class="fs">
     <div class="fs-hd">
+      <div style="display:flex;align-items:center;gap:6px">
       <button class="fs-back" onclick="closeC()">← Volver</button>
+      <a href="https://enformafit.github.io/enformafit-app/" target="_blank" class="btn bo bs" style="font-size:11px;padding:4px 8px" title="Ver app como cliente">👁</a>
+    </div>
       <div class="fs-cav" style="background:${col}">${c.init}</div>
       <div style="flex:1;min-width:0">
         <div class="fs-nom">${c.nom}</div>
