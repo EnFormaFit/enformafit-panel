@@ -1964,13 +1964,13 @@ function tEntrenoGrid(c){
 
 // ═══ RUTINAS EDITOR ═══
 function getRut(cliId,sem,dia){
-  if(!RUTINAS[cliId])RUTINAS[cliId]={};
+  if(!RUTINAS[cliId])RUTINAS[cliId]={__logs:{}};
   if(!RUTINAS[cliId].__logs)RUTINAS[cliId].__logs={};
   if(!RUTINAS[cliId][sem])RUTINAS[cliId][sem]={};
   if(RUTINAS[cliId][sem][dia]===undefined){
-    // Try to get from client's rutinaDias first
+    // Fallback: rutinaDias from BD (same for all semanas unless overridden)
     const c=byId(cliId);
-    if(c&&c.rutinaDias&&c.rutinaDias[String(dia)]){
+    if(c&&c.rutinaDias&&c.rutinaDias[String(dia)]!==undefined){
       RUTINAS[cliId][sem][dia]=JSON.parse(JSON.stringify(c.rutinaDias[String(dia)]));
     } else {
       RUTINAS[cliId][sem][dia]=JSON.parse(JSON.stringify(EJ_DEF[dia]||[]));
@@ -2388,57 +2388,69 @@ function cpImportConfirm(sem,idx){
   const code=RUTS_ALL[idx].code;
   const rutData=RUTINAS_PARSED[code];
   if(!rutData){toast('Rutina no encontrada: '+code,'rj');picker.remove();return;}
-  // RUT_CLI might be null if called from grid view — use CLI_ID
   const cliId=RUT_CLI||CLI_ID;
   if(!cliId){toast('No hay cliente seleccionado','rj');picker.remove();return;}
   RUT_CLI=cliId;
-  rutPush();
-  if(!RUTINAS[cliId])RUTINAS[cliId]={};
-  if(!RUTINAS[cliId][sem])RUTINAS[cliId][sem]={};
-  // Determine target semanas from radio selection
+  
+  // Ensure RUTINAS[cliId] is fully initialized for ALL semanas before saving undo
+  // This way undo restores the COMPLETE state
+  if(!RUTINAS[cliId])RUTINAS[cliId]={__logs:{}};
+  const c=byId(cliId);
+  const totalSems=c?.semTotal||14;
+  // Pre-populate all semanas from rutinaDias so undo has the right baseline
+  for(let s=1;s<=totalSems;s++){
+    if(!RUTINAS[cliId][s]){
+      RUTINAS[cliId][s]={};
+      if(c&&c.rutinaDias){
+        Object.entries(c.rutinaDias).forEach(([di,ejes])=>{
+          RUTINAS[cliId][s][parseInt(di)]=JSON.parse(JSON.stringify(ejes));
+        });
+      }
+    }
+  }
+  
+  // Save FULL state for undo BEFORE making any changes (single push, no double)
+  UNDO_RUT.push({cli:cliId,sem:RUT_SEM,dia:RUT_DIA,
+    data:JSON.stringify(RUTINAS[cliId])});
+  if(UNDO_RUT.length>UNDO_MAX)UNDO_RUT.shift();
+
+  // Determine target semanas
   const targetRadio=document.querySelector('input[name="imp-target"]:checked');
   const target=targetRadio?targetRadio.value:'sem';
-  const totalSems=byId(cliId)?.semTotal||14;
   let semsToApply=[];
   if(target==='all'){semsToApply=Array.from({length:totalSems},(_,i)=>i+1);}
   else if(target==='from'){semsToApply=Array.from({length:totalSems-sem+1},(_,i)=>sem+i);}
   else{semsToApply=[sem];}
 
-  // Save full state for undo (all affected semanas)
-  const preImportState=JSON.parse(JSON.stringify(RUTINAS[cliId]||{}));
-  UNDO_RUT.push({cli:cliId,sem:RUT_SEM,dia:RUT_DIA,
-    data:JSON.stringify(RUTINAS[cliId]||{})});
-  if(UNDO_RUT.length>UNDO_MAX)UNDO_RUT.shift();
-
+  // Apply rutina ONLY to selected semanas
   semsToApply.forEach(s=>{
-    if(!RUTINAS[cliId])RUTINAS[cliId]={};
     if(!RUTINAS[cliId][s])RUTINAS[cliId][s]={};
-    // Apply only days that exist in rutData — don't touch DIAS_BASE (global state)
     Object.entries(rutData).forEach(([diStr,dayEjs])=>{
       const di=parseInt(diStr);
-      if(!dayEjs||dayEjs.length===0){
-        RUTINAS[cliId][s][di]=[];
-      } else {
-        RUTINAS[cliId][s][di]=dayEjs.map(e=>({
-          nom:e.nom,sets:e.sets,reps:String(e.reps),
-          rir:e.rir,rest:e.rest,url:e.url||'',acl:e.acl||''
-        }));
-      }
+      RUTINAS[cliId][s][di]=(!dayEjs||dayEjs.length===0)?[]:
+        dayEjs.map(e=>({nom:e.nom,sets:e.sets,reps:String(e.reps),
+          rir:e.rir,rest:e.rest,url:e.url||'',acl:e.acl||''}));
     });
   });
 
-  // Update DIAS_BASE only for the currently viewed semana
-  Object.entries(rutData).forEach(([diStr,dayEjs])=>{
-    const di=parseInt(diStr);
-    DIAS_BASE[di].rest=(!dayEjs||dayEjs.length===0);
-    if(DIAS_BASE[di].rest)DIAS_BASE[di].tipo='Descanso';
+  // Update DIAS_BASE ONLY for the semana currently being viewed
+  // Reset all days first, then apply rutData for current sem
+  const currSemData=RUTINAS[cliId][sem]||{};
+  DIAS_BASE.forEach((d,di)=>{
+    const ejes=currSemData[di];
+    if(ejes===undefined){
+      // Day not in rutina — leave as is
+    } else {
+      d.rest=ejes.length===0;
+      if(d.rest)d.tipo='Descanso';
+    }
   });
 
   picker.remove();
   document.querySelectorAll('[style*="rgba(0,0,0,.4)"]').forEach(el=>el.remove());
   ENT_VIEW='grid';RUT_SEM=sem;
   if(VIEW==='client')setTab('entreno');else render();
-  toast('✅ '+code+' aplicada en '+(semsToApply.length>1?semsToApply.length+' semanas':'S'+sem)+' — Ctrl+Z para deshacer','vd');
+  toast('✅ '+code+' en '+(semsToApply.length>1?semsToApply.length+' semanas':'S'+sem)+' — Ctrl+Z para deshacer','vd');
 }
 
 // ═══ TAB: EDITAR ═══
