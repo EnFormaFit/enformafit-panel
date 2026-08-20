@@ -1113,7 +1113,13 @@ function tRevision(c){
   <div class="sec-t" style="margin-bottom:6px">Registro de pesos <button class="btn bo bs" style="float:right;margin-top:-4px" onclick="loadPesosCliente('${c.id}')">🔄 Actualizar</button></div>
   ${buildPesoGrid(c.histPesos&&c.histPesos.length?c.histPesos:[],c.inicioBloque,c.semana)}`;
 
-  if(!rev&&c.semana!==nextRev)return`${statsH}<div style="text-align:center;padding:30px;color:var(--t3)"><div style="font-size:48px;margin-bottom:12px">📅</div><div style="font-size:16px;font-weight:700">Próxima revisión: S${nextRev}</div><div style="font-size:13px;margin-top:6px">Semana actual: S${c.semana}</div></div>`;
+  // Auto-load pesos if empty
+  if(!c.histPesos||!c.histPesos.length){
+    if(API_TOKEN)apiCall('GET','/api/entreno/pesos/'+c.id).then(rows=>{
+      if(rows&&rows.length){c.histPesos=rows.map(r=>({f:new Date(r.fecha).toISOString().split('T')[0],v:parseFloat(r.peso)}));setTab('revision');}
+    }).catch(()=>{});
+  }
+  if(!rev&&c.semana!==nextRev)return`${statsH}${buildMedidasHTML(c)}<div style="text-align:center;padding:30px;color:var(--t3)"><div style="font-size:48px;margin-bottom:12px">📅</div><div style="font-size:16px;font-weight:700">Próxima revisión: S${nextRev}</div><div style="font-size:13px;margin-top:6px">Semana actual: S${c.semana}</div></div>`;
 
   // FOTOS: cada postura en su fila, S0 vs actual lado a lado
   // object-fit:cover + object-position: permite crop manual
@@ -1149,7 +1155,7 @@ function tRevision(c){
                      <button class="ph-zoom-btn" onclick="phZoom('ph-${rs}-${pi}',0,'reset')" title="Reset" style="font-size:9px">↺</button>
                    </div>
                    <div class="ph-lbl">${revLabels[rs]||'S'+rs}</div>`
-                :`<div class="ph-empty" ${!locked&&isActive?`onclick="uploadRevPhoto('${c.id}','${rs}',${pi})" style="cursor:pointer" title="Click para subir foto"`:''}><span style="font-size:20px">📷</span><span style="font-size:10px">${locked?'🔒':isActive?'📤 Subir foto':revLabels[rs]||'S'+rs}</span></div>`
+                :`<div class="ph-empty" ${!locked?`onclick="uploadRevPhoto('${c.id}','${rs}',${pi})" style="cursor:pointer" title="Click para subir foto"`:''}><span style="font-size:20px">📷</span><span style="font-size:10px">${locked?'🔒':'📤 Subir'}</span></div>`
               }
             </div>
           </div>`;
@@ -1160,32 +1166,18 @@ function tRevision(c){
 
   // Medidas en tabla horizontal comparativa
   const MEDS=[['peso','Peso','kg'],['pecho','Pecho','cm'],['cintura','Cintura','cm'],['cadera','Cadera','cm'],['biceps','Bíceps','cm'],['muslo','Muslo','cm'],['gemelo','Gemelo','cm']];
-  const medsH=`<div class="sec-t">Medidas — comparativa</div>
-  <div style="overflow-x:auto;margin-bottom:14px">
-    <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:400px">
-      <thead><tr style="background:var(--bg)">
-        <th style="padding:7px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase">Medida</th>
-        <th style="padding:7px 10px;text-align:center;font-size:10px;font-weight:700;color:var(--vd)">S0</th>
-        <th style="padding:7px 10px;text-align:center;font-size:10px;font-weight:700;color:var(--az2)">S${nextRev}</th>
-        <th style="padding:7px 10px;text-align:center;font-size:10px;font-weight:700;color:var(--t3)">Cambio</th>
-      </tr></thead>
-      <tbody>${MEDS.map(([k,l,u])=>{
-        const v1=rev?.medidas?.[k];
-        if(!v1)return'';
-        return`<tr style="border-bottom:1px solid var(--bor2)">
-          <td style="padding:8px 10px;font-weight:600">${l}</td>
-          <td style="padding:8px 10px;text-align:center;color:var(--t3)">—</td>
-          <td style="padding:8px 10px;text-align:center;font-weight:700;color:var(--az2)">${v1}${u}</td>
-          <td style="padding:8px 10px;text-align:center;color:var(--t3)">—</td>
-        </tr>`;
-      }).join('')}</tbody>
-    </table>
-  </div>`;
+  const medsH=buildMedidasHTML(c);
 
-  const respsH=rev?.preguntas&&Object.values(rev.preguntas).some(Boolean)?`<div class="sec-t">Respuestas del cliente</div>
+  const respsH=`<div class="sec-t" style="margin-bottom:8px">Preguntas de revisión</div>
   <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
-    ${PP.map((q,i)=>rev.preguntas[i]?`<div style="background:var(--bg);border-radius:8px;padding:10px 13px;border-left:3px solid var(--az2)"><div style="font-size:10.5px;font-weight:700;color:var(--t3);margin-bottom:4px">${q}</div><div style="font-size:13px;line-height:1.5">${rev.preguntas[i]}</div></div>`:'').join('')}
-  </div>`:'';
+    ${PP.map((q,i)=>{
+      const ans=rev?.preguntas?.[i]||'';
+      return`<div style="background:var(--bg);border-radius:8px;padding:10px;border:1px solid var(--bor)">
+        <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:4px">P${i+1}. ${q[0]}</div>
+        <div style="font-size:13px;color:${ans?'var(--t1)':'var(--bor)'}">${ans||'Sin respuesta aún'}</div>
+      </div>`;
+    }).join('')}
+  </div>`;
 
   const fbH=rev?`<div class="sec-t">Tu feedback</div>
   <div style="border:1.5px solid var(--az2);border-radius:8px;padding:11px;margin-bottom:10px">
