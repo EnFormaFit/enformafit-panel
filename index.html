@@ -2410,24 +2410,12 @@ function cpImportConfirm(sem,idx){
   if(!cliId){toast('No hay cliente seleccionado','rj');picker.remove();return;}
   RUT_CLI=cliId;
   
-  // Ensure RUTINAS[cliId] is fully initialized for ALL semanas before saving undo
-  // This way undo restores the COMPLETE state
   if(!RUTINAS[cliId])RUTINAS[cliId]={__logs:{}};
   const c=byId(cliId);
   const totalSems=c?.semTotal||14;
-  // Pre-populate all semanas from rutinaDias so undo has the right baseline
-  for(let s=1;s<=totalSems;s++){
-    if(!RUTINAS[cliId][s]){
-      RUTINAS[cliId][s]={};
-      if(c&&c.rutinaDias){
-        Object.entries(c.rutinaDias).forEach(([di,ejes])=>{
-          RUTINAS[cliId][s][parseInt(di)]=JSON.parse(JSON.stringify(ejes));
-        });
-      }
-    }
-  }
-  
-  // Save FULL state for undo BEFORE making any changes (single push, no double)
+
+  // Save current state for undo BEFORE any changes
+  // Only save what's currently in memory (don't pre-populate other semanas)
   UNDO_RUT.push({cli:cliId,sem:RUT_SEM,dia:RUT_DIA,
     data:JSON.stringify(RUTINAS[cliId])});
   if(UNDO_RUT.length>UNDO_MAX)UNDO_RUT.shift();
