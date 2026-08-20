@@ -1344,35 +1344,36 @@ function buildMedidasHTML(c){
   return'<div id="medidas-'+c.id+'">'+(medidas?renderMedidasTable(medidas):btn)+'</div>';
 }
 
-function renderMedidasTable(medidas, allRevs){
+function renderMedidasTable(medidas){
   if(!medidas||typeof medidas!=='object')return'';
-  // Get semana keys
-  const semanas=new Set();
-  Object.values(medidas).forEach(v=>{if(typeof v==='object')Object.keys(v).forEach(k=>semanas.add(k));});
-  const semArr=[...semanas].sort((a,b)=>parseInt(a.replace('S',''))-parseInt(b.replace('S','')));
+  var MEDS_ORDER=['Hombros','Pecho','Brazo der','Brazo izq','Abdomen','Muslo der','Muslo izq','Gemelo der','Gemelo izq'];
+  var semanas=new Set();
+  Object.values(medidas).forEach(function(v){if(typeof v==='object')Object.keys(v).forEach(function(k){semanas.add(k);});});
+  var semArr=[...semanas].sort(function(a,b){return parseInt(a.replace('S',''))-parseInt(b.replace('S',''));});
   if(!semArr.length)return'';
-  
-  let html='<div class="sec-t" style="margin-bottom:6px">Medidas corporales (cm)</div>';
+  var entries=Object.entries(medidas);
+  entries.sort(function(a,b){
+    var ai=MEDS_ORDER.findIndex(function(m){return a[0].toLowerCase().includes(m.toLowerCase().split(' ')[0]);});
+    var bi=MEDS_ORDER.findIndex(function(m){return b[0].toLowerCase().includes(m.toLowerCase().split(' ')[0]);});
+    return(ai<0?99:ai)-(bi<0?99:bi);
+  });
+  var html='<div class="sec-t" style="margin-bottom:6px">Medidas corporales (cm)</div>';
   html+='<div style="overflow-x:auto;margin-bottom:12px"><table style="border-collapse:collapse;font-size:12px;width:100%">';
-  html+='<thead><tr style="background:var(--az)"><th style="padding:5px 10px;text-align:left;color:rgba(255,255,255,.8);font-size:10px">Medida</th>';
-  semArr.forEach(s=>{html+='<th style="padding:5px 10px;text-align:center;color:#fff;font-size:10px">'+s+'</th>';});
-  html+='<th style="padding:5px 10px;text-align:center;color:rgba(255,255,255,.8);font-size:10px">Cambio</th></tr></thead><tbody>';
-  
-  Object.entries(medidas).forEach(function([nom,vals],i){
-    const bg=i%2===0?'#fff':'var(--bg)';
-    html+='<tr style="border-bottom:1px solid var(--bor2);background:'+bg+'">';
-    html+='<td style="padding:5px 10px;font-size:11.5px;color:var(--t2)">'+nom+'</td>';
-    const numVals=semArr.map(s=>typeof vals==='object'&&vals[s]!=null?vals[s]:null);
-    numVals.forEach(v=>{
-      html+='<td style="padding:5px 10px;text-align:center;font-weight:600">'+(v!=null?v+'cm':'—')+'</td>';
-    });
-    // Cambio total
-    const first=numVals.find(v=>v!=null);
-    const last=[...numVals].reverse().find(v=>v!=null);
-    const cambio=first!=null&&last!=null&&first!==last?+(last-first).toFixed(1):null;
-    const col=cambio===null?'var(--t3)':cambio<0?'var(--vd)':cambio>0?'var(--rj)':'var(--t3)';
-    html+='<td style="padding:5px 10px;text-align:center;font-weight:700;color:'+col+'">'+(cambio!==null?(cambio>0?'+':'')+cambio+'cm':'—')+'</td>';
-    html+='</tr>';
+  html+='<thead><tr style="background:var(--az)"><th style="padding:5px 10px;text-align:left;color:rgba(255,255,255,.8);font-size:10px;min-width:140px">Medida</th>';
+  semArr.forEach(function(s){html+='<th style="padding:5px 12px;text-align:right;color:#fff;font-size:11px;min-width:55px">'+s+'</th>';});
+  html+='<th style="padding:5px 10px;text-align:right;color:rgba(255,255,255,.8);font-size:10px">Cambio</th></tr></thead><tbody>';
+  entries.forEach(function(entry,i){
+    var nom=entry[0],vals=entry[1];
+    var bg=i%2===0?'#fff':'var(--bg)';
+    var shortNom=nom.replace(/\s*\([^)]*\)/g,'').trim();
+    html+='<tr style="border-bottom:1px solid var(--bor2);background:'+bg+'"><td style="padding:6px 10px;font-size:12px;color:var(--t2);font-weight:600">'+shortNom+'</td>';
+    var numVals=semArr.map(function(s){return typeof vals==='object'&&vals[s]!=null?vals[s]:null;});
+    numVals.forEach(function(v){html+='<td style="padding:6px 12px;text-align:right;font-weight:700;font-size:13px">'+(v!=null?v:'<span style="color:var(--bor2)">—</span>')+'</td>';});
+    var first=numVals.find(function(v){return v!=null;});
+    var last=[...numVals].reverse().find(function(v){return v!=null;});
+    var cambio=first!=null&&last!=null&&first!==last?+(last-first).toFixed(1):null;
+    var col=cambio===null?'var(--t3)':cambio<0?'var(--vd)':cambio>0?'var(--rj)':'var(--t3)';
+    html+='<td style="padding:6px 10px;text-align:right;font-weight:700;color:'+col+'">'+(cambio!==null?(cambio>0?'+':'')+cambio:'—')+'</td></tr>';
   });
   html+='</tbody></table></div>';
   return html;
