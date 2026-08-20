@@ -775,18 +775,16 @@ function setTab(t){
         c._revLoaded=true;
         apiCall('GET','/api/entreno/revisiones/'+CLI_ID).then(rows=>{
           if(rows&&rows.length){
-            // Build revision object from BD data
-            const medidas={};
+            const medidas={};const fotos=c.revision?.fotos||{};
             rows.forEach(r=>{
-              const meds=typeof r.medidas==='string'?JSON.parse(r.medidas||'{}'):r.medidas||{};
-              Object.entries(meds).forEach(([k,v])=>{
-                if(!medidas[k])medidas[k]={};
-                if(typeof v==='object')Object.assign(medidas[k],v);
-                else medidas[k]['S'+r.semana]=v;
+              const meds=typeof r.medidas==='string'?JSON.parse(r.medidas||'{}'):(r.medidas||{});
+              Object.entries(meds).forEach(([nom,vals])=>{
+                if(!medidas[nom])medidas[nom]={};
+                if(typeof vals==='object'&&vals!==null)Object.assign(medidas[nom],vals);
+                else if(vals!=null)medidas[nom]['S'+r.semana]=vals;
               });
             });
-            c.revision={medidas,preguntas:{},fotos:{}};
-            render();
+            c.revision={medidas,preguntas:{},fotos};render();
           }
         }).catch(()=>{});
       }
@@ -1170,16 +1168,18 @@ function tRevision(c){
       <div class="rev-photos-row" style="grid-template-columns:repeat(${allRevSems.length},1fr)">
         ${allRevSems.map((rs,ri)=>{
           const isActive=rs===c.nextRev;
-          const fotoKey=rs===0?'s0_'+pi:'rev_'+rs+'_'+pi;
+          const fotoKey='s'+rs+'_'+pi;
           const hasFoto=rev?.fotos?.[fotoKey];
           const locked=rs>c.semana&&rs!==0;
           return`<div>
             <div style="font-size:9px;font-weight:700;color:#fff;background:${revCols[ri]||'var(--az2)'};padding:3px 8px;border-radius:4px;display:inline-block;margin-bottom:4px;opacity:${locked?.5:1}">${revLabels[rs]||'S'+rs}${isActive?' ●':''}</div>
             <div class="photo-slot${hasFoto?' has':''}${locked?' locked':''}">
               ${hasFoto
-                ?`<div class="ph-img-wrap" id="phw-${rs}-${pi}">
+                ?`<div class="ph-img-wrap" id="phw-${rs}-${pi}" style="cursor:grab"
+                     onmousedown="phStartDrag(event,'ph-${rs}-${pi}')"
+                     ontouchstart="phStartDrag(event,'ph-${rs}-${pi}')">
                      <img src="${hasFoto}" id="ph-${rs}-${pi}"
-                       style="transform:scale(${1}) translateX(0px) translateY(0px)"
+                       style="transform:scale(1) translateX(0px) translateY(0px)"
                        data-scale="1" data-tx="0" data-ty="0">
                    </div>
                    <div class="ph-zoom-bar">
@@ -1214,13 +1214,14 @@ function tRevision(c){
     }).join('')}
   </div>`;
 
-  const fbH=rev?`<div class="sec-t">Tu feedback</div>
-  <div style="border:1.5px solid var(--az2);border-radius:8px;padding:11px;margin-bottom:10px">
-    <textarea id="fb-${c.id}" style="width:100%;border:none;outline:none;font-family:inherit;font-size:13px;resize:none;min-height:90px" placeholder="Escribe tu feedback para ${c.nom.split(' ')[0]}...">${rev.feedback||''}</textarea>
-  </div>
-  <button class="btn bp" onclick="guardarFeedback('${c.id}')">Guardar feedback ✓</button>`:'';
+  const fbH=`<div class="sec-t" style="margin-bottom:6px">Notas del entrenador</div>
+  <div style="border:1.5px solid var(--bor);border-radius:8px;padding:10px;margin-bottom:14px">
+    <textarea id="notas-ent-${c.id}" placeholder="Observaciones privadas..."
+      style="width:100%;border:none;outline:none;font-family:inherit;font-size:13px;resize:none;min-height:60px;background:transparent"
+      onblur="guardarNotasEnt('${c.id}',this.value)">${c.notasRevision||''}</textarea>
+  </div>`;';
 
-  return`${statsH}${fotosH}${medsH}${respsH}${fbH}`;
+  return`${statsH}${medsH}${fotosH}${respsH}${fbH}`;
 }
 
 function uploadRevPhoto(cliId, rev, pose){
@@ -1232,12 +1233,11 @@ function uploadRevPhoto(cliId, rev, pose){
     // Read as base64
     const reader=new FileReader();
     reader.onload=async(ev)=>{
-      const b64=ev.target.result; // data:image/jpeg;base64,...
-      // For now store in client revision data
+      const b64=ev.target.result;
       const c=byId(cliId);if(!c)return;
-      if(!c.revision)c.revision={fotos:{}};
+      if(!c.revision)c.revision={fotos:{},medidas:{},preguntas:{}};
       if(!c.revision.fotos)c.revision.fotos={};
-      const key=rev===0?'s0_'+pose:'rev_'+rev+'_'+pose;
+      const key='s'+rev+'_'+pose;
       c.revision.fotos[key]=b64;
       toast('Foto guardada ✓','vd');
       setTab('revision');
@@ -1247,6 +1247,33 @@ function uploadRevPhoto(cliId, rev, pose){
   inp.click();
 }
 
+function deleteRevPhoto(cliId,rev,pose){
+  if(!confirm('¿Eliminar esta foto? No se puede deshacer.'))return;
+  const c=byId(cliId);if(!c||!c.revision?.fotos)return;
+  delete c.revision.fotos['s'+rev+'_'+pose];
+  toast('Foto eliminada','');setTab('revision');
+}
+function phStartDrag(e,id){
+  const img=document.getElementById(id);if(!img)return;
+  e.preventDefault();const it=e.touches;
+  const sx=it?e.touches[0].clientX:e.clientX;const sy=it?e.touches[0].clientY:e.clientY;
+  const tx=parseFloat(img.dataset.tx||0);const ty=parseFloat(img.dataset.ty||0);
+  const sc=parseFloat(img.dataset.scale||1);
+  const wrap=img.closest('.ph-img-wrap');if(wrap)wrap.style.cursor='grabbing';
+  function mv(ev){
+    const cx=it?ev.touches[0].clientX:ev.clientX;const cy=it?ev.touches[0].clientY:ev.clientY;
+    const nx=tx+(cx-sx);const ny=ty+(cy-sy);
+    img.dataset.tx=nx;img.dataset.ty=ny;
+    img.style.transform='scale('+sc+') translateX('+nx+'px) translateY('+ny+'px)';
+  }
+  function up(){
+    document.removeEventListener(it?'touchmove':'mousemove',mv);
+    document.removeEventListener(it?'touchend':'mouseup',up);
+    if(wrap)wrap.style.cursor='grab';
+  }
+  document.addEventListener(it?'touchmove':'mousemove',mv,{passive:false});
+  document.addEventListener(it?'touchend':'mouseup',up);
+}
 function phZoom(id,delta,dir){
   const img=document.getElementById(id);if(!img)return;
   let sc=parseFloat(img.dataset.scale)||1;
@@ -1306,25 +1333,9 @@ function buildPesoGrid(pesoRows,inicioBloque,semanaActual){
 
 
 function buildMedidasHTML(c){
-  // Try to get medidas from revision data or from API
-  const rev=c.revision;
-  const medidas=rev?.medidas||c.medidasS0||null;
-  
-  // Load from API if not available
-  if(!medidas&&API_TOKEN){
-    apiCall('GET','/api/entreno/revisiones/'+c.id)
-      .then(rows=>{
-        if(!rows||!rows.length)return;
-        // Find S0 revision
-        const s0=rows.find(r=>r.semana===0);
-        if(!s0||!s0.medidas)return;
-        const el=document.getElementById('medidas-'+c.id);
-        if(el)el.outerHTML=renderMedidasTable(s0.medidas, rows);
-      }).catch(()=>{});
-  }
-  
-  const btnHTML='<div style="text-align:right;margin-bottom:8px"><button class="btn bo bs" onclick="loadMedidasCliente(this.dataset.id)" data-id="'+c.id+'">📏 Cargar medidas desde BD</button></div>';
-  return'<div id="medidas-'+c.id+'">'+(medidas?renderMedidasTable(medidas,null):btnHTML)+'</div>';
+  const medidas=c.revision?.medidas&&Object.keys(c.revision.medidas).length>0?c.revision.medidas:null;
+  const btn='<div style="text-align:right;margin-bottom:8px"><button class="btn bo bs" onclick="loadMedidasCliente(this.dataset.id)" data-id="'+c.id+'">📏 Cargar medidas</button></div>';
+  return'<div id="medidas-'+c.id+'">'+(medidas?renderMedidasTable(medidas):btn)+'</div>';
 }
 
 function renderMedidasTable(medidas, allRevs){
@@ -1332,7 +1343,7 @@ function renderMedidasTable(medidas, allRevs){
   // Get semana keys
   const semanas=new Set();
   Object.values(medidas).forEach(v=>{if(typeof v==='object')Object.keys(v).forEach(k=>semanas.add(k));});
-  const semArr=[...semanas].sort();
+  const semArr=[...semanas].sort((a,b)=>parseInt(a.replace('S',''))-parseInt(b.replace('S','')));
   if(!semArr.length)return'';
   
   let html='<div class="sec-t" style="margin-bottom:6px">Medidas corporales (cm)</div>';
@@ -1384,6 +1395,7 @@ function loadPesosCliente(cliId){
     }).catch(e=>toast('Error: '+e.message,'rj'));
 }
 
+function guardarNotasEnt(cliId,txt){const c=byId(cliId);if(c){c.notasRevision=txt;}}
 function guardarFeedback(id){
   const ta=document.getElementById('fb-'+id);
   const c=byId(id);
