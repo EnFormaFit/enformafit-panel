@@ -2024,7 +2024,13 @@ function rutUndo(){
   const s=UNDO_RUT.pop();
   RUTINAS[s.cli]=JSON.parse(s.data);
   RUT_SEM=s.sem;RUT_DIA=s.dia;
-  toast(`↩ Deshecho (${UNDO_RUT.length} más)`,'vd');
+  // Restore DIAS_BASE for the restored semana
+  const semData=RUTINAS[s.cli][s.sem]||{};
+  DIAS_BASE.forEach((d,di)=>{
+    const ejes=semData[di];
+    if(ejes!==undefined){d.rest=ejes.length===0;if(d.rest)d.tipo='Descanso';}
+  });
+  toast('↩ Deshecho ('+(UNDO_RUT.length)+' más)','vd');
   rutRefresh();
 }
 
