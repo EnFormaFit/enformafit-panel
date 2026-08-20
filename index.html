@@ -757,6 +757,41 @@ function closeC(){VIEW='list';CLI_ID=null;render();}
 function setTab(t){
   CLI_TAB=t;
   if(t!=='editar')EDITING=false;
+  // Load revision data when opening revision tab
+  if(t==='revision'&&CLI_ID&&API_TOKEN){
+    const c=byId(CLI_ID);
+    if(c){
+      // Load pesos if needed
+      if(!c.histPesos||!c.histPesos.length){
+        apiCall('GET','/api/entreno/pesos/'+CLI_ID).then(rows=>{
+          if(rows&&rows.length){
+            c.histPesos=rows.map(r=>({f:new Date(r.fecha).toISOString().split('T')[0],v:parseFloat(r.peso)}));
+            render();
+          }
+        }).catch(()=>{});
+      }
+      // Load revisiones (medidas + preguntas) if needed
+      if(!c.revision&&!c._revLoaded){
+        c._revLoaded=true;
+        apiCall('GET','/api/entreno/revisiones/'+CLI_ID).then(rows=>{
+          if(rows&&rows.length){
+            // Build revision object from BD data
+            const medidas={};
+            rows.forEach(r=>{
+              const meds=typeof r.medidas==='string'?JSON.parse(r.medidas||'{}'):r.medidas||{};
+              Object.entries(meds).forEach(([k,v])=>{
+                if(!medidas[k])medidas[k]={};
+                if(typeof v==='object')Object.assign(medidas[k],v);
+                else medidas[k]['S'+r.semana]=v;
+              });
+            });
+            c.revision={medidas,preguntas:{},fotos:{}};
+            render();
+          }
+        }).catch(()=>{});
+      }
+    }
+  }
   render();
 }
 
