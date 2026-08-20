@@ -796,6 +796,9 @@ function setTab(t){
 function renderClient(ct){
   const c=byId(CLI_ID);if(!c)return;
   const col=gc(ciIdx(c));
+  // Add "Ver como cliente" button - opens app with client token
+  const verComoCliente=`<a href="https://enformafit.github.io/enformafit-app/" target="_blank" 
+    class="btn bo bs" style="font-size:11px" title="Ver la app como ve el cliente">👁 Ver app cliente</a>`;
   const tabs=c.tipo==='uno'?['resumen','nutricion','entreno','checkin','revision','editar']:['resumen','nutricion','entreno','revision','editar'];
   const TNOM={resumen:'Resumen',nutricion:'Nutrición',entreno:'Entreno',checkin:'Check-in',revision:'Revisión',editar:'Editar'};
   const tabsH=tabs.map(t=>`<button class="fs-tab${t===CLI_TAB?' on':''}" onclick="setTab('${t}')">${TNOM[t]}</button>`).join('');
@@ -1188,6 +1191,9 @@ function tRevision(c){
                      <button class="ph-zoom-btn" onclick="phZoom('ph-${rs}-${pi}',0,'up')" title="Subir">↑</button>
                      <button class="ph-zoom-btn" onclick="phZoom('ph-${rs}-${pi}',0,'down')" title="Bajar">↓</button>
                      <button class="ph-zoom-btn" onclick="phZoom('ph-${rs}-${pi}',0,'reset')" title="Reset" style="font-size:9px">↺</button>
+                   </div>
+                   <div class="ph-zoom-bar" style="justify-content:center">
+                     <button class="ph-zoom-btn" onclick="deleteRevPhoto('${c.id}',${rs},${pi})" style="color:var(--rj);padding:2px 8px" title="Eliminar foto">🗑 Eliminar</button>
                    </div>
                    <div class="ph-lbl">${revLabels[rs]||'S'+rs}</div>`
                 :`<div class="ph-empty" ${!locked?`onclick="uploadRevPhoto('${c.id}','${rs}',${pi})" style="cursor:pointer" title="Click para subir foto"`:''}><span style="font-size:20px">📷</span><span style="font-size:10px">${locked?'🔒':'📤 Subir'}</span></div>`
