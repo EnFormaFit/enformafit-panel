@@ -649,10 +649,11 @@ let CLI_ID=null, CLI_TAB='resumen';
 let EDITING=false;
 
 // ═══ UNDO STACKS (module-level, persist through re-renders) ═══
-const UNDO_RUT=[];   // rutinas undo stack
-function fmt(n,dec){if(n==null||isNaN(parseFloat(n)))return'—';return Number(n).toFixed(dec!=null?dec:1).replace('.',',');}
-const UNDO_NUT=[];   // nutrition undo stack
+const UNDO_RUT=[];const REDO_RUT=[];
+const UNDO_NUT=[];const REDO_NUT=[];
+const UNDO_EDIT=[];const REDO_EDIT=[];
 const UNDO_MAX=50;
+function fmt(n,dec){if(n==null||isNaN(parseFloat(n)))return'—';return Number(n).toFixed(dec!=null?dec:1).replace('.',',');}
 
 // ═══ RUTINAS STATE ═══
 const RUTINAS={};
