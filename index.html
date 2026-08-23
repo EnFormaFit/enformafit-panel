@@ -650,6 +650,7 @@ let EDITING=false;
 
 // ═══ UNDO STACKS (module-level, persist through re-renders) ═══
 const UNDO_RUT=[];const REDO_RUT=[];
+const UNDO_MED=[];const REDO_MED=[];
 const UNDO_NUT=[];const REDO_NUT=[];
 const UNDO_EDIT=[];const REDO_EDIT=[];
 const UNDO_MAX=50;
@@ -1405,9 +1406,42 @@ function editMedidaInput(inp){
   if(!c.revision)c.revision={medidas:{},preguntas:{},fotos:{}};
   if(!c.revision.medidas)c.revision.medidas={};
   if(!c.revision.medidas[nom])c.revision.medidas[nom]={};
+  var prev=c.revision.medidas[nom][sem];
   var v=parseFloat(inp.value);
-  if(!isNaN(v)&&v>0)c.revision.medidas[nom][sem]=v;
+  var newVal=(!isNaN(v)&&v>0)?v:null;
+  if(prev===newVal)return;
+  UNDO_MED.push({cliId:cliId,nom:nom,sem:sem,v:prev!=null?prev:null});
+  REDO_MED.length=0;
+  if(UNDO_MED.length>50)UNDO_MED.shift();
+  if(newVal!=null)c.revision.medidas[nom][sem]=newVal;
   else delete c.revision.medidas[nom][sem];
+}
+function medUndo(){
+  if(!UNDO_MED.length){toast('Nada que deshacer en medidas','');return;}
+  var s=UNDO_MED.pop();
+  var c=byId(s.cliId);if(!c||!c.revision)return;
+  var cur=c.revision.medidas[s.nom]?c.revision.medidas[s.nom][s.sem]:null;
+  REDO_MED.push({cliId:s.cliId,nom:s.nom,sem:s.sem,v:cur});
+  if(!c.revision.medidas[s.nom])c.revision.medidas[s.nom]={};
+  if(s.v!=null)c.revision.medidas[s.nom][s.sem]=s.v;
+  else delete c.revision.medidas[s.nom][s.sem];
+  // Update input field
+  var inp=document.querySelector('input[data-cli="'+s.cliId+'"][data-nom="'+s.nom+'"][data-sem="'+s.sem+'"]');
+  if(inp)inp.value=s.v!=null?s.v:'';
+  toast('↩ Medida deshecha','vd');
+}
+function medRedo(){
+  if(!REDO_MED.length){toast('Nada que rehacer en medidas','');return;}
+  var s=REDO_MED.pop();
+  var c=byId(s.cliId);if(!c||!c.revision)return;
+  var cur=c.revision.medidas[s.nom]?c.revision.medidas[s.nom][s.sem]:null;
+  UNDO_MED.push({cliId:s.cliId,nom:s.nom,sem:s.sem,v:cur});
+  if(!c.revision.medidas[s.nom])c.revision.medidas[s.nom]={};
+  if(s.v!=null)c.revision.medidas[s.nom][s.sem]=s.v;
+  else delete c.revision.medidas[s.nom][s.sem];
+  var inp=document.querySelector('input[data-cli="'+s.cliId+'"][data-nom="'+s.nom+'"][data-sem="'+s.sem+'"]');
+  if(inp)inp.value=s.v!=null?s.v:'';
+  toast('↪ Medida rehecha','vd');
 }
 
 
@@ -2198,7 +2232,8 @@ document.addEventListener('keydown',e=>{
     e.preventDefault();
     const activeNutInp=document.activeElement?.dataset?.cli&&document.activeElement?.dataset?.meal?document.activeElement:null;
     if(activeNutInp)nutSave(activeNutInp);
-    if(CLI_TAB==='editar')editUndo();
+    if(CLI_TAB==='revision')medUndo();
+    else if(CLI_TAB==='editar')editUndo();
     else if(CLI_TAB==='nutricion'||UNDO_NUT.length>0&&!UNDO_RUT.length){
       if(UNDO_NUT.length)nutUndo();else toast('Nada que deshacer','');
     } else {
@@ -2208,7 +2243,8 @@ document.addEventListener('keydown',e=>{
   // Ctrl+Y or Ctrl+Shift+Z = redo
   if((e.ctrlKey||e.metaKey)&&(e.key==='y'||(e.key==='z'&&e.shiftKey))){
     e.preventDefault();
-    if(CLI_TAB==='editar')editRedo();
+    if(CLI_TAB==='revision')medRedo();
+    else if(CLI_TAB==='editar')editRedo();
     else if(CLI_TAB==='nutricion'){
       if(REDO_NUT&&REDO_NUT.length)nutRedo();else toast('Nada que rehacer','');
     } else {
