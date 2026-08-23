@@ -802,7 +802,7 @@ function renderClient(ct){
   // Add "Ver como cliente" button - opens app with client token
   const verComoCliente=`<a href="https://enformafit.github.io/enformafit-app/" target="_blank" 
     class="btn bo bs" style="font-size:11px" title="Ver la app como ve el cliente">👁 Ver app cliente</a>`;
-  const tabs=c.tipo==='uno'?['resumen','nutricion','entreno','checkin','revision','editar']:['resumen','nutricion','entreno','revision','editar'];
+  const tabs=c.tipo==='uno'?['resumen','nutricion','entreno','checkin','revision','editar']:['resumen','nutricion','entreno','checkin','revision','editar'];
   const TNOM={resumen:'Resumen',nutricion:'Nutrición',entreno:'Entreno',checkin:'Check-in',revision:'Revisión',editar:'Editar'};
   const tabsH=tabs.map(t=>`<button class="fs-tab${t===CLI_TAB?' on':''}" onclick="setTab('${t}')">${TNOM[t]}</button>`).join('');
   const isFinalRev=(c.tipo==='programa'&&c.nextRev===12)||(c.tipo==='uno'&&c.nextRev===11);
@@ -1101,37 +1101,121 @@ function togglePublicar(id){
 
 // ═══ TAB: CHECK-IN ═══
 function tCheckin(c){
-  if(c.tipo!=='uno')return`<div style="text-align:center;padding:40px;color:var(--t3)">Los clientes del Programa no tienen check-in semanal.</div>`;
-  if(!c.checkInDone||!c.checkIn)return`<div style="text-align:center;padding:40px;color:var(--t3)"><div style="font-size:48px;margin-bottom:12px">⏳</div><div style="font-size:16px;font-weight:700">Check-in pendiente</div><div style="font-size:13px;margin-top:6px">El cliente aún no lo ha enviado esta semana.</div></div>`;
-  const ci=c.checkIn,ne=c.diasSemana||4;
-  const adhC=Math.round((ci.entrenos/ne*0.45+(ci.nutriDias?.length||0)/7*0.35+(ci.pasosDias?.length||0)/7*0.20)*100);
-  return`<div class="rg">
-  <div>
-    <div class="sec-t">Semana ${c.semana}</div>
-    <div class="rs4" style="margin-bottom:12px">
-      <div class="rs-box"><div class="rs-v" style="color:var(--az)">${ci.entrenos}/${ne}</div><div class="rs-l">Entrenos</div></div>
-      <div class="rs-box"><div class="rs-v" style="color:var(--vd)">${ci.nutriDias?.length||0}/7</div><div class="rs-l">Nutrición</div></div>
-      <div class="rs-box"><div class="rs-v" style="color:var(--nr)">${ci.pasosDias?.length||0}/7</div><div class="rs-l">Pasos</div></div>
-      <div class="rs-box"><div class="rs-v" style="color:${adhCol(adhC/100)}">${adhC}%</div><div class="rs-l">Adherencia</div></div>
-    </div>
-    <div class="sec-t">Días nutrición</div>
-    <div style="display:flex;gap:5px;margin-bottom:12px">${DL.map((d,i)=>`<div style="width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:${ci.nutriDias?.includes(i)?'var(--vd)':'var(--bg)'};color:${ci.nutriDias?.includes(i)?'#fff':'var(--t3)'};border:1px solid ${ci.nutriDias?.includes(i)?'var(--vd)':'var(--bor)'}">${d}</div>`).join('')}</div>
-    <div class="sec-t">Días pasos</div>
-    <div style="display:flex;gap:5px;margin-bottom:12px">${DL.map((d,i)=>`<div style="width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:${ci.pasosDias?.includes(i)?'var(--nr)':'var(--bg)'};color:${ci.pasosDias?.includes(i)?'#fff':'var(--t3)'};border:1px solid ${ci.pasosDias?.includes(i)?'var(--nr)':'var(--bor)'}">${d}</div>`).join('')}</div>
-    <div class="sec-t">Bienestar</div>
-    <div style="font-size:20px;margin-bottom:12px">${'⭐'.repeat(ci.estrellas||0)}${'☆'.repeat(5-(ci.estrellas||0))}</div>
-    ${ci.nota?`<div class="sec-t">Nota</div><div style="background:var(--bg);border:1px solid var(--bor);border-radius:8px;padding:11px;font-size:13px;line-height:1.6;border-left:3px solid var(--az2)">"${ci.nota}"</div>`:''}
-  </div>
-  <div>
-    <div class="sec-t">Adherencia calculada</div>
-    <div style="font-size:30px;font-weight:800;color:${adhCol(adhC/100)};margin-bottom:4px">${adhC}%</div>
-    <div style="font-size:12px;color:var(--t3);margin-bottom:16px">${ci.entrenos}/${ne}×0.45 + ${ci.nutriDias?.length||0}/7×0.35 + ${ci.pasosDias?.length||0}/7×0.20</div>
-    <div class="sec-t">Feedback</div>
-    <div style="background:var(--az3);border-radius:8px;padding:12px;font-size:13px;color:var(--az2)">💬 El feedback del check-in se da directamente por WhatsApp.</div>
-  </div></div>`;
+  // Load checkins from BD if not loaded
+  if(!c._ciLoaded&&API_TOKEN){
+    c._ciLoaded=true;
+    apiCall('GET','/api/entreno/checkins/'+c.id).then(function(rows){
+      if(rows&&rows.length){
+        c.checkIns=rows;
+        c.checkIn=rows[0]; // most recent
+        c.checkInDone=true;
+        // Calculate adherencia from last check-in
+        var ci=rows[0];
+        var ne=c.diasSemana||4;
+        var pEnt=Math.min(1,(ci.dias_entreno_real||0)/ne)*40;
+        var pNut=Math.min(1,(ci.dias_nutricion||0)/7)*40;
+        var pPas=Math.min(1,(ci.dias_pasos||0)/7)*20;
+        c.adh=Math.round(pEnt+pNut+pPas);
+        setTab('checkin');
+      }
+    }).catch(function(){});
+  }
+
+  if(!c.checkInDone||!c.checkIn){
+    return'<div style="text-align:center;padding:40px;color:var(--t3)">'
+      +'<div style="font-size:48px;margin-bottom:12px">⏳</div>'
+      +'<div style="font-size:16px;font-weight:700">Check-in pendiente</div>'
+      +'<div style="font-size:13px;margin-top:6px">El cliente aún no lo ha enviado esta semana.</div>'
+    +'</div>';
+  }
+
+  var ci=c.checkIn;
+  var ne=c.diasSemana||4;
+  var diasEnt=ci.dias_entreno_real||ci.diasEnt||0;
+  var diasNut=ci.dias_nutricion||ci.diasNut||0;
+  var diasPas=ci.dias_pasos||ci.diasPasos||0;
+  var pEnt=Math.min(1,diasEnt/ne)*40;
+  var pNut=Math.min(1,diasNut/7)*40;
+  var pPas=Math.min(1,diasPas/7)*20;
+  var adh=Math.round(pEnt+pNut+pPas);
+  var adhCol=adh>=80?'var(--vd)':adh>=50?'var(--nr)':'var(--rj)';
+
+  var html='<div style="padding:4px">';
+
+  // Adherencia header
+  html+='<div style="background:var(--az3);border-radius:12px;padding:16px;text-align:center;margin-bottom:14px">'
+    +'<div style="font-size:11px;color:var(--t3);margin-bottom:4px">ADHERENCIA SEMANAL</div>'
+    +'<div style="font-size:42px;font-weight:900;color:'+adhCol+'">'+adh+'%</div>'
+    +'<div style="display:flex;justify-content:center;gap:6px;margin-top:8px">'
+      +'<div class="badge" style="background:var(--az2)">🏋️ '+diasEnt+'/'+ne+'</div>'
+      +'<div class="badge" style="background:var(--vd)">🥗 '+diasNut+'/7</div>'
+      +'<div class="badge" style="background:var(--nr)">👟 '+diasPas+'/7</div>'
+    +'</div>'
+  +'</div>';
+
+  // Desglose barras
+  html+='<div class="sec-t" style="margin-bottom:8px">Desglose</div>';
+  var bars=[
+    ['🏋️ Entrenos',diasEnt,ne,adh>=0],
+    ['🥗 Nutrición',diasNut,7,true],
+    ['👟 Pasos',diasPas,7,true],
+  ];
+  bars.forEach(function(b){
+    var pct=Math.round(b[1]/b[2]*100);
+    var col=pct>=80?'var(--vd)':pct>=50?'var(--nr)':'var(--rj)';
+    html+='<div style="margin-bottom:10px">'
+      +'<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">'
+        +'<span>'+b[0]+'</span><span style="font-weight:700">'+b[1]+'/'+b[2]+' ('+pct+'%)</span>'
+      +'</div>'
+      +'<div style="background:var(--bor);border-radius:4px;height:8px">'
+        +'<div style="background:'+col+';height:8px;border-radius:4px;width:'+Math.min(100,pct)+'%"></div>'
+      +'</div>'
+    +'</div>';
+  });
+
+  // Respuestas del 1:1
+  if(c.tipo==='uno'){
+    html+='<div class="sec-t" style="margin-top:14px;margin-bottom:8px">Respuestas</div>';
+    var pregs=[
+      ['¿Cómo fue la semana?', ci.como_semana||ci.como||''],
+      ['Orgullo de la semana', ci.orgullos||ci.orgullo||''],
+      ['Compromiso esta semana', ci.compromisos||ci.compromiso||''],
+      ['Sensaciones generales', ci.sensaciones||''],
+    ];
+    pregs.forEach(function(p){
+      if(!p[1])return;
+      html+='<div style="background:var(--bg);border-radius:8px;padding:10px;margin-bottom:8px">'
+        +'<div style="font-size:10px;font-weight:700;color:var(--t3);margin-bottom:4px">'+p[0].toUpperCase()+'</div>'
+        +'<div style="font-size:13px;color:var(--t1)">'+p[1]+'</div>'
+      +'</div>';
+    });
+  }
+
+  // Historial de check-ins
+  if(c.checkIns&&c.checkIns.length>1){
+    html+='<div class="sec-t" style="margin-top:14px;margin-bottom:8px">Historial (últimas semanas)</div>';
+    c.checkIns.slice(0,8).forEach(function(r,i){
+      var dE=r.dias_entreno_real||0;
+      var dN=r.dias_nutricion||0;
+      var dP=r.dias_pasos||0;
+      var a=Math.round(Math.min(1,dE/ne)*40+Math.min(1,dN/7)*40+Math.min(1,dP/7)*20);
+      var col=a>=80?'var(--vd)':a>=50?'var(--nr)':'var(--rj)';
+      var fecha=r.semana_inicio?new Date(r.semana_inicio).toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit'}):'S?';
+      html+='<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bor2)">'
+        +'<div style="font-size:11px;color:var(--t3);min-width:40px">'+fecha+'</div>'
+        +'<div style="flex:1;background:var(--bor);border-radius:3px;height:6px">'
+          +'<div style="background:'+col+';height:6px;border-radius:3px;width:'+a+'%"></div>'
+        +'</div>'
+        +'<div style="font-size:12px;font-weight:700;color:'+col+';min-width:36px;text-align:right">'+a+'%</div>'
+      +'</div>';
+    });
+  }
+
+  html+='</div>';
+  return html;
 }
 
-// ═══ TAB: REVISIÓN CON FOTOS AUTO-CROP ═══
+
 function tRevision(c){
   const nextRev=c.nextRev,rev=c.revision;
   const sems=Math.max(c.semana-1,1);
