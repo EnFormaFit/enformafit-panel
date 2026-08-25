@@ -759,6 +759,7 @@ function openC(id,tab='resumen'){
 function closeC(){VIEW='list';CLI_ID=null;render();}
 function setTab(t){
   CLI_TAB=t;
+  try{localStorage.setItem('ef_tab',t);localStorage.setItem('ef_cli',CLI_ID||'');}catch(e){}
   if(t!=='editar')EDITING=false;
   // Load revision data when opening revision tab
   if(t==='revision'&&CLI_ID&&API_TOKEN){
