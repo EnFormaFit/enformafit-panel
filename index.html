@@ -740,7 +740,7 @@ function setRol(r){
 
 // ═══ CLIENT FULLSCREEN ═══
 function openC(id,tab='resumen'){
-  CLI_ID=id;CLI_TAB=tab;VIEW='client';EDITING=false;
+  CLI_ID=id;CLI_TAB=tab;VIEW='client';try{localStorage.setItem('ef_cli',CLI_ID);}catch(e){}EDITING=false;
   RUT_CLI=id;
   ENT_VIEW='grid';
   // Update DIAS_BASE rest days based on client's rutinaDias
@@ -3004,6 +3004,17 @@ window.addEventListener('DOMContentLoaded',async()=>{
     // Then load real data from BD
     try{
       await loadClientesFromAPI();
+      // Restore last open client and tab
+      try{
+        const savedCli=localStorage.getItem('ef_cli');
+        const savedTab=localStorage.getItem('ef_tab')||'resumen';
+        if(savedCli&&byId(savedCli)){
+          CLI_ID=savedCli;CLI_TAB=savedTab;
+          VIEW='client';
+          const ct=document.getElementById('ct');
+          if(ct)renderClient(ct);
+        }
+      }catch(e){}
     }catch(e){
       console.error('[PANEL] Error cargando BD:',e);
       toast('Error conectando con BD: '+e.message,'rj');
