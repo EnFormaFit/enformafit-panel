@@ -518,11 +518,12 @@ async function loadClientesFromAPI(){
       const grasa=parseInt(r.grasas_g)||60;
       
       // Rutina dias and objetivo_kg from notas_entrenador JSON
-      let rutinaDias={}, objetivoKg=null, semanaActual=semana;
+      let rutinaDias={}, rutinaSemanas={}, objetivoKg=null, semanaActual=semana;
       try{
         if(r.notas_entrenador){
           const notas=JSON.parse(r.notas_entrenador);
           rutinaDias=notas.rutina_dias||{};
+          rutinaSemanas=notas.rutina_semanas||{};
           objetivoKg=notas.objetivo_kg||null;
           semanaActual=notas.semana_actual||semana;
         }
@@ -567,6 +568,7 @@ async function loadClientesFromAPI(){
         nivel:parseInt(r.nivel)||1,
         rutina:r.rutina_cod||r.rutina_actual||'4D.TP',
         rutinaDias,
+        rutinaSemanas,
         alimentos,
       };
     });
@@ -575,11 +577,14 @@ async function loadClientesFromAPI(){
     C.length=0;
     mapped.forEach(c=>C.push(c));
 
-    // Load RUTINAS from rutinaDias for ALL semanas
+    // Load RUTINAS — prefer rutina_semanas from BD, fallback to rutinaDias
     mapped.forEach(c=>{
-      if(c.rutinaDias&&Object.keys(c.rutinaDias).length>0){
-        if(!RUTINAS[c.id])RUTINAS[c.id]={__logs:{}};
-        // Apply same rutina to all semanas 1-14
+      if(!RUTINAS[c.id])RUTINAS[c.id]={__logs:{}};
+      if(c.rutinaSemanas&&Object.keys(c.rutinaSemanas).length>0){
+        Object.entries(c.rutinaSemanas).forEach(([sem,dias])=>{
+          RUTINAS[c.id][parseInt(sem)]=JSON.parse(JSON.stringify(dias));
+        });
+      } else if(c.rutinaDias&&Object.keys(c.rutinaDias).length>0){
         for(let sem=1;sem<=14;sem++){
           if(!RUTINAS[c.id][sem])RUTINAS[c.id][sem]={};
           Object.entries(c.rutinaDias).forEach(([dia,ejes])=>{
