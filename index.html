@@ -425,7 +425,6 @@ const API_URL='https://enformafit-backend-production.up.railway.app';
 let API_TOKEN=localStorage.getItem('ef_token')||null;
 let API_ROLE=localStorage.getItem('ef_role')||null;
 
-async 
 function fmtFecha(f){
   if(!f)return'—';
   if(f.includes('/'))return f; // already formatted
@@ -439,7 +438,7 @@ function fmtFechaCorta(f){
   if(p.length===3)return p[2]+'/'+p[1];
   return f;
 }
-function apiCall(method,path,body){
+async function apiCall(method,path,body){
   const opts={method,headers:{'Content-Type':'application/json'}};
   if(API_TOKEN)opts.headers['Authorization']='Bearer '+API_TOKEN;
   if(body)opts.body=JSON.stringify(body);
