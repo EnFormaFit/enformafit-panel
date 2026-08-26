@@ -427,8 +427,8 @@ function renderClient(ct){
   const c=byId(CLI_ID);if(!c)return;
   const col=gc(ciIdx(c));
   // Add "Ver como cliente" button - opens app with client token
-  const verComoCliente=`<a href="https://enformafit.github.io/enformafit-app/" target="_blank" 
-    class="btn bo bs" style="font-size:11px" title="Ver la app como ve el cliente">👁 Ver app cliente</a>`;
+  const verComoCliente=`<button class="btn bo bs" style="font-size:11px" title="Ver la app como ve el cliente"
+    onclick="abrirAppCliente('${c.id}')">👁 Ver app cliente</button>`;
   const tabs=c.tipo==='uno'?['resumen','nutricion','entreno','checkin','revision','editar']:['resumen','nutricion','entreno','checkin','revision','editar'];
   const TNOM={resumen:'Resumen',nutricion:'Nutrición',entreno:'Entreno',checkin:'Check-in',revision:'Revisión',editar:'Editar'};
   const tabsH=tabs.map(t=>`<button class="fs-tab${t===CLI_TAB?' on':''}" onclick="setTab('${t}')">${TNOM[t]}</button>`).join('');
@@ -626,3 +626,13 @@ function rLista(tipo){
   </tbody></table></div>`;
 }
 
+
+async function abrirAppCliente(clienteId){
+  try{
+    const data=await apiCall('GET','/api/clientes/'+clienteId+'/token-preview');
+    const url='https://enformafit.github.io/enformafit-app/?tk='+encodeURIComponent(data.token);
+    window.open(url,'_blank');
+  }catch(e){
+    toast('Error abriendo app: '+e.message,'rj');
+  }
+}
