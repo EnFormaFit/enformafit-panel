@@ -790,13 +790,16 @@ function crearCliente(){
 // ═══ INIT ═══
 window.addEventListener('DOMContentLoaded',async()=>{
   updateBadges();
+  // Always show login — token validated server-side
+  // This prevents auto-login when sharing device or switching trainers
   if(API_TOKEN){
-    // Show panel immediately with static data
-    nav('ci');
-    // Then load real data from BD
     try{
+      // Validate token is still valid before auto-logging in
+      await apiCall('GET','/api/clientes?limit=1');
+      // Token valid — auto-login ok
+      nav('ci');
       await loadClientesFromAPI();
-      // Restore last open client and tab
+      // Restore last open client only if trainer matches
       try{
         const savedCli=localStorage.getItem('ef_cli');
         const savedTab=localStorage.getItem('ef_tab')||'resumen';
@@ -808,10 +811,24 @@ window.addEventListener('DOMContentLoaded',async()=>{
         }
       }catch(e){}
     }catch(e){
-      console.error('[PANEL] Error cargando BD:',e);
-      toast('Error conectando con BD: '+e.message,'rj');
+      // Token invalid or expired — force login
+      API_TOKEN=null;
+      localStorage.removeItem('ef_token');
+      localStorage.removeItem('ef_role');
+      localStorage.removeItem('ef_cli');
+      showLogin();
     }
   } else {
     showLogin();
   }
 });
+
+function logout(){
+  API_TOKEN=null;API_ROLE=null;
+  window.ENTRENADOR_ACTIVO=null;
+  localStorage.removeItem('ef_token');
+  localStorage.removeItem('ef_role');
+  localStorage.removeItem('ef_cli');
+  localStorage.removeItem('ef_tab');
+  location.reload();
+}
