@@ -5,9 +5,10 @@ function tResumen(c){
   const last7=hist.filter(p=>{const d=new Date(p.f);return(now-d)/(1000*60*60*24)<=7;});
   const pesoMedio=last7.length?+(last7.reduce((s,p)=>s+p.v,0)/last7.length).toFixed(1):c.pesoAct;
   const cambio=+(pesoMedio-c.pesoIni).toFixed(1);
-  const left=+(pesoMedio-c.obj).toFixed(1);
+  const objKg=Math.round(c.obj*10)/10;
+  const left=+(pesoMedio-objKg).toFixed(1);
   const sems=Math.max(c.semana-1,1);
-  const bajaSem=((c.pesoIni-pesoMedio)/sems).toFixed(2);
+  const bajaSem=sems>0?+(((c.pesoIni-pesoMedio)/sems)).toFixed(2):0;
   const totalDiff=Math.abs(c.pesoIni-c.obj)||1;
   const pct=Math.min(100,Math.round(Math.abs(cambio)/totalDiff*100));
   return`
@@ -18,7 +19,8 @@ function tResumen(c){
         <div class="rs-box"><div class="rs-v" style="color:var(--az2);font-size:16px">${c.pesoIni}</div><div class="rs-l">Inicio kg</div></div>
         <div class="rs-box" style="border:2px solid var(--az)"><div class="rs-v" style="color:var(--az);font-size:18px">${pesoMedio}</div><div class="rs-l">Actual kg<br><span style="font-size:8px;color:var(--t3)">media 7d</span></div></div>
         <div class="rs-box"><div class="rs-v" style="color:${cambio<0?'var(--vd)':'var(--rj)'};font-size:16px">${cambio}</div><div class="rs-l">Cambio kg</div></div>
-        <div class="rs-box"><div class="rs-v" style="color:var(--vd);font-size:16px">${c.obj}</div><div class="rs-l">Objetivo kg</div></div>
+        <div class="rs-box"><div class="rs-v" style="color:var(--vd);font-size:16px">${objKg}</div><div class="rs-l">Objetivo kg</div></div>
+        <div class="rs-box"><div class="rs-v" style="color:var(--az);font-size:16px">${bajaSem}</div><div class="rs-l">Ritmo kg/sem</div></div>
       </div>
       <div style="margin-bottom:12px">
         <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--t3);margin-bottom:4px">
@@ -426,9 +428,14 @@ function buildPesoGrid(pesoRows,inicioBloque,semanaActual){
 
 
 function buildMedidasHTML(c){
-  const medidas=c.revision?.medidas&&Object.keys(c.revision.medidas).length>0?c.revision.medidas:null;
+  const medRev=c.revision?.medidas&&Object.keys(c.revision.medidas).length>0?c.revision.medidas:null;
+  const medS0=c.medidasS0&&Object.keys(c.medidasS0).length>0?c.medidasS0:null;
+  const medidas=medRev||medS0;
+  const s0badge=(!medRev&&medS0)?'<span style="font-size:9px;background:var(--vd);color:#fff;border-radius:4px;padding:1px 5px;margin-left:6px">S0 formulario</span>':'';
   const btn='<div style="text-align:right;margin-bottom:8px"><button class="btn bo bs" onclick="loadMedidasCliente(this.dataset.id)" data-id="'+c.id+'">📏 Cargar medidas</button></div>';
-  return'<div id="medidas-'+c.id+'">'+(medidas?renderMedidasTable(medidas,c.id):btn)+'</div>';
+  return'<div id="medidas-'+c.id+'">'+
+    (medidas?'<div style="text-align:right;margin-bottom:4px">'+s0badge+'</div>'+renderMedidasTable(medidas,c.id):btn)+
+    '</div>';
 }
 
 function renderMedidasTable(medidas,cliId){
@@ -605,21 +612,7 @@ const MEAL_NOM_NUT={desayuno:'☀️ Desayuno',comida:'🌞 Comida',cena:'🌙 C
 
 function getNutState(c){
   if(NE[c.id]&&NE[c.id].meals)return NE[c.id];
-  const meals=MEAL_ORDER_NUT.map(mKey=>{
-    const md=MENU[mKey]||{};
-    const items=[];
-    CAT_ORDER_NUT.forEach(cat=>{
-      const arr=md[CAT_KEY_NUT[cat]];
-      if(!arr||!arr.length)return;
-      const def=arr[0];
-      items.push({cat,catNom:CAT_NOM_NUT[cat],
-        nom:def.nom||def.alimento||'',
-        cantidad:def.cantidad||100,
-        p100:def.p_100||0,c100:def.c_100||0,g100:def.g_100||0,k100:def.kcal_100||0,
-        u:def.u||'g'});
-    });
-    return{id:mKey,nom:MEAL_NOM_NUT[mKey],items};
-  }).filter(m=>m.items.length);
+  const meals=MEAL_ORDER_NUT.map(mKey=>({id:mKey,nom:MEAL_NOM_NUT[mKey],items:[]}));
   // If client has alimentos from BD plan, use those instead of MENU defaults
   if(c.alimentos&&Object.keys(c.alimentos).length>0){
     const bdMeals=[];
