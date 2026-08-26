@@ -103,7 +103,7 @@ async function loadClientesFromAPI(){
       
       // Semanas revision
       const semRev=Array.isArray(r.semanas_revision)?r.semanas_revision:[4,8,12];
-      const semana=parseInt(r.semana_actual)||1;
+      const semana=parseInt(r.semana_actual)||0;
       const nextRev=semRev.find(s=>s>=semana)||semRev[semRev.length-1];
       
       // Pesos from historial
@@ -117,7 +117,7 @@ async function loadClientesFromAPI(){
       const grasa=parseInt(r.grasas_g)||60;
       
       // Rutina dias and objetivo_kg from notas_entrenador JSON
-      let rutinaDias={}, rutinaSemanas={}, objetivoKg=null, semanaActual=semana;
+      let rutinaDias={}, rutinaSemanas={}, objetivoKg=null, semanaActual=semana, entrenadorAsignado='alvaro';
       try{
         if(r.notas_entrenador){
           const notas=JSON.parse(r.notas_entrenador);
@@ -125,8 +125,19 @@ async function loadClientesFromAPI(){
           rutinaSemanas=notas.rutina_semanas||{};
           objetivoKg=notas.objetivo_kg||null;
           semanaActual=notas.semana_actual||semana;
+          entrenadorAsignado=notas.entrenador||'alvaro';
         }
       }catch(e){}
+      
+      // Parse notas cliente JSON — extract real comentario, medidas_s0, etc.
+      let notasCliente={}, comentarioReal='', medidasS0=null;
+      try{
+        if(r.notas){
+          const nc=JSON.parse(r.notas);
+          comentarioReal=nc.comentarios||'';
+          medidasS0=nc.medidas_s0||null;
+        }
+      }catch(e){ comentarioReal=r.notas||''; }
       
       // Alimentos from distribucion
       let alimentos={};
@@ -140,7 +151,7 @@ async function loadClientesFromAPI(){
         fechaNac:toDate(r.fecha_nacimiento),
         pesoIni,
         pesoAct,
-        obj:objetivoKg||(pesoIni*0.9),
+        obj:objetivoKg?Math.round(objetivoKg*10)/10:Math.round(pesoIni*0.9*10)/10,
         altura:parseInt(r.altura)||175,
         semana:semanaActual,
         semTotal:parseInt(r.semanas_bloque)||14,
@@ -150,7 +161,9 @@ async function loadClientesFromAPI(){
         equipamiento:r.lugar==='gym'?'Gimnasio completo':r.lugar||'Gimnasio completo',
         lesiones:r.lesiones||'',
         intolerancias:r.intolerancias||'',
-        comentario:r.notas||'',
+        comentario:comentarioReal,
+        medidasS0:medidasS0,
+        entrenador:entrenadorAsignado,
         adh:parseFloat(r.adherencia)||0,
         checkInDone:false,
         revDone:false,
