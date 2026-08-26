@@ -612,6 +612,7 @@ const MEAL_NOM_NUT={desayuno:'☀️ Desayuno',comida:'🌞 Comida',cena:'🌙 C
 
 function getNutState(c){
   if(NE[c.id]&&NE[c.id].meals)return NE[c.id];
+  // Build meals: prefer BD plan alimentos, else empty (entrenador fills manually)
   const meals=MEAL_ORDER_NUT.map(mKey=>({id:mKey,nom:MEAL_NOM_NUT[mKey],items:[]}));
   // If client has alimentos from BD plan, use those instead of MENU defaults
   if(c.alimentos&&Object.keys(c.alimentos).length>0){
