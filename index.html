@@ -425,7 +425,21 @@ const API_URL='https://enformafit-backend-production.up.railway.app';
 let API_TOKEN=localStorage.getItem('ef_token')||null;
 let API_ROLE=localStorage.getItem('ef_role')||null;
 
-async function apiCall(method,path,body){
+async 
+function fmtFecha(f){
+  if(!f)return'—';
+  if(f.includes('/'))return f; // already formatted
+  const p=f.split('-');
+  if(p.length===3)return p[2]+'/'+p[1]+'/'+p[0];
+  return f;
+}
+function fmtFechaCorta(f){
+  if(!f)return'—';
+  const p=f.split('-');
+  if(p.length===3)return p[2]+'/'+p[1];
+  return f;
+}
+function apiCall(method,path,body){
   const opts={method,headers:{'Content-Type':'application/json'}};
   if(API_TOKEN)opts.headers['Authorization']='Bearer '+API_TOKEN;
   if(body)opts.body=JSON.stringify(body);
@@ -2792,7 +2806,8 @@ function tEditar(c){
         <div class="dato"><label>Pasos/día</label>${inp('pasosObj',c.pasosObj)}</div>
         <div class="dato"><label>Días entreno/sem</label>${inp('diasSemana',c.diasSemana,'number','min=1 max=6')}</div>
         <div class="dato"><label>Semana actual</label>${inp('semana',c.semana,'number','min=1 max='+c.semTotal)}</div>
-        <div class="dato"><label>Inicio bloque</label>${ed?`<input class="dato-inp" type="date" value="${c.inicioBloque||''}" onchange="editC('${c.id}','inicioBloque',this.value)">`:`<span style="font-weight:700">${c.inicioBloque||'—'}</span>`}</div>
+        <div class="dato"><label>Inicio bloque</label>${ed?`<input class="dato-inp" type="date" value="${c.inicioBloque||''}" onchange="editC('${c.id}','inicioBloque',this.value)">`:`<span style="font-weight:700">${c.inicioBloque?c.inicioBloque.split('-').reverse().join('/'):'—'}</span>`}</div>
+        <div class="dato"><label>Entrenador</label>${ed?`<select class="dato-inp" onchange="editC('${c.id}','entrenador',this.value)"><option value="alvaro" ${c.entrenador==='alvaro'?'selected':''}>Álvaro Casal</option><option value="gerard" ${c.entrenador==='gerard'?'selected':''}>Gerard Sala</option></select>`:`<span style="font-weight:700">${c.entrenador==='gerard'?'Gerard Sala':'Álvaro Casal'}</span>`}</div>
       </div></div>
       <div class="sec-t">Publicación</div>
       <div class="card" style="margin-bottom:12px"><div class="cb" style="padding:10px 14px">
