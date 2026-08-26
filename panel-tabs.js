@@ -610,11 +610,82 @@ const CAT_KEY_NUT={prot:'proteinas_magras',hidrat:'hidratos',fat:'grasas',verd:'
 const MEAL_ORDER_NUT=['desayuno','comida','cena','snack'];
 const MEAL_NOM_NUT={desayuno:'☀️ Desayuno',comida:'🌞 Comida',cena:'🌙 Cena',snack:'🍎 Snack'};
 
+function autoGenerarMeals(c){
+  // Generar comidas automáticamente desde MENU ajustando a macros del cliente
+  const macros=c.macros||{kcal:2000,p:160,c:200,g:60};
+  const numComidas=c.comidas||3;
+  const isDeficit=c.obj<c.pesoAct;
+  const isSuperavit=!isDeficit;
+  // Repartos por comida (igual que el generador Python)
+  const repartos={
+    2:{'desayuno':0.45,'cena':0.55},
+    3:{'desayuno':0.30,'comida':0.40,'cena':0.30},
+    4:{'desayuno':0.25,'comida':0.35,'cena':0.25,'snack':0.15},
+    5:{'desayuno':0.20,'comida':0.30,'cena':0.25,'snack':0.15,'snack2':0.10},
+  };
+  const reparto=repartos[numComidas]||repartos[3];
+  const mealOrder=['desayuno','comida','cena','snack'];
+  const mealNoms={desayuno:'☀️ Desayuno',comida:'🌞 Comida',cena:'🌙 Cena',snack:'🍎 Snack'};
+  
+  function pickItem(menuCat,targetGrams,unit){
+    const items=menuCat||[];
+    if(!items.length)return null;
+    const it=items[0];
+    // Calcular cantidad para alcanzar targetGrams de proteína/hidratos
+    let cantidad=it.cantidad||100;
+    if(targetGrams>0&&it.p_100>0&&unit==='p')cantidad=Math.round(targetGrams*100/it.p_100/10)*10;
+    else if(targetGrams>0&&it.c_100>0&&unit==='c')cantidad=Math.round(targetGrams*100/it.c_100/10)*10;
+    cantidad=Math.max(50,Math.min(cantidad,400));
+    return{nom:it.nom,cantidad,u:it.u||'g',cat:'prot',
+      p100:it.p_100||0,c100:it.c_100||0,g100:it.g_100||0,k100:it.kcal_100||0};
+  }
+
+  const meals=[];
+  mealOrder.forEach(mKey=>{
+    const pct=reparto[mKey];
+    if(!pct)return;
+    const mP=Math.round(macros.p*pct);
+    const mC=Math.round(macros.c*pct);
+    const mG=Math.round(macros.g*pct);
+    const items=[];
+    const md=MENU[mKey]||MENU['comida']||{};
+    const isSnack=mKey==='snack';
+
+    // Proteína magra
+    const protItem=pickItem(md.proteinas_magras,mP,'p');
+    if(protItem){items.push({...protItem,cat:'prot',catNom:'Proteína magra'});}
+
+    if(!isSnack){
+      // Hidrato (reducido 20g para dejar espacio a fruta)
+      const hidC=Math.max(0,mC-20);
+      const hidItem=pickItem(md.hidratos,hidC,'c');
+      if(hidItem){items.push({...hidItem,cat:'hidrat',catNom:'Hidrato'});}
+      // Verdura siempre
+      const verd=(md.verduras||[])[0];
+      if(verd)items.push({nom:verd.nom,cantidad:verd.cantidad||200,u:verd.u||'g',
+        cat:'verd',catNom:'Verdura',p100:verd.p_100||0,c100:verd.c_100||0,g100:verd.g_100||0,k100:verd.kcal_100||0});
+      // Fruta
+      items.push({nom:'Manzana (o equivalente)',cantidad:210,u:'g',
+        cat:'fruta',catNom:'Fruta',p100:0.3,c100:13,g100:0.2,k100:52});
+      // Grasa saludable: solo en superávit o si sobra margen de grasa
+      if(isSuperavit&&mG>5){
+        const grasaItem=(md.grasas_saludables||[])[0];
+        if(grasaItem)items.push({nom:grasaItem.nom,cantidad:grasaItem.cantidad||15,u:grasaItem.u||'g',
+          cat:'grasa',catNom:'Grasa saludable',p100:grasaItem.p_100||0,c100:grasaItem.c_100||0,g100:grasaItem.g_100||0,k100:grasaItem.kcal_100||0});
+      }
+    } else {
+      // Snack en déficit: solo fruta + proteína, sin grasas
+      items.push({nom:'Manzana (o equivalente)',cantidad:210,u:'g',
+        cat:'fruta',catNom:'Fruta',p100:0.3,c100:13,g100:0.2,k100:52});
+    }
+    meals.push({id:mKey,nom:mealNoms[mKey],items});
+  });
+  return meals;
+}
+
 function getNutState(c){
   if(NE[c.id]&&NE[c.id].meals)return NE[c.id];
-  // Build meals: prefer BD plan alimentos, else empty (entrenador fills manually)
-  const meals=MEAL_ORDER_NUT.map(mKey=>({id:mKey,nom:MEAL_NOM_NUT[mKey],items:[]}));
-  // If client has alimentos from BD plan, use those instead of MENU defaults
+  // If client has alimentos from BD plan, use those
   if(c.alimentos&&Object.keys(c.alimentos).length>0){
     const bdMeals=[];
     const mealOrder=['desayuno','comida','cena','snack'];
@@ -655,7 +726,9 @@ function getNutState(c){
     }
   }
   
-  NE[c.id]={meals};
+  // No BD alimentos — auto-generate from MENU based on client macros
+  const autoMeals=autoGenerarMeals(c);
+  NE[c.id]={meals:autoMeals};
   return NE[c.id];
 }
 
