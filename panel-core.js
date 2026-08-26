@@ -77,9 +77,11 @@ async function doLogin(){
     if(emailLow==='gerardsalac20@gmail.com'){
       window.ENTRENADOR_ACTIVO='gerard';
       toast('✅ Bienvenido Gerard','vd');
+      const tb=document.getElementById('tb-trainer');if(tb)tb.textContent='👤 Gerard Sala';
     } else {
       window.ENTRENADOR_ACTIVO='alvaro';
       toast('✅ Bienvenido Álvaro','vd');
+      const tb=document.getElementById('tb-trainer');if(tb)tb.textContent='👤 Álvaro Casal';
     }
     await loadClientesFromAPI();
     nav('ci');
