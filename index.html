@@ -495,7 +495,15 @@ async function doLogin(){
     API_TOKEN=data.token;API_ROLE=data.role;
     localStorage.setItem('ef_token',API_TOKEN);
     localStorage.setItem('ef_role',API_ROLE);
-    toast('✅ Bienvenido Álvaro','vd');
+    // Detectar entrenador por email
+    const emailLow=email.toLowerCase();
+    if(emailLow.includes('gerard')||emailLow.includes('sala')){
+      window.ENTRENADOR_ACTIVO='gerard';
+      toast('✅ Bienvenido Gerard','vd');
+    } else {
+      window.ENTRENADOR_ACTIVO='alvaro';
+      toast('✅ Bienvenido Álvaro','vd');
+    }
     await loadClientesFromAPI();
     nav('ci');
   }catch(e){
@@ -587,9 +595,16 @@ async function loadClientesFromAPI(){
       };
     });
 
-    // Replace C array
+    // Replace C array — Gerard solo ve sus clientes asignados
     C.length=0;
-    mapped.forEach(c=>C.push(c));
+    mapped.forEach(c=>{
+      if(window.ENTRENADOR_ACTIVO==='gerard'){
+        // Gerard solo ve clientes donde entrenador='gerard'
+        if(c.entrenador==='gerard')C.push(c);
+      } else {
+        C.push(c);
+      }
+    });
 
     // Load RUTINAS — prefer rutina_semanas from BD, fallback to rutinaDias
     mapped.forEach(c=>{
