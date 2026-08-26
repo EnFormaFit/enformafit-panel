@@ -2873,11 +2873,25 @@ function editRedo(){
   toast('↪ Rehecho','vd');
   setTab('editar');
 }
-function guardarEditar(id){
+async function guardarEditar(id){
   window._editSnapshot=null;
   EDITING=false;
+  const c=byId(id);
+  if(!c){setTab('editar');return;}
+  const patch={};
+  if(c.semana!==undefined)patch.semana_actual=c.semana;
+  if(c.nivel!==undefined)patch.nivel=c.nivel;
+  if(c.rutina!==undefined)patch.rutina_actual=c.rutina;
+  if(c.pasos!==undefined)patch.pasos_objetivo=c.pasos;
+  if(c.inicioBloque){patch.fecha_inicio=c.inicioBloque;patch.bloque_fecha_inicio=c.inicioBloque;}
+  if(c.macros){patch.kcal_asignadas=c.macros.kcal;patch.macros_p=c.macros.p;patch.macros_c=c.macros.c;patch.macros_g=c.macros.g;}
+  try{
+    await apiCall('PATCH',`/api/clientes/${id}`,patch);
+    toast('✅ Cambios guardados','vd');
+  }catch(e){
+    toast('⚠️ Error guardando: '+e.message,'nr');
+  }
   setTab('editar');
-  toast('Cambios guardados ✓','vd');
 }
 function editC(id,k,v){
   const c=byId(id);if(!c)return;
