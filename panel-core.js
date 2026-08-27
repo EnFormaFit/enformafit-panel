@@ -445,7 +445,7 @@ function renderClient(ct){
       <div style="flex:1;min-width:0">
         <div class="fs-nom">${c.nom}</div>
         <div class="fs-sub">${c.tipo==='uno'?'1:1 Coaching':'Programa grupal'} · S${c.semana}/${c.semTotal} · Bloque ${c.bloque||1}</div>
-        <div style="font-size:10.5px;color:var(--t3);margin-top:2px">${c.email} · <span style="color:var(--t3)">${c.email.split('@')[0].slice(0,6)}2024</span></div>
+        <div style="font-size:10.5px;color:var(--t3);margin-top:2px">${c.email} · <span style="color:var(--t3)">${c.email.split('@')[0]}2026</span></div>
       </div>
       ${c.lesiones?`<div class="badge bam" style="flex-shrink:0;max-width:180px;overflow:hidden;text-overflow:ellipsis">🩹 ${c.lesiones.split(',')[0]}</div>`:''}
       ${checkBirthday(c)?'<div style="font-size:22px" title="¡Hoy es su cumpleaños!">🎂</div>':''}
