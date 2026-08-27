@@ -440,18 +440,15 @@ function buildMedidasHTML(c){
 
 function renderMedidasTable(medidas,cliId){
   if(!medidas||typeof medidas!=='object')return'';
-  var MO=['Hombros','Pecho','Brazo der','Brazo izq','Abdomen','Muslo der','Muslo izq','Gemelo der','Gemelo izq'];
+  var MO=[['hombros','Hombros (zona + amplia)'],['pecho','Pecho (zona + amplia)'],['brazo_i','Brazo izq. contraído'],['brazo_d','Brazo dcho. contraído'],['cintura','Cintura ombligo'],['muslo_i','Muslo izq. relajado'],['muslo_d','Muslo dcho. relajado'],['gemelo_i','Gemelo izq. contraído'],['gemelo_d','Gemelo dcho. contraído']];
   var sems=new Set(['S0','S4','S8','S12']);
   Object.values(medidas).forEach(function(v){if(typeof v==='object')Object.keys(v).forEach(function(k){sems.add(k);});});
   var sa=[...sems].sort(function(a,b){return parseInt(a.replace('S',''))-parseInt(b.replace('S',''));});
   var mf={};
-  MO.forEach(function(n){
-    var found=Object.keys(medidas).find(function(k){return k.toLowerCase().includes(n.toLowerCase().split(' ')[0]);});
-    mf[n]=found?medidas[found]:{};
-  });
-  Object.keys(medidas).forEach(function(k){
-    var inO=MO.some(function(m){return k.toLowerCase().includes(m.toLowerCase().split(' ')[0]);});
-    if(!inO)mf[k]=medidas[k];
+  MO.forEach(function(pair){
+    var key=pair[0],label=pair[1];
+    var val=medidas[key]!==undefined?medidas[key]:(medidas[key.replace('_','')]!==undefined?medidas[key.replace('_','')]:null);
+    mf[label]=val!==null?val:null;
   });
   var rows='';
   Object.entries(mf).forEach(function(e,i){
