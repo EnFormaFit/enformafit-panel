@@ -942,7 +942,7 @@ function nutSave(inp){
     if(API_TOKEN&&cliId){
       const ns=getNutState(byId(cliId));
       const alimentos={};
-      (ns.meals||[]).forEach(m=>{alimentos[m.id]=(m.items||[]).map(it=>({nom:it.nom,cantidad:it.cantidad,u:it.u||'g',cat:it.cat}));});
+      (ns.meals||[]).forEach(m=>{alimentos[m.id]=(m.items||[]).map(it=>({nom:it.nom,cantidad:it.cantidad,u:it.u||'g',cat:it.cat,p100:it.p100||0,c100:it.c100||0,g100:it.g100||0,k100:it.k100||0}));});
       apiCall('PATCH','/api/clientes/'+cliId,{distribucion:JSON.stringify(alimentos)}).catch(()=>{});
       registrarCambio(cliId,'Nutrición actualizada');
     }
