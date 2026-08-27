@@ -440,7 +440,7 @@ function buildMedidasHTML(c){
 
 function renderMedidasTable(medidas,cliId){
   if(!medidas||typeof medidas!=='object')return'';
-  var MO=['Hombros','Pecho','Brazo der','Brazo izq','Abdomen','Muslo der','Muslo izq','Gemelo der','Gemelo izq'];
+  var MO=['Hombros','Pecho','Brazo izq','Brazo der','Cintura','Muslo izq','Muslo der','Gemelo izq','Gemelo der'];
   var sems=new Set(['S0','S4','S8','S12']);
   Object.values(medidas).forEach(function(v){if(typeof v==='object')Object.keys(v).forEach(function(k){sems.add(k);});});
   var sa=[...sems].sort(function(a,b){return parseInt(a.replace('S',''))-parseInt(b.replace('S',''));});
