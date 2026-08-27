@@ -664,9 +664,7 @@ function autoGenerarMeals(c){
       const verd=(md.verduras||[])[0];
       if(verd)items.push({nom:verd.nom,cantidad:verd.cantidad||200,u:verd.u||'g',
         cat:'verd',catNom:'Verdura',p100:verd.p_100||0,c100:verd.c_100||0,g100:verd.g_100||0,k100:verd.kcal_100||0});
-      // Fruta
-      items.push({nom:'Manzana (o equivalente)',cantidad:210,u:'g',
-        cat:'fruta',catNom:'Fruta',p100:0.3,c100:13,g100:0.2,k100:52});
+      // Fruta — client selects from MENU
       // Grasa saludable: solo en superávit o si sobra margen de grasa
       if(isSuperavit&&mG>5){
         const grasaItem=(md.grasas_saludables||[])[0];
@@ -674,9 +672,7 @@ function autoGenerarMeals(c){
           cat:'grasa',catNom:'Grasa saludable',p100:grasaItem.p_100||0,c100:grasaItem.c_100||0,g100:grasaItem.g_100||0,k100:grasaItem.kcal_100||0});
       }
     } else {
-      // Snack en déficit: solo fruta + proteína, sin grasas
-      items.push({nom:'Manzana (o equivalente)',cantidad:210,u:'g',
-        cat:'fruta',catNom:'Fruta',p100:0.3,c100:13,g100:0.2,k100:52});
+      // Snack en déficit: proteína — fruta la elige el cliente
     }
     meals.push({id:mKey,nom:mealNoms[mKey],items});
   });
@@ -734,8 +730,12 @@ function getNutState(c){
 
 function nutCalc(it){
   const r=it.cantidad/100;
-  return{p:+(it.p100*r).toFixed(1),c:+(it.c100*r).toFixed(1),
-         g:+(it.g100*r).toFixed(1),k:Math.round(it.k100*r)};
+  const p100=it.p100||it.p_100||0;
+  const c100=it.c100||it.c_100||0;
+  const g100=it.g100||it.g_100||0;
+  const k100=it.k100||it.kcal_100||((p100*4)+(c100*4)+(g100*9));
+  return{p:+(p100*r).toFixed(1),c:+(c100*r).toFixed(1),
+         g:+(g100*r).toFixed(1),k:Math.round(k100*r)};
 }
 
 function nutSnapshot(cliId){
