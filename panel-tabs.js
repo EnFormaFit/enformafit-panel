@@ -440,18 +440,28 @@ function buildMedidasHTML(c){
 
 function renderMedidasTable(medidas,cliId){
   if(!medidas||typeof medidas!=='object')return'';
-  var MO=['Hombros','Pecho','Brazo izq','Brazo der','Cintura','Muslo izq','Muslo der','Gemelo izq','Gemelo der'];
+  // Canonical order with all key format mappings
+  var CANONICAL=[
+    {label:'Hombros',     keys:['hombros','hombros (zona más amplia)','hombros (zona mas amplia)']},
+    {label:'Pecho',       keys:['pecho','pecho (altura de pezones)']},
+    {label:'Brazo izq.',  keys:['brazoi','brazo izquierdo (zona más amplia)','brazo izquierdo (zona mas amplia)']},
+    {label:'Brazo dcho.', keys:['brazod','brazo derecho (zona más amplia)','brazo derecho (zona mas amplia)']},
+    {label:'Cintura ombligo', keys:['cintura','abdomen (altura del ombligo)']},
+    {label:'Muslo izq.',  keys:['musloi','muslo izquierdo (zona más amplia)','muslo izquierdo (zona mas amplia)']},
+    {label:'Muslo dcho.', keys:['muslod','muslo derecho (zona más amplia)','muslo derecho (zona mas amplia)']},
+    {label:'Gemelo izq.', keys:['gemeloi']},
+    {label:'Gemelo dcho.',keys:['gemelod']},
+  ];
   var sems=new Set(['S0','S4','S8','S12']);
   Object.values(medidas).forEach(function(v){if(typeof v==='object')Object.keys(v).forEach(function(k){sems.add(k);});});
   var sa=[...sems].sort(function(a,b){return parseInt(a.replace('S',''))-parseInt(b.replace('S',''));});
   var mf={};
-  MO.forEach(function(n){
-    var found=Object.keys(medidas).find(function(k){return k.toLowerCase().includes(n.toLowerCase().split(' ')[0]);});
-    mf[n]=found?medidas[found]:{};
-  });
-  Object.keys(medidas).forEach(function(k){
-    var inO=MO.some(function(m){return k.toLowerCase().includes(m.toLowerCase().split(' ')[0]);});
-    if(!inO)mf[k]=medidas[k];
+  CANONICAL.forEach(function(c){
+    var found=null;
+    Object.keys(medidas).forEach(function(k){
+      if(c.keys.indexOf(k.toLowerCase())>=0)found=k;
+    });
+    mf[c.label]=found?medidas[found]:{};
   });
   var rows='';
   Object.entries(mf).forEach(function(e,i){
