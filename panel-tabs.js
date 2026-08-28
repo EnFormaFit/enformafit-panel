@@ -568,7 +568,7 @@ function guardarMedidasBD(cliId){
     Object.entries(medidas).forEach(function(e){
       if(e[1][semLabel]!=null)medidasSem[e[0]]={[semLabel]:e[1][semLabel]};
     });
-    return apiCall('POST','/api/entreno/revision',{
+    return apiCall('POST','/api/entreno/revision-cliente',{
       cliente_id:cliId,semana:semNum,medidas:JSON.stringify(medidasSem),estado:'revisada'
     });
   });
