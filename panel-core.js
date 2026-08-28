@@ -338,7 +338,7 @@ function updateBadges(){
 }
 
 // ═══ NAV ═══
-const TITLES={ci:'Check-ins semana',rev1:'Revisiones 1:1',al1:'Alertas 1:1',uno:'Clientes 1:1',revp:'Revisiones programa',alp:'Alertas programa',prog:'Clientes programa',rut:'Editor rutinas',log:'Lógicas del plan',nuevo:'Nuevo cliente'};
+const TITLES={ci:'Check-ins semana',bd:'Base de datos — Rutinas y Ejercicios',rev1:'Revisiones 1:1',al1:'Alertas 1:1',uno:'Clientes 1:1',revp:'Revisiones programa',alp:'Alertas programa',prog:'Clientes programa',rut:'Editor rutinas',log:'Lógicas del plan',nuevo:'Nuevo cliente'};
 
 function nav(s){
   SEC=s;SEARCH='';VIEW='list';CLI_ID=null;EDITING=false;
@@ -636,4 +636,193 @@ async function abrirAppCliente(clienteId){
   }catch(e){
     toast('Error abriendo app: '+e.message,'rj');
   }
+}
+
+
+// ═══ BD DE RUTINAS Y EJERCICIOS ═══
+let _BD_TAB='rutinas';
+let _BD_RUTINAS=null;
+let _BD_EJERCICIOS=null;
+let _BD_RUTINA_EDIT=null;
+let _BD_EJ_SEARCH='';
+
+function renderBD(){
+  if(_BD_TAB==='rutinas'){
+    if(!_BD_RUTINAS){
+      apiCall('GET','/api/bd/rutinas').then(rows=>{_BD_RUTINAS=rows;render();}).catch(()=>{});
+      return'<div style="padding:20px;color:var(--t3)">Cargando rutinas...</div>';
+    }
+    return renderBDRutinas();
+  } else {
+    if(!_BD_EJERCICIOS){
+      apiCall('GET','/api/bd/ejercicios').then(rows=>{_BD_EJERCICIOS=rows;render();}).catch(()=>{});
+      return'<div style="padding:20px;color:var(--t3)">Cargando ejercicios...</div>';
+    }
+    return renderBDEjercicios();
+  }
+}
+
+function renderBDRutinas(){
+  const tabs=`<div style="display:flex;gap:8px;margin-bottom:16px">
+    <button class="btn ${_BD_TAB==='rutinas'?'btnp':'bo bs'}" onclick="_BD_TAB='rutinas';render()">📋 Rutinas (${_BD_RUTINAS?_BD_RUTINAS.length:0})</button>
+    <button class="btn ${_BD_TAB==='ejercicios'?'btnp':'bo bs'}" onclick="_BD_TAB='ejercicios';_BD_EJERCICIOS=null;render()">🏋️ Ejercicios</button>
+    <button class="btn bo bs" style="margin-left:auto" onclick="bdNuevaRutina()">+ Nueva rutina</button>
+  </div>`;
+
+  const lista=(_BD_RUTINAS||[]).map(r=>`
+    <div class="card" style="margin-bottom:8px;cursor:pointer" onclick="bdEditarRutina('${r.codigo}')">
+      <div class="cb" style="display:flex;align-items:center;gap:12px;padding:10px 14px">
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:13px">${r.codigo}</div>
+          <div style="font-size:11px;color:var(--t3)">${r.descripcion}</div>
+        </div>
+        <div style="font-size:11px;color:var(--t3)">${Object.keys(r.dias||{}).length} días</div>
+        <button class="btn bo bs" style="font-size:11px" onclick="event.stopPropagation();bdAsignarRutina('${r.codigo}')">Asignar</button>
+      </div>
+    </div>`).join('');
+
+  return`<div style="padding:16px">${tabs}${lista}</div>`;
+}
+
+function renderBDEjercicios(){
+  const tabs=`<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+    <button class="btn bo bs" onclick="_BD_TAB='rutinas';render()">← Rutinas</button>
+    <input class="tb-search" style="max-width:220px" placeholder="Buscar ejercicio..." 
+      value="${_BD_EJ_SEARCH}" oninput="_BD_EJ_SEARCH=this.value;render()">
+    <button class="btn bo bs" style="margin-left:auto" onclick="bdNuevoEjercicio()">+ Nuevo ejercicio</button>
+  </div>`;
+
+  const filtered=(_BD_EJERCICIOS||[]).filter(e=>
+    !_BD_EJ_SEARCH||e.nombre.toLowerCase().includes(_BD_EJ_SEARCH.toLowerCase())
+  );
+
+  const lista=filtered.map(e=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--bor)">
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600">${e.nombre}</div>
+        <div style="font-size:11px;color:var(--t3)">${e.sets}×${e.reps} · RIR ${e.rir}${e.aclaraciones?` · ${e.aclaraciones}`:''}</div>
+      </div>
+      ${e.url?`<a href="${e.url}" target="_blank" class="btn bo bs" style="font-size:11px">▶</a>`:''}
+      <button class="btn bo bs" style="font-size:11px" onclick="bdEditarEjercicio(${e.id})">✏️</button>
+    </div>`).join('');
+
+  return`<div style="padding:16px">${tabs}
+    <div style="font-size:12px;color:var(--t3);margin-bottom:8px">${filtered.length} ejercicios</div>
+    ${lista}
+  </div>`;
+}
+
+function bdEditarRutina(codigo){
+  const r=_BD_RUTINAS&&_BD_RUTINAS.find(x=>x.codigo===codigo);
+  if(!r)return;
+  _BD_RUTINA_EDIT=JSON.parse(JSON.stringify(r));
+  const ct=document.getElementById('ct');
+  if(ct)ct.innerHTML=renderBDRutinaEditor();
+}
+
+function renderBDRutinaEditor(){
+  if(!_BD_RUTINA_EDIT)return'';
+  const r=_BD_RUTINA_EDIT;
+  const DIAS=['LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES','SÁBADO','DOMINGO'];
+
+  const diasH=DIAS.map(dia=>{
+    const exs=(r.dias[dia]||[]);
+    const exsH=exs.map((ex,i)=>`
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+        <div style="flex:1;font-size:12px;padding:4px 8px;background:var(--bg);border-radius:6px">${ex}</div>
+        <button class="btn bo bs" style="font-size:10px;padding:3px 7px" 
+          onclick="bdRutinaQuitarEj('${dia}',${i})">✕</button>
+      </div>`).join('');
+
+    return`<div class="card" style="margin-bottom:8px">
+      <div class="ch" style="padding:8px 12px">
+        <span style="font-weight:700;font-size:12px">${dia}</span>
+        <button class="btn bo bs" style="font-size:10px" onclick="bdRutinaAnadirEj('${dia}')">+ Ejercicio</button>
+      </div>
+      <div class="cb" style="padding:8px 12px">${exsH||'<div style="font-size:11px;color:var(--t3)">Descanso</div>'}</div>
+    </div>`;
+  }).join('');
+
+  return`<div style="padding:16px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+      <button class="btn bo bs" onclick="_BD_RUTINA_EDIT=null;render()">← Volver</button>
+      <div style="flex:1">
+        <div style="font-weight:700">${r.codigo}</div>
+        <div style="font-size:11px;color:var(--t3)">${r.descripcion}</div>
+      </div>
+      <button class="btn btnp" onclick="bdGuardarRutina()">💾 Guardar</button>
+    </div>
+    ${diasH}
+  </div>`;
+}
+
+function bdRutinaAnadirEj(dia){
+  const nombre=prompt('Nombre del ejercicio:');
+  if(!nombre)return;
+  if(!_BD_RUTINA_EDIT.dias[dia])_BD_RUTINA_EDIT.dias[dia]=[];
+  _BD_RUTINA_EDIT.dias[dia].push(nombre);
+  const ct=document.getElementById('ct');
+  if(ct)ct.innerHTML=renderBDRutinaEditor();
+}
+
+function bdRutinaQuitarEj(dia,idx){
+  _BD_RUTINA_EDIT.dias[dia].splice(idx,1);
+  const ct=document.getElementById('ct');
+  if(ct)ct.innerHTML=renderBDRutinaEditor();
+}
+
+async function bdGuardarRutina(){
+  const r=_BD_RUTINA_EDIT;
+  try{
+    await apiCall('PATCH','/api/bd/rutinas/'+encodeURIComponent(r.codigo),{descripcion:r.descripcion,dias:r.dias});
+    _BD_RUTINAS=null; // force reload
+    _BD_RUTINA_EDIT=null;
+    toast('Rutina guardada ✓','vd');
+    render();
+  }catch(e){toast('Error: '+e.message,'rj');}
+}
+
+function bdNuevaRutina(){
+  const codigo=prompt('Código de la nueva rutina (ej: 4D.TP.NUEVO):');
+  if(!codigo)return;
+  const descripcion=prompt('Descripción:');
+  if(!descripcion)return;
+  apiCall('POST','/api/bd/rutinas',{codigo,descripcion,dias:{}}).then(()=>{
+    _BD_RUTINAS=null;toast('Rutina creada ✓','vd');render();
+  }).catch(e=>toast('Error: '+e.message,'rj'));
+}
+
+function bdEditarEjercicio(id){
+  const e=_BD_EJERCICIOS&&_BD_EJERCICIOS.find(x=>x.id===id);
+  if(!e)return;
+  const nombre=prompt('Nombre:',e.nombre);if(nombre===null)return;
+  const sets=prompt('Sets:',e.sets);if(sets===null)return;
+  const reps=prompt('Reps:',e.reps);if(reps===null)return;
+  const rir=prompt('RIR:',e.rir);if(rir===null)return;
+  const acl=prompt('Aclaraciones:',e.aclaraciones||'');if(acl===null)return;
+  const url=prompt('URL YouTube:',e.url||'');if(url===null)return;
+  apiCall('PATCH','/api/bd/ejercicios/'+id,{nombre,sets:parseInt(sets),reps,rir:parseFloat(rir),aclaraciones:acl,url}).then(()=>{
+    _BD_EJERCICIOS=null;toast('Ejercicio actualizado ✓','vd');render();
+  }).catch(e=>toast('Error: '+e.message,'rj'));
+}
+
+function bdNuevoEjercicio(){
+  const nombre=prompt('Nombre del ejercicio:');if(!nombre)return;
+  const sets=prompt('Sets:','3');if(sets===null)return;
+  const reps=prompt('Reps:','8-12');if(reps===null)return;
+  const rir=prompt('RIR:','2');if(rir===null)return;
+  const url=prompt('URL YouTube (opcional):','');if(url===null)return;
+  apiCall('POST','/api/bd/ejercicios',{nombre,sets:parseInt(sets),reps,rir:parseFloat(rir),url}).then(()=>{
+    _BD_EJERCICIOS=null;toast('Ejercicio creado ✓','vd');render();
+  }).catch(e=>toast('Error: '+e.message,'rj'));
+}
+
+function bdAsignarRutina(codigo){
+  if(!CLI_ID){toast('Abre un cliente primero','rj');return;}
+  const c=byId(CLI_ID);if(!c)return;
+  if(!confirm('¿Asignar rutina '+codigo+' a '+c.nom+'?'))return;
+  apiCall('PATCH','/api/clientes/'+CLI_ID,{rutina_cod:codigo}).then(()=>{
+    c.rutinaCod=codigo;
+    toast('Rutina asignada ✓','vd');
+  }).catch(e=>toast('Error: '+e.message,'rj'));
 }
