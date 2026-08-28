@@ -579,7 +579,7 @@ function tEditar(c){
       </div></div>
     </div>
     <div>
-      <div class="sec-t">Macros objetivo <span style="font-size:9px;font-weight:400;color:var(--t3)">(independientes de Nutrición)</span></div>
+      <div class="sec-t">Fase y objetivo semanal</div><div class="card" style="margin-bottom:12px"><div class="cb" style="padding:0 14px"><div class="dato"><label>Fase actual</label><select id="fase-${c.id}" style="font-size:14px;padding:4px 8px;border:1px solid var(--bor);border-radius:6px;background:#fff"><option value="deficit" ${(c.fase||'deficit')==='deficit'?'selected':''}>📉 Déficit</option><option value="reconstruccion" ${(c.fase||'')=='reconstruccion'?'selected':''}>🔄 Reconstrucción metabólica</option><option value="superavit" ${(c.fase||'')=='superavit'?'selected':''}>📈 Superávit</option></select></div><div class="dato" style="margin-top:8px"><label>Objetivo semanal (kg)</label><input type="number" step="0.1" id="obj-sem-${c.id}" value="${c.objSemKg!=null?c.objSemKg:''}" placeholder="ej: -0.5" style="width:120px;font-size:14px;padding:4px 8px;border:1px solid var(--bor);border-radius:6px"></div></div></div><div class="sec-t">Macros objetivo <span style="font-size:9px;font-weight:400;color:var(--t3)">(independientes de Nutrición)</span></div>
       <div class="card" style="margin-bottom:12px"><div class="cb" style="padding:0 14px">
         <div class="dato">
         <label>Calorías <span style="font-size:9px;color:var(--vd)">(calculadas automáticamente)</span></label>
