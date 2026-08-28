@@ -1,3 +1,77 @@
+
+// ═══ TAB: FORMULARIO INICIAL ═══
+function tFormulario(c){
+  const n=c.notas||{};
+  const NIVEL_NOM={0:'Principiante (0-1 año)',1:'Intermedio (1-3 años)',2:'Avanzado (3+ años)'};
+  const LUGAR_NOM={gym:'Gimnasio completo',sinmat:'Casa sin material',band:'Casa con bandas',bym:'Casa con bandas y mancuernas'};
+  const ACT_NOM={'1.2':'Sedentario','1.375':'Ligeramente activo','1.55':'Moderadamente activo','1.725':'Muy activo'};
+
+  function row(label, val){
+    if(!val&&val!==0)return'';
+    return'<div style="display:flex;gap:12px;padding:8px 0;border-bottom:1px solid var(--bor)">'+
+      '<div style="width:160px;font-size:11px;font-weight:700;color:var(--t3);flex-shrink:0">'+label+'</div>'+
+      '<div style="font-size:13px;color:var(--t1)">'+val+'</div>'+
+    '</div>';
+  }
+
+  function section(title, rows){
+    const content=rows.filter(Boolean).join('');
+    if(!content)return'';
+    return'<div class="card" style="margin-bottom:12px">'+
+      '<div class="ch"><span style="font-weight:700;font-size:13px">'+title+'</span></div>'+
+      '<div class="cb" style="padding:0 14px">'+content+'</div>'+
+    '</div>';
+  }
+
+  // Parse datos personales
+  const fechaNac=c.fechaNac?c.fechaNac.split('T')[0].split('-').reverse().join('/'):'—';
+  const edad=c.fechaNac?Math.floor((new Date()-new Date(c.fechaNac))/31557600000)+'años':'—';
+
+  const personal=section('👤 Datos personales',[
+    row('Nombre',c.nom),
+    row('Email',c.email),
+    row('Tipo de plan',c.tipo==='uno'?'1:1 Coaching':'Programa Grupal'),
+    row('Fecha nacimiento',fechaNac+' ('+edad+')'),
+    row('Peso inicial',c.pesoIni?c.pesoIni+'kg':'—'),
+    row('Altura',c.altura?c.altura+'cm':'—'),
+    row('Objetivo peso',c.obj?c.obj+'kg':'—'),
+  ]);
+
+  const entreno=section('🏋️ Entrenamiento',[
+    row('Días entreno/sem',c.diasSemana||n.dias_entreno),
+    row('Lugar',LUGAR_NOM[n.lugar]||n.lugar||c.equipamiento),
+    row('Tiempo por sesión',n.tiempo_ent?n.tiempo_ent+'min':'—'),
+    row('Nivel',NIVEL_NOM[n.nivel]||n.nivel),
+    row('Material libre',n.material_libre||'—'),
+  ]);
+
+  const nutri=section('🥗 Nutrición y salud',[
+    row('Nº comidas/día',c.comidas),
+    row('Actividad diaria',ACT_NOM[String(n.actividad)]||n.actividad),
+    row('Objetivo',n.objetivo==='def'?'Bajar grasa (déficit)':n.objetivo==='sup'?'Ganar músculo (superávit)':n.objetivo||'—'),
+    row('Fecha inicio deseada',n.fecha_inicio_deseada||'—'),
+  ]);
+
+  const salud=section('🩺 Salud',[
+    row('Lesiones/molestias',c.lesiones||'Ninguna'),
+    row('Alimentos a excluir',n.excluir_alimentos&&n.excluir_alimentos.length?n.excluir_alimentos.join(', '):'Ninguno'),
+    row('Patología',n.patologia||'Ninguna'),
+    row('Comentarios',n.comentarios||'—'),
+  ]);
+
+  const medidas=c.medidasS0&&Object.keys(c.medidasS0).length?section('📏 Medidas S0',
+    Object.entries(c.medidasS0).map(([k,v])=>row(k,typeof v==='object'?Object.values(v)[0]+' cm':v+' cm'))
+  ):'';
+
+  const fotos=n.fotos_count>0?'<div class="alert aaz" style="margin-bottom:12px">📸 '+n.fotos_count+' foto(s) enviadas con el formulario</div>':'';
+
+  if(!personal&&!entreno&&!nutri&&!salud){
+    return'<div style="padding:20px;color:var(--t3);text-align:center">Este cliente no fue creado mediante formulario o no hay datos del formulario disponibles.</div>';
+  }
+
+  return'<div style="padding:16px">'+fotos+personal+entreno+nutri+salud+medidas+'</div>';
+}
+
 // ═══ TAB: RESUMEN ═══
 function tResumen(c){
   const now=new Date();
