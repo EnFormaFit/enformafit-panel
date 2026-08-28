@@ -156,7 +156,7 @@ async function loadClientesFromAPI(){
         obj:objetivoKg?Math.round(objetivoKg*10)/10:Math.round(pesoIni*0.9*10)/10,
         altura:parseInt(r.altura)||175,
         semana:semanaActual,
-        semTotal:parseInt(r.semanas_bloque)||14,
+        semTotal:parseInt(r.semanas_bloque)||13,
         nextRev,
         diasSemana:parseInt(r.dias_entreno)||4,
         pasosObj:parseInt(r.pasos_obj)||8000,
