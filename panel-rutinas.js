@@ -658,6 +658,11 @@ async function guardarEditar(id){
   if(c.pasos!==undefined)patch.pasos_objetivo=c.pasos;
   if(c.inicioBloque){patch.fecha_inicio=c.inicioBloque;patch.bloque_fecha_inicio=c.inicioBloque;}
   if(c.macros){patch.kcal_asignadas=c.macros.kcal;patch.macros_p=c.macros.p;patch.macros_c=c.macros.c;patch.macros_g=c.macros.g;}
+  // Fase y objetivo semanal
+  const faseEl=document.getElementById('fase-'+id);
+  const objSemEl=document.getElementById('obj-sem-'+id);
+  if(faseEl){const fv=faseEl.value;c.fase=fv;patch.fase=fv;}
+  if(objSemEl&&objSemEl.value!==''){const osv=parseFloat(objSemEl.value);c.objSemKg=osv;patch.obj_sem_kg=osv;}
   try{
     await apiCall('PATCH',`/api/clientes/${id}`,patch);
     toast('✅ Cambios guardados','vd');
