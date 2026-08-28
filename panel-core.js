@@ -352,7 +352,7 @@ function nav(s){
 function render(){
   const ct=document.getElementById('ct');
   if(VIEW==='client'&&CLI_ID){renderClient(ct);return;}
-  const map={ci:rCI,rev1:()=>rRevs('uno'),al1:()=>rAlertas('uno'),uno:()=>rLista('uno'),revp:()=>rRevs('prog'),alp:()=>rAlertas('prog'),prog:()=>rLista('prog'),rut:rRutinas,log:rLogicas,nuevo:rNuevo};
+  const map={ci:rCI,rev1:()=>rRevs('uno'),al1:()=>rAlertas('uno'),uno:()=>rLista('uno'),revp:()=>rRevs('prog'),alp:()=>rAlertas('prog'),prog:()=>rLista('prog'),rut:rRutinas,log:rLogicas,nuevo:rNuevo,bd:renderBD};
   ct.innerHTML=(map[SEC]||rCI)();
 }
 
