@@ -21,6 +21,11 @@ function tResumen(c){
         <div class="rs-box"><div class="rs-v" style="color:${cambio<0?'var(--vd)':'var(--rj)'};font-size:16px">${cambio}</div><div class="rs-l">Cambio kg</div></div>
         <div class="rs-box"><div class="rs-v" style="color:var(--vd);font-size:16px">${objKg}</div><div class="rs-l">Objetivo kg</div></div>
         <div class="rs-box"><div class="rs-v" style="color:var(--az);font-size:16px">${bajaSem}</div><div class="rs-l">Ritmo kg/sem</div></div>
+        <div class="rs-box" style="min-width:120px">
+          <div class="rs-v" style="color:var(--az);font-size:13px">${{deficit:'📉 Déficit',reconstruccion:'🔄 Reconstrucción',superavit:'📈 Superávit'}[c.fase||'deficit']||'📉 Déficit'}</div>
+          <div class="rs-l">Fase actual</div>
+        </div>
+        ${c.objSemKg!=null?`<div class="rs-box"><div class="rs-v" style="color:${c.objSemKg<0?'var(--vd)':c.objSemKg>0?'var(--rj)':'var(--t3)'}">${c.objSemKg>0?'+':''}${c.objSemKg} kg</div><div class="rs-l">Objetivo sem.</div></div>`:''}
       </div>
       <div style="margin-bottom:12px">
         <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--t3);margin-bottom:4px">
