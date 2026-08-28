@@ -166,6 +166,8 @@ async function loadClientesFromAPI(){
         comentario:comentarioReal,
         medidasS0:medidasS0,
         entrenador:entrenadorAsignado,
+        fase:r.fase||'deficit',
+        objSemKg:r.obj_sem_kg!=null?parseFloat(r.obj_sem_kg):null,
         adh:parseFloat(r.adherencia)||0,
         checkInDone:false,
         revDone:false,
