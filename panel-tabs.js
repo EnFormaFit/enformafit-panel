@@ -442,15 +442,15 @@ function renderMedidasTable(medidas,cliId){
   if(!medidas||typeof medidas!=='object')return'';
   // Canonical order with all key format mappings
   var CANONICAL=[
-    {label:'Hombros',     keys:['hombros','hombros (zona más amplia)','hombros (zona mas amplia)']},
+    {label:'Hombros',     keys:['hombros','hombros (zona más amplia)','hombros (zona mas amplia)','hombros']},
     {label:'Pecho',       keys:['pecho','pecho (altura de pezones)']},
-    {label:'Brazo izq.',  keys:['brazoi','brazo izquierdo (zona más amplia)','brazo izquierdo (zona mas amplia)']},
-    {label:'Brazo dcho.', keys:['brazod','brazo derecho (zona más amplia)','brazo derecho (zona mas amplia)']},
-    {label:'Cintura ombligo', keys:['cintura','abdomen (altura del ombligo)']},
-    {label:'Muslo izq.',  keys:['musloi','muslo izquierdo (zona más amplia)','muslo izquierdo (zona mas amplia)']},
-    {label:'Muslo dcho.', keys:['muslod','muslo derecho (zona más amplia)','muslo derecho (zona mas amplia)']},
-    {label:'Gemelo izq.', keys:['gemeloi']},
-    {label:'Gemelo dcho.',keys:['gemelod']},
+    {label:'Brazo izq.',  keys:['brazoi','brazo izquierdo (zona más amplia)','brazo izquierdo (zona mas amplia)','brazo izq.']},
+    {label:'Brazo dcho.', keys:['brazod','brazo derecho (zona más amplia)','brazo derecho (zona mas amplia)','brazo dcho.']},
+    {label:'Cintura ombligo', keys:['cintura','abdomen (altura del ombligo)','cintura ombligo']},
+    {label:'Muslo izq.',  keys:['musloi','muslo izquierdo (zona más amplia)','muslo izquierdo (zona mas amplia)','muslo izq.']},
+    {label:'Muslo dcho.', keys:['muslod','muslo derecho (zona más amplia)','muslo derecho (zona mas amplia)','muslo dcho.']},
+    {label:'Gemelo izq.', keys:['gemeloi','gemelo izq.']},
+    {label:'Gemelo dcho.',keys:['gemelod','gemelo dcho.']},
   ];
   var sems=new Set(['S0','S4','S8','S12']);
   Object.values(medidas).forEach(function(v){if(typeof v==='object')Object.keys(v).forEach(function(k){sems.add(k);});});
