@@ -431,12 +431,12 @@ function renderClient(ct){
   // Add "Ver como cliente" button - opens app with client token
   const verComoCliente=`<button class="btn bo bs" style="font-size:11px" title="Ver la app como ve el cliente"
     onclick="abrirAppCliente('${c.id}')">👁 Ver app cliente</button>`;
-  const tabs=c.tipo==='uno'?['resumen','nutricion','entreno','checkin','revision','editar']:['resumen','nutricion','entreno','checkin','revision','editar'];
-  const TNOM={resumen:'Resumen',nutricion:'Nutrición',entreno:'Entreno',checkin:'Check-in',revision:'Revisión',editar:'Editar'};
+  const tabs=c.tipo==='uno'?['resumen','nutricion','entreno','checkin','revision','editar','formulario']:['resumen','nutricion','entreno','checkin','revision','editar','formulario'];
+  const TNOM={resumen:'Resumen',nutricion:'Nutrición',entreno:'Entreno',checkin:'Check-in',revision:'Revisión',editar:'Editar',formulario:'📋 Formulario inicial'};
   const tabsH=tabs.map(t=>`<button class="fs-tab${t===CLI_TAB?' on':''}" onclick="setTab('${t}')">${TNOM[t]}</button>`).join('');
   const isFinalRev=(c.tipo==='programa'&&c.nextRev===12)||(c.tipo==='uno'&&c.nextRev===11);
   const PP=c.tipo==='programa'?(isFinalRev?PP_PROG_FINAL:PP_PROG):(isFinalRev?PP_UNO_FINAL:PP_UNO);
-  const fns={resumen:tResumen,nutricion:tNutricion,entreno:tEntreno,checkin:tCheckin,revision:tRevision,editar:tEditar};
+  const fns={resumen:tResumen,nutricion:tNutricion,entreno:tEntreno,checkin:tCheckin,revision:tRevision,editar:tEditar,formulario:tFormulario};
   ct.innerHTML=`<div class="fs">
     <div class="fs-hd">
       <div style="display:flex;align-items:center;gap:6px">
