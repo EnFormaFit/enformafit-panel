@@ -643,6 +643,9 @@ async function abrirAppCliente(clienteId){
 let _BD_TAB='rutinas';
 let _BD_RUTINAS=null;
 let _BD_EJERCICIOS=null;
+let _BD_ALIMENTOS=null;
+let _BD_ALI_SEARCH='';
+let _BD_ALI_MEAL='todos';
 let _BD_RUTINA_EDIT=null;
 let _BD_EJ_SEARCH='';
 
@@ -653,19 +656,26 @@ function renderBD(){
       return'<div style="padding:20px;color:var(--t3)">Cargando rutinas...</div>';
     }
     return renderBDRutinas();
-  } else {
+  } else if(_BD_TAB==='ejercicios'){
     if(!_BD_EJERCICIOS){
       apiCall('GET','/api/bd/ejercicios').then(rows=>{_BD_EJERCICIOS=rows;render();}).catch(()=>{});
       return'<div style="padding:20px;color:var(--t3)">Cargando ejercicios...</div>';
     }
     return renderBDEjercicios();
+  } else {
+    if(!_BD_ALIMENTOS){
+      apiCall('GET','/api/bd/alimentos').then(rows=>{_BD_ALIMENTOS=rows;render();}).catch(()=>{});
+      return'<div style="padding:20px;color:var(--t3)">Cargando alimentos...</div>';
+    }
+    return renderBDAlimentos();
   }
 }
 
 function renderBDRutinas(){
-  const tabs=`<div style="display:flex;gap:8px;margin-bottom:16px">
+  const tabs=`<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
     <button class="btn ${_BD_TAB==='rutinas'?'btnp':'bo bs'}" onclick="_BD_TAB='rutinas';render()">📋 Rutinas (${_BD_RUTINAS?_BD_RUTINAS.length:0})</button>
     <button class="btn ${_BD_TAB==='ejercicios'?'btnp':'bo bs'}" onclick="_BD_TAB='ejercicios';_BD_EJERCICIOS=null;render()">🏋️ Ejercicios</button>
+    <button class="btn ${_BD_TAB==='alimentos'?'btnp':'bo bs'}" onclick="_BD_TAB='alimentos';_BD_ALIMENTOS=null;render()">🥗 Alimentos</button>
     <button class="btn bo bs" style="margin-left:auto" onclick="bdNuevaRutina()">+ Nueva rutina</button>
   </div>`;
 
@@ -815,6 +825,91 @@ function bdNuevoEjercicio(){
   apiCall('POST','/api/bd/ejercicios',{nombre,sets:parseInt(sets),reps,rir:parseFloat(rir),url}).then(()=>{
     _BD_EJERCICIOS=null;toast('Ejercicio creado ✓','vd');render();
   }).catch(e=>toast('Error: '+e.message,'rj'));
+}
+
+function renderBDAlimentos(){
+  const MEALS=['todos','desayuno','comida','cena','snack'];
+  const MEAL_NOM={todos:'Todos',desayuno:'Desayuno',comida:'Comida',cena:'Cena',snack:'Snack'};
+  const CATS={proteinas_magras:'Proteína magra',proteinas_grasas:'Proteína grasa',hidratos:'Hidrato',verduras:'Verdura',grasas:'Grasa saludable',frutas:'Fruta',grasas_superavit:'Grasa (superávit)'};
+
+  const mealTabs=MEALS.map(m=>`<button class="btn ${_BD_ALI_MEAL===m?'btnp':'bo bs'}" style="font-size:11px" onclick="_BD_ALI_MEAL='${m}';render()">${MEAL_NOM[m]}</button>`).join('');
+
+  let filtered=(_BD_ALIMENTOS||[]).filter(a=>
+    (_BD_ALI_MEAL==='todos'||a.comida===_BD_ALI_MEAL)&&
+    (!_BD_ALI_SEARCH||a.nom.toLowerCase().includes(_BD_ALI_SEARCH.toLowerCase()))
+  );
+
+  const lista=filtered.map(a=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--bor)">
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600">${a.nom}</div>
+        <div style="font-size:11px;color:var(--t3)">${CATS[a.categoria]||a.categoria} · ${a.cantidad}${a.u} · ${a.p}P ${a.c}C ${a.g}G ${a.kcal}kcal</div>
+      </div>
+      <button class="btn bo bs" style="font-size:11px" onclick="bdEditarAlimento(${a.id})">✏️</button>
+      <button class="btn bo bs" style="font-size:11px;color:var(--rj)" onclick="bdEliminarAlimento(${a.id},'${a.nom.replace(/'/g,'\\&apos;')}')">✕</button>
+    </div>`).join('');
+
+  return`<div style="padding:16px">
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+      <button class="btn bo bs" onclick="_BD_TAB='rutinas';render()">← Volver</button>
+      <input class="tb-search" style="max-width:200px" placeholder="Buscar alimento..." 
+        value="${_BD_ALI_SEARCH}" oninput="_BD_ALI_SEARCH=this.value;render()">
+      <button class="btn btnp" onclick="bdPublicarAlimentos()" style="margin-left:auto">🚀 Publicar en app</button>
+      <button class="btn bo bs" onclick="bdNuevoAlimento()">+ Nuevo</button>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">${mealTabs}</div>
+    <div style="font-size:11px;color:var(--t3);margin-bottom:8px">${filtered.length} alimentos</div>
+    ${lista}
+  </div>`;
+}
+
+function bdEditarAlimento(id){
+  const a=_BD_ALIMENTOS&&_BD_ALIMENTOS.find(x=>x.id===id);
+  if(!a)return;
+  const nom=prompt('Nombre:',a.nom);if(nom===null)return;
+  const cantidad=prompt('Cantidad (g):',a.cantidad);if(cantidad===null)return;
+  const p=prompt('Proteína (g):',a.p);if(p===null)return;
+  const c=prompt('Carbos (g):',a.c);if(c===null)return;
+  const g=prompt('Grasa (g):',a.g);if(g===null)return;
+  const kcal=prompt('Kcal:',a.kcal);if(kcal===null)return;
+  apiCall('PATCH','/api/bd/alimentos/'+id,{
+    nom,comida:a.comida,categoria:a.categoria,
+    cantidad:parseFloat(cantidad),u:a.u,
+    p:parseFloat(p),c:parseFloat(c),g:parseFloat(g),kcal:parseFloat(kcal)
+  }).then(()=>{_BD_ALIMENTOS=null;toast('Alimento actualizado ✓','vd');render();})
+    .catch(e=>toast('Error: '+e.message,'rj'));
+}
+
+function bdNuevoAlimento(){
+  const nom=prompt('Nombre del alimento:');if(!nom)return;
+  const comida=prompt('Comida (desayuno/comida/cena/snack):');if(!comida)return;
+  const categoria=prompt('Categoría (proteinas_magras/proteinas_grasas/hidratos/verduras/grasas/frutas):');if(!categoria)return;
+  const cantidad=prompt('Cantidad (g):','100');if(cantidad===null)return;
+  const p=prompt('Proteína (g):','0');if(p===null)return;
+  const c=prompt('Carbos (g):','0');if(c===null)return;
+  const g=prompt('Grasa (g):','0');if(g===null)return;
+  const kcal=prompt('Kcal:','0');if(kcal===null)return;
+  apiCall('POST','/api/bd/alimentos',{
+    nom,comida,categoria,cantidad:parseFloat(cantidad),u:'g',
+    p:parseFloat(p),c:parseFloat(c),g:parseFloat(g),kcal:parseFloat(kcal)
+  }).then(()=>{_BD_ALIMENTOS=null;toast('Alimento creado ✓','vd');render();})
+    .catch(e=>toast('Error: '+e.message,'rj'));
+}
+
+function bdEliminarAlimento(id,nom){
+  if(!confirm('¿Eliminar "'+nom+'"?'))return;
+  apiCall('DELETE','/api/bd/alimentos/'+id)
+    .then(()=>{_BD_ALIMENTOS=null;toast('Eliminado ✓','vd');render();})
+    .catch(e=>toast('Error: '+e.message,'rj'));
+}
+
+async function bdPublicarAlimentos(){
+  if(!confirm('¿Publicar los alimentos en la app? Esto actualizará el MENU para todos los clientes.'))return;
+  toast('Publicando...','');
+  try{
+    await apiCall('POST','/api/bd/alimentos/publicar',{});
+    toast('✅ Alimentos publicados en la app','vd');
+  }catch(e){toast('Error publicando: '+e.message,'rj');}
 }
 
 function bdAsignarRutina(codigo){
