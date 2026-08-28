@@ -395,7 +395,7 @@ function buildPesoGrid(pesoRows,inicioBloque,semanaActual){
     var dw=d.getDay();var di=dw===0?6:dw-1;
     if(!pm[sem])pm[sem]={};pm[sem][di]=p.v;
   });
-  var sa=Array.from({length:maxSem+1},function(_,i){return i;});
+  var sa=Array.from({length:maxSem},function(_,i){return i+1;}); // start from S1, skip S0
   var md={};
   sa.forEach(function(s){
     var vs=Object.values(pm[s]||{}).filter(function(v){return v>0;});
