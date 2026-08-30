@@ -662,12 +662,30 @@ function loadMedidasCliente(cliId){
   apiCall('GET','/api/entreno/revisiones/'+cliId)
     .then(rows=>{
       if(!rows||!rows.length){toast('Sin medidas en BD','');return;}
+      const c=byId(cliId);
+      if(c){
+        // Load fotos from all revisions into c.revision.fotos
+        if(!c.revision)c.revision={fotos:{}};
+        if(!c.revision.fotos)c.revision.fotos={};
+        rows.forEach(function(rev){
+          const sem=rev.semana;
+          const fotos=typeof rev.fotos==='string'?JSON.parse(rev.fotos||'{}'):rev.fotos||{};
+          Object.entries(fotos).forEach(([pose,url])=>{
+            if(url)c.revision.fotos['s'+sem+'_'+pose]=url;
+          });
+        });
+      }
       const s0=rows.find(r=>r.semana===0);
-      if(!s0||!s0.medidas){toast('Sin medidas S0','');return;}
+      if(!s0||!s0.medidas){
+        const el=document.getElementById('medidas-'+cliId);
+        if(el)el.innerHTML='<div style="padding:12px;color:var(--t3);font-size:12px">Sin medidas S0 registradas</div>';
+        return;
+      }
       const el=document.getElementById('medidas-'+cliId);
       if(el)el.innerHTML=renderMedidasTable(
         typeof s0.medidas==='string'?JSON.parse(s0.medidas):s0.medidas, rows);
-      toast('Medidas cargadas','vd');
+      toast('Medidas y fotos cargadas','vd');
+      render();
     }).catch(e=>toast('Error: '+e.message,'rj'));
 }
 
