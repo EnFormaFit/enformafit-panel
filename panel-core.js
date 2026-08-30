@@ -153,7 +153,7 @@ async function loadClientesFromAPI(){
         fechaNac:toDate(r.fecha_nacimiento),
         pesoIni,
         pesoAct,
-        obj:objetivoKg?Math.round(objetivoKg*10)/10:Math.round(pesoIni*0.9*10)/10,
+        obj:r.objetivo_kg?Math.round(parseFloat(r.objetivo_kg)*10)/10:(objetivoKg?Math.round(objetivoKg*10)/10:Math.round(pesoIni*0.9*10)/10),
         altura:parseInt(r.altura)||175,
         semana:semanaActual,
         semTotal:parseInt(r.semanas_bloque)||13,
