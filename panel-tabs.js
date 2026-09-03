@@ -794,9 +794,7 @@ function getNutState(c){
   if(c.alimentos&&Object.keys(c.alimentos).length>0){
     const bdMeals=[];
     // Use all keys from c.alimentos — includes custom meals like snack_pm, snack_am, etc.
-    const MEAL_NOMS_MAP={desayuno:'☀️ Desayuno',comida:'🌞 Comida',cena:'🌙 Cena',snack:'🍎 Snack',
-      snack_am:'🍎 Snack mañana',snack_pm:'🍎 Snack tarde',post_entreno:'💪 Post-entreno',
-      desayuno_extra:'☀️ Desayuno extra',comida_extra:'🌞 Comida extra',cena_extra:'🌙 Cena extra'};
+
     const MEAL_ORDER_BASE=['desayuno','desayuno_extra','snack_am','comida','comida_extra','post_entreno','cena','cena_extra','snack_pm','snack'];
     // Build ordered list: base order first, then any extra keys
     const allKeys=Object.keys(c.alimentos);
