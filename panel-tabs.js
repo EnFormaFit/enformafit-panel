@@ -1175,6 +1175,7 @@ function nutAddMealFromTemplate(cliId,templateId,nom,tipo){
   state.meals.push({id:templateId+'_'+Date.now(),nom,items});
   // Close picker
   document.querySelectorAll('[id^="nut-addmeal-picker-"]').forEach(el=>el.remove());
+  nutSaveBD(cliId);
   nutRepaint(cliId);
   toast(nom+' añadida','vd');
 }
