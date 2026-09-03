@@ -772,8 +772,7 @@ function autoGenerarMeals(c){
       if(verd)items.push({nom:verd.nom,cantidad:verd.cantidad||200,u:verd.u||'g',
         cat:'verd',catNom:'Verdura',p100:verd.p_100||0,c100:verd.c_100||0,g100:verd.g_100||0,k100:verd.kcal_100||0});
       // Fruta
-      items.push({nom:'Manzana (o equivalente)',cantidad:210,u:'g',
-        cat:'fruta',catNom:'Fruta',p100:0.3,c100:13,g100:0.2,k100:52});
+
       // Grasa saludable: solo en superávit o si sobra margen de grasa
       if(isSuperavit&&mG>5){
         const grasaItem=(md.grasas_saludables||[])[0];
@@ -782,8 +781,7 @@ function autoGenerarMeals(c){
       }
     } else {
       // Snack en déficit: solo fruta + proteína, sin grasas
-      items.push({nom:'Manzana (o equivalente)',cantidad:210,u:'g',
-        cat:'fruta',catNom:'Fruta',p100:0.3,c100:13,g100:0.2,k100:52});
+
     }
     meals.push({id:mKey,nom:mealNoms[mKey],items});
   });
