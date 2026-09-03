@@ -1172,7 +1172,12 @@ function nutAddMealFromTemplate(cliId,templateId,nom,tipo){
         u:def.u||'g'});
     });
   }
-  state.meals.push({id:templateId+'_'+Date.now(),nom,items});
+  // Use stable ID: templateId, or templateId_2, _3 etc if already exists
+  var mealId=templateId;
+  var existingIds=state.meals.map(function(m){return m.id;});
+  var counter=2;
+  while(existingIds.indexOf(mealId)>=0){mealId=templateId+'_'+counter;counter++;}
+  state.meals.push({id:mealId,nom,items});
   // Close picker
   document.querySelectorAll('[id^="nut-addmeal-picker-"]').forEach(el=>el.remove());
   nutSaveBD(cliId);
