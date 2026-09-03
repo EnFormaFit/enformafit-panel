@@ -1113,6 +1113,7 @@ function nutDelMeal(cliId,mi){
   UNDO_NUT.push({cliId,structural:true,snap:nutSnapshot(cliId)});
   if(UNDO_NUT.length>UNDO_MAX)UNDO_NUT.shift();
   state.meals.splice(mi,1);
+  nutSaveBD(cliId);
   nutRepaint(cliId);
   toast('Comida eliminada — Ctrl+Z para deshacer','');
 }
