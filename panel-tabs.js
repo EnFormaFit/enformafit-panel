@@ -1069,13 +1069,25 @@ function nutUndo(){
 // ── STRUCTURAL CHANGES ──
 function nutSaveBD(cliId){
   if(!API_TOKEN||!cliId)return;
+  // Build alimentos from current state
   const ns=getNutState(byId(cliId));
   const alimentos={};
-  (ns.meals||[]).forEach(m=>{alimentos[m.id]=(m.items||[]).map(it=>({nom:it.nom,cantidad:it.cantidad,u:it.u||'g',cat:it.cat,p100:it.p100||0,c100:it.c100||0,g100:it.g100||0,k100:it.k100||0}));});
-  clearTimeout(window._nutSaveBD);
-  window._nutSaveBD=setTimeout(()=>{
-    apiCall('PATCH','/api/bd/plan-nutricion/'+cliId,{distribucion:JSON.stringify(alimentos)}).catch(()=>{});
-  },500);
+  (ns.meals||[]).forEach(function(m){
+    alimentos[m.id]=(m.items||[]).map(function(it){
+      return {nom:it.nom,cantidad:it.cantidad,u:it.u||'g',cat:it.cat,
+              p100:it.p100||0,c100:it.c100||0,g100:it.g100||0,k100:it.k100||0};
+    });
+  });
+  // Update client object so reload shows correct data
+  const c=byId(cliId);
+  if(c)c.alimentos=alimentos;
+  // Debounce save to BD
+  clearTimeout(window['_nutSave_'+cliId]);
+  window['_nutSave_'+cliId]=setTimeout(function(){
+    apiCall('PATCH','/api/bd/plan-nutricion/'+cliId,{distribucion:JSON.stringify(alimentos)})
+      .then(function(){console.log('[Nutri] Guardado OK');})
+      .catch(function(e){console.warn('[Nutri] Error guardando:',e.message);});
+  },800);
 }
 
 function nutDelItem(cliId,mi,ii){
