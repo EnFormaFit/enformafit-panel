@@ -974,6 +974,7 @@ function nutPickItem(cliId,mi,cat,oi,nom,cantidad,p100,c100,g100,k100,u){
   // Close picker
   const pickerId=`nut-picker-${cliId}-${mi}`;
   document.getElementById(pickerId)?.remove();
+  nutSaveBD(cliId);
   nutRepaint(cliId);
   toast(nom+' añadido ✓','vd');
 }
