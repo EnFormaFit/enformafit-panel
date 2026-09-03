@@ -1415,4 +1415,5 @@ function tEntrenoGrid(c){
     <div class="cb" style="padding:10px 14px">${grid}</div>
   </div>`;
 }
+var MEAL_NOMS_MAP={desayuno:'☀️ Desayuno',comida:'🌞 Comida',cena:'🌙 Cena',snack:'🍎 Snack',snack_am:'🍎 Snack mañana',snack_pm:'🍎 Snack tarde',post_entreno:'💪 Post-entreno',desayuno_extra:'☀️ Desayuno extra',comida_extra:'🌞 Comida extra',cena_extra:'🌙 Cena extra'};
 
