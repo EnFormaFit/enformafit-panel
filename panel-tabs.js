@@ -1038,15 +1038,7 @@ function nutSave(inp){
   const state=getNutState(byId(cliId));
   if(state.meals[mi]?.items[ii])state.meals[mi].items[ii].cantidad=newVal;
   inp.dataset.orig=String(newVal);
-  clearTimeout(window._nutSaveBD);
-  window._nutSaveBD=setTimeout(()=>{
-    if(API_TOKEN&&cliId){
-      const ns=getNutState(byId(cliId));
-      const alimentos={};
-      (ns.meals||[]).forEach(m=>{alimentos[m.id]=(m.items||[]).map(it=>({nom:it.nom,cantidad:it.cantidad,u:it.u||'g',cat:it.cat,p100:it.p100||0,c100:it.c100||0,g100:it.g100||0,k100:it.k100||0}));});
-      nutSaveBD(cliId);
-    }
-  },100);
+  nutSaveBD(cliId);
 }
 
 // ── UNDO (handles both quantity changes and structural) ──
