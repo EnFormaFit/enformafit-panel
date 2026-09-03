@@ -1050,9 +1050,9 @@ function nutSave(inp){
       const ns=getNutState(byId(cliId));
       const alimentos={};
       (ns.meals||[]).forEach(m=>{alimentos[m.id]=(m.items||[]).map(it=>({nom:it.nom,cantidad:it.cantidad,u:it.u||'g',cat:it.cat,p100:it.p100||0,c100:it.c100||0,g100:it.g100||0,k100:it.k100||0}));});
-      apiCall('PATCH','/api/bd/plan-nutricion/'+cliId,{distribucion:JSON.stringify(alimentos)}).catch(()=>{});
+      nutSaveBD(cliId);
     }
-  },2000);
+  },100);
 }
 
 // ── UNDO (handles both quantity changes and structural) ──
@@ -1078,6 +1078,17 @@ function nutUndo(){
 }
 
 // ── STRUCTURAL CHANGES ──
+function nutSaveBD(cliId){
+  if(!API_TOKEN||!cliId)return;
+  const ns=getNutState(byId(cliId));
+  const alimentos={};
+  (ns.meals||[]).forEach(m=>{alimentos[m.id]=(m.items||[]).map(it=>({nom:it.nom,cantidad:it.cantidad,u:it.u||'g',cat:it.cat,p100:it.p100||0,c100:it.c100||0,g100:it.g100||0,k100:it.k100||0}));});
+  clearTimeout(window._nutSaveBD);
+  window._nutSaveBD=setTimeout(()=>{
+    apiCall('PATCH','/api/bd/plan-nutricion/'+cliId,{distribucion:JSON.stringify(alimentos)}).catch(()=>{});
+  },500);
+}
+
 function nutDelItem(cliId,mi,ii){
   const state=getNutState(byId(cliId));
   if(!state.meals[mi])return;
@@ -1085,6 +1096,7 @@ function nutDelItem(cliId,mi,ii){
   if(UNDO_NUT.length>UNDO_MAX)UNDO_NUT.shift();
   state.meals[mi].items.splice(ii,1);
   nutRepaint(cliId);
+  nutSaveBD(cliId);
   toast('Eliminado — Ctrl+Z para deshacer','');
 }
 
