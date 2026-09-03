@@ -783,7 +783,7 @@ function autoGenerarMeals(c){
       // Snack en déficit: solo fruta + proteína, sin grasas
 
     }
-    meals.push({id:mKey,nom:mealNoms[mKey],items});
+    meals.push({id:mKey,nom:MEAL_NOMS_MAP[mKey]||mKey,items});
   });
   return meals;
 }
@@ -793,8 +793,14 @@ function getNutState(c){
   // If client has alimentos from BD plan, use those
   if(c.alimentos&&Object.keys(c.alimentos).length>0){
     const bdMeals=[];
-    const mealOrder=['desayuno','comida','cena','snack'];
-    const mealNoms={desayuno:'☀️ Desayuno',comida:'🌞 Comida',cena:'🌙 Cena',snack:'🍎 Snack'};
+    // Use all keys from c.alimentos — includes custom meals like snack_pm, snack_am, etc.
+    const MEAL_NOMS_MAP={desayuno:'☀️ Desayuno',comida:'🌞 Comida',cena:'🌙 Cena',snack:'🍎 Snack',
+      snack_am:'🍎 Snack mañana',snack_pm:'🍎 Snack tarde',post_entreno:'💪 Post-entreno',
+      desayuno_extra:'☀️ Desayuno extra',comida_extra:'🌞 Comida extra',cena_extra:'🌙 Cena extra'};
+    const MEAL_ORDER_BASE=['desayuno','desayuno_extra','snack_am','comida','comida_extra','post_entreno','cena','cena_extra','snack_pm','snack'];
+    // Build ordered list: base order first, then any extra keys
+    const allKeys=Object.keys(c.alimentos);
+    const mealOrder=[...MEAL_ORDER_BASE.filter(k=>allKeys.includes(k)),...allKeys.filter(k=>!MEAL_ORDER_BASE.includes(k))];
     mealOrder.forEach(mKey=>{
       const items=c.alimentos[mKey];
       if(!items||!items.length)return;
@@ -811,7 +817,7 @@ function getNutState(c){
         }
         return{...it,p100,c100,g100,k100,catNom:CAT_NOM_NUT[it.cat]||it.cat};
       });
-      bdMeals.push({id:mKey,nom:mealNoms[mKey]||mKey,items:enriched});
+      bdMeals.push({id:mKey,nom:MEAL_NOMS_MAP[mKey]||mKey||mKey,items:enriched});
     });
     if(bdMeals.length>0){
       // Add fruta option to desayuno, comida, cena — reduce hidrat by 20g
