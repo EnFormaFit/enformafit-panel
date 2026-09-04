@@ -328,7 +328,26 @@ function tRevision(c){
       if(rows&&rows.length){c.histPesos=rows.map(r=>({f:new Date(r.fecha).toISOString().split('T')[0],v:parseFloat(r.peso)}));setTab('revision');}
     }).catch(()=>{});
   }
-  if(!rev&&c.semana!==nextRev)return`${statsH}${buildMedidasHTML(c)}<div style="text-align:center;padding:30px;color:var(--t3)"><div style="font-size:48px;margin-bottom:12px">📅</div><div style="font-size:16px;font-weight:700">Próxima revisión: S${nextRev}</div><div style="font-size:13px;margin-top:6px">Semana actual: S${c.semana}</div></div>`;
+  // Auto-load revisiones y fotos si no están cargadas
+  if(!c._revLoaded&&API_TOKEN){
+    c._revLoaded=true;
+    apiCall('GET','/api/entreno/revisiones/'+c.id).then(function(rows){
+      if(!rows||!rows.length)return;
+      if(!c.revision)c.revision={fotos:{},medidas:{}};
+      if(!c.revision.fotos)c.revision.fotos={};
+      var PM={frente:0,perfil_d:1,perfil_i:2,espalda:3};
+      rows.forEach(function(r){
+        var sem=r.semana;
+        var fotos=typeof r.fotos==='string'?JSON.parse(r.fotos||'{}'):r.fotos||{};
+        Object.entries(fotos).forEach(function(e){
+          var pi=PM[e[0]];
+          if(e[1])c.revision.fotos[pi!==undefined?'s'+sem+'_'+pi:'s'+sem+'_'+e[0]]=e[1];
+        });
+      });
+      setTab('revision');
+    }).catch(function(){});
+  }
+
 
   // FOTOS: cada postura en su fila, S0 vs actual lado a lado
   // object-fit:cover + object-position: permite crop manual
