@@ -532,6 +532,19 @@ function cpImportConfirm(sem,idx){
   picker.remove();
   document.querySelectorAll('[style*="rgba(0,0,0,.4)"]').forEach(el=>el.remove());
   ENT_VIEW='grid';RUT_SEM=sem;
+  // Update DIAS_BASE to reflect the new rutina's training days
+  if(semsToApply.includes(RUT_SEM)){
+    const semData=RUTINAS[cliId][RUT_SEM]||{};
+    DIAS_BASE.forEach(function(d,i){
+      const ejes=semData[i];
+      d.rest=!ejes||ejes.length===0;
+      if(!d.rest&&ejes&&ejes.length>0){
+        // Use tipo from rutData if available
+        const rutDayData=rutData[String(i)];
+        if(rutDayData&&rutDayData.tipo)d.tipo=rutDayData.tipo;
+      }
+    });
+  }
   guardarRutinaEnBD(cliId);
   if(VIEW==='client')setTab('entreno');else render();
   toast('✅ '+code+' en '+(semsToApply.length>1?semsToApply.length+' semanas':'S'+sem)+' — Ctrl+Z para deshacer','vd');
