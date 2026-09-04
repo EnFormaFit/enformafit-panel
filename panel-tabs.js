@@ -321,7 +321,27 @@ function tRevision(c){
   ${buildPesoGrid(c.histPesos&&c.histPesos.length?c.histPesos:[],c.inicioBloque,c.semana)}`;
 
   // Auto-load pesos if empty
-    if(!c._fotosLoaded&&API_TOKEN){c._fotosLoaded=true;apiCall('GET','/api/entreno/revisiones/'+c.id).then(function(rows){if(!rows||!rows.length)return;if(!c.revision)c.revision={fotos:{}};if(!c.revision.fotos)c.revision.fotos={};rows.forEach(function(rev){var sem=rev.semana;var fotos=typeof rev.fotos==='string'?JSON.parse(rev.fotos||'{}'):rev.fotos||{};Object.entries(fotos).forEach(function(e){if(e[1])c.revision.fotos['s'+sem+'_'+e[0]]=e[1];});});setTab('revision');}).catch(function(){});}
+    
+    if(!c._fotosLoaded&&API_TOKEN){
+    c._fotosLoaded=true;
+    var POSE_IDX_MAP={frente:0,perfil_d:1,perfil_i:2,espalda:3};
+    apiCall('GET','/api/entreno/revisiones/'+c.id).then(function(rows){
+      if(!rows||!rows.length)return;
+      if(!c.revision)c.revision={fotos:{},medidas:{}};
+      if(!c.revision.fotos)c.revision.fotos={};
+      rows.forEach(function(rev){
+        var sem=rev.semana;
+        var fotos=typeof rev.fotos==='string'?JSON.parse(rev.fotos||'{}'):rev.fotos||{};
+        Object.entries(fotos).forEach(function(entry){
+          var pi=POSE_IDX_MAP[entry[0]];
+          var key=pi!==undefined?'s'+sem+'_'+pi:'s'+sem+'_'+entry[0];
+          if(entry[1])c.revision.fotos[key]=entry[1];
+        });
+      });
+      var el=document.getElementById('tab-revision');
+      if(el)el.innerHTML=tRevision(c);
+    }).catch(function(){});
+  }
   if(!c.histPesos||!c.histPesos.length){
     if(API_TOKEN)apiCall('GET','/api/entreno/pesos/'+c.id).then(rows=>{
       if(rows&&rows.length){c.histPesos=rows.map(r=>({f:new Date(r.fecha).toISOString().split('T')[0],v:parseFloat(r.peso)}));setTab('revision');}
