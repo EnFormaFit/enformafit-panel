@@ -123,7 +123,7 @@ async function loadClientesFromAPI(){
       try{
         if(r.notas_entrenador){
           const notas=JSON.parse(r.notas_entrenador);
-          rutinaDias=notas.rutina_dias||{};
+          rutinaDias=notas.rutina_base||notas.rutina_dias||{};
           rutinaSemanas=notas.rutina_semanas||{};
           objetivoKg=notas.objetivo_kg||null;
           semanaActual=notas.semana_actual||semana;
@@ -183,6 +183,7 @@ async function loadClientesFromAPI(){
         entrenador:'alvaro',
         nivel:parseInt(r.nivel)||1,
         rutina:r.rutina_cod||r.rutina_actual||'4D.TP',
+        rutinaBase:rutinaDias,
         rutinaDias,
         rutinaSemanas,
         alimentos,
