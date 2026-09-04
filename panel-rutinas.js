@@ -532,6 +532,7 @@ function cpImportConfirm(sem,idx){
   picker.remove();
   document.querySelectorAll('[style*="rgba(0,0,0,.4)"]').forEach(el=>el.remove());
   ENT_VIEW='grid';RUT_SEM=sem;
+  guardarRutinaEnBD(cliId);
   if(VIEW==='client')setTab('entreno');else render();
   toast('✅ '+code+' en '+(semsToApply.length>1?semsToApply.length+' semanas':'S'+sem)+' — Ctrl+Z para deshacer','vd');
 }
