@@ -193,13 +193,14 @@ async function loadClientesFromAPI(){
     // Replace C array — Gerard solo ve sus clientes asignados
     C.length=0;
     mapped.forEach(c=>{
-      if(window.ENTRENADOR_ACTIVO==='gerard'){
-        // Gerard solo ve clientes donde entrenador='gerard'
-        if(c.entrenador==='gerard')C.push(c);
-      } else {
-        C.push(c);
+      if(!RUTINAS[c.id])RUTINAS[c.id]={__logs:{}};
+      // Only load semana overrides — base is loaded lazily by getRut
+      if(c.rutinaSemanas&&Object.keys(c.rutinaSemanas).length>0){
+        Object.entries(c.rutinaSemanas).forEach(([sem,dias])=>{
+          RUTINAS[c.id][parseInt(sem)]=JSON.parse(JSON.stringify(dias));
+        });
       }
-    });
+    }););
 
     // Load RUTINAS — prefer rutina_semanas from BD, fallback to rutinaDias
     mapped.forEach(c=>{
