@@ -2,16 +2,17 @@
 function getRut(cliId,sem,dia){
   if(!RUTINAS[cliId])RUTINAS[cliId]={__logs:{}};
   if(!RUTINAS[cliId].__logs)RUTINAS[cliId].__logs={};
-  if(!RUTINAS[cliId][sem])RUTINAS[cliId][sem]={};
-  if(RUTINAS[cliId][sem][dia]===undefined){
-    // Fallback: rutinaDias from BD (same for all semanas unless overridden)
-    const c=byId(cliId);
-    if(c&&c.rutinaDias&&c.rutinaDias[String(dia)]!==undefined){
-      RUTINAS[cliId][sem][dia]=JSON.parse(JSON.stringify(c.rutinaDias[String(dia)]));
-    } else {
-      RUTINAS[cliId][sem][dia]=JSON.parse(JSON.stringify(EJ_DEF[dia]||[]));
-    }
+  // Check if this semana has an override
+  if(RUTINAS[cliId][sem]&&RUTINAS[cliId][sem][dia]!==undefined){
+    return RUTINAS[cliId][sem][dia];
   }
+  // No override for this semana — use rutina_base (same for all weeks)
+  const c=byId(cliId);
+  const base=c&&c.rutinaBase?c.rutinaBase:c&&c.rutinaDias?c.rutinaDias:null;
+  const ejBase=base&&base[String(dia)]!==undefined?base[String(dia)]:EJ_DEF[dia]||[];
+  // Cache it so edits work
+  if(!RUTINAS[cliId][sem])RUTINAS[cliId][sem]={};
+  RUTINAS[cliId][sem][dia]=JSON.parse(JSON.stringify(ejBase));
   return RUTINAS[cliId][sem][dia];
 }
 // Flag to block ejSave briefly after structural changes (add/del)
@@ -259,7 +260,17 @@ function ejSave(ei,k,v){
 }
 function guardarRutinaEnBD(cliId){
   if(!RUTINAS[cliId])return;
-  apiCall('PATCH','/api/clientes/'+cliId,{notas_rutina:JSON.stringify(RUTINAS[cliId])}).catch(()=>{});
+  // Build rutina_base and rutina_semanas from RUTINAS[cliId]
+  const rutinaSemanas={};
+  Object.keys(RUTINAS[cliId]).forEach(function(key){
+    if(key==='__logs')return;
+    const sem=parseInt(key);
+    if(!isNaN(sem))rutinaSemanas[sem]=RUTINAS[cliId][sem];
+  });
+  apiCall('PATCH','/api/entreno/rutina',{
+    cliente_id:cliId,
+    rutina_semanas:rutinaSemanas
+  }).catch(function(e){console.warn('[Rutina] Error guardando:',e.message);});
 }
 
 function acSearch(inp,ei){
