@@ -321,6 +321,7 @@ function tRevision(c){
   ${buildPesoGrid(c.histPesos&&c.histPesos.length?c.histPesos:[],c.inicioBloque,c.semana)}`;
 
   // Auto-load pesos if empty
+    if(!c._fotosLoaded&&API_TOKEN){c._fotosLoaded=true;apiCall('GET','/api/entreno/revisiones/'+c.id).then(function(rows){if(!rows||!rows.length)return;if(!c.revision)c.revision={fotos:{}};if(!c.revision.fotos)c.revision.fotos={};rows.forEach(function(rev){var sem=rev.semana;var fotos=typeof rev.fotos==='string'?JSON.parse(rev.fotos||'{}'):rev.fotos||{};Object.entries(fotos).forEach(function(e){if(e[1])c.revision.fotos['s'+sem+'_'+e[0]]=e[1];});});setTab('revision');}).catch(function(){});}
   if(!c.histPesos||!c.histPesos.length){
     if(API_TOKEN)apiCall('GET','/api/entreno/pesos/'+c.id).then(rows=>{
       if(rows&&rows.length){c.histPesos=rows.map(r=>({f:new Date(r.fecha).toISOString().split('T')[0],v:parseFloat(r.peso)}));setTab('revision');}
