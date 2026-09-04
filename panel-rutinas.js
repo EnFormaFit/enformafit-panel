@@ -525,8 +525,13 @@ function cpImportConfirm(sem,idx){
       // Day not in rutina — leave as is
     } else {
       d.rest=ejes.length===0;
-      if(d.rest)d.tipo='Descanso';
+      if(d.rest){d.tipo='Descanso';}
     }
+  });
+  // Assign generic training names
+  var tn=0;
+  DIAS_BASE.forEach((d)=>{
+    if(!d.rest){tn++;d.tipo='Entreno '+tn;}
   });
 
   picker.remove();
