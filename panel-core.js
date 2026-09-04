@@ -200,22 +200,15 @@ async function loadClientesFromAPI(){
           RUTINAS[c.id][parseInt(sem)]=JSON.parse(JSON.stringify(dias));
         });
       }
-    }););
+    });
 
-    // Load RUTINAS — prefer rutina_semanas from BD, fallback to rutinaDias
+    // Load RUTINAS — only overrides, base loaded lazily by getRut
     mapped.forEach(c=>{
       if(!RUTINAS[c.id])RUTINAS[c.id]={__logs:{}};
       if(c.rutinaSemanas&&Object.keys(c.rutinaSemanas).length>0){
         Object.entries(c.rutinaSemanas).forEach(([sem,dias])=>{
           RUTINAS[c.id][parseInt(sem)]=JSON.parse(JSON.stringify(dias));
         });
-      } else if(c.rutinaDias&&Object.keys(c.rutinaDias).length>0){
-        for(let sem=1;sem<=14;sem++){
-          if(!RUTINAS[c.id][sem])RUTINAS[c.id][sem]={};
-          Object.entries(c.rutinaDias).forEach(([dia,ejes])=>{
-            RUTINAS[c.id][sem][parseInt(dia)]=JSON.parse(JSON.stringify(ejes));
-          });
-        }
       }
     });
 
