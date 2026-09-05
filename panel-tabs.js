@@ -485,6 +485,36 @@ function phZoom(id,delta,dir){
   img.style.transform=`scale(${sc}) translateX(${tx/sc}px) translateY(${ty/sc}px)`;
 }
 
+function editPesoCell(td, cliId, semana, dia){
+  var current=td.textContent==='—'?'':td.textContent;
+  var inp=document.createElement('input');
+  inp.type='number';inp.step='0.1';inp.value=current;
+  inp.style.cssText='width:52px;font-size:11px;text-align:center;border:1px solid var(--az);border-radius:4px;padding:2px 4px;background:#fff';
+  td.innerHTML='';td.appendChild(inp);inp.focus();inp.select();
+  function save(){
+    var val=parseFloat(inp.value);
+    if(isNaN(val)||val<=0){td.textContent=current||'—';return;}
+    td.textContent=val;
+    // Save to BD: find the date for this semana+dia and post peso
+    var c=byId(cliId);
+    if(!c||!c.inicioBloque){toast('Sin fecha de inicio de bloque','rj');return;}
+    var fi=new Date(c.inicioBloque);
+    // semana 1 = week starting at fi, dia 0=lunes
+    var d=new Date(fi);d.setDate(d.getDate()+(semana-1)*7+dia);
+    var fecha=d.toISOString().split('T')[0];
+    apiCall('POST','/api/entreno/peso',{peso:val,fecha:fecha}).then(function(){
+      toast('Peso guardado','vd');
+      // Update histPesos in memory
+      if(!c.histPesos)c.histPesos=[];
+      var existing=c.histPesos.findIndex(function(p){return p.f===fecha;});
+      if(existing>=0)c.histPesos[existing].v=val;
+      else c.histPesos.push({f:fecha,v:val});
+    }).catch(function(e){toast('Error: '+e.message,'rj');});
+  }
+  inp.addEventListener('blur',save);
+  inp.addEventListener('keydown',function(e){if(e.key==='Enter')inp.blur();if(e.key==='Escape'){td.textContent=current||'—';}});
+}
+
 function buildPesoGrid(pesoRows,inicioBloque,semanaActual,semTotal){
   var DIAS=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
   var fi=inicioBloque?new Date(inicioBloque):null;
@@ -512,7 +542,8 @@ function buildPesoGrid(pesoRows,inicioBloque,semanaActual,semTotal){
       var v=pm[s]&&pm[s][di]!=null?pm[s][di]:null;var m=md[s];
       var bg=v==null?'transparent':m&&v>m?'rgba(255,26,26,.1)':m&&v<m?'rgba(13,191,111,.1)':'transparent';
       var col=v==null?'#ccc':m&&v>m?'var(--rj)':m&&v<m?'var(--vd)':'var(--t1)';
-      h+='<td style="padding:4px 6px;text-align:center;background:'+bg+';color:'+col+';font-weight:'+(v?'700':'400')+'">'+(v!=null?v:'—')+'</td>';
+      var cliIdForPeso=typeof CLI_ID!=='undefined'?CLI_ID:'';
+      h+='<td style="padding:4px 6px;text-align:center;background:'+bg+';color:'+col+';font-weight:'+(v?'700':'400')+';cursor:pointer" onclick="editPesoCell(this,\''+cliIdForPeso+'\','+s+','+di+')">'+(v!=null?v:'—')+'</td>';
     });
     h+='</tr>';
   });
