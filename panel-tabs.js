@@ -1241,7 +1241,10 @@ function tEntrenoHistorial(c){
         const el=document.getElementById('hist-body');
         if(!el)return;
         if(!rows||!rows.length){el.innerHTML='<div style="padding:20px;color:var(--t3);text-align:center">Sin registros de entrenamiento aún</div>';return;}
-        el.innerHTML=buildHistTable(rows);
+        // Build rutina order map from RUTINAS
+          var rut=RUTINAS[c.id]||{};
+          var rutSem=rut[RUT_SEM]||rut[1]||{};
+          el.innerHTML=buildHistTable(rows,rutSem);
       }).catch(e=>{
         const el=document.getElementById('hist-body');
         if(el)el.innerHTML='<div style="padding:20px;color:var(--rj)">Error: '+e.message+'</div>';
@@ -1258,13 +1261,13 @@ function tEntrenoHistorial(c){
   '</div>';
 }
 
-function buildHistTable(rows){
+function buildHistTable(rows,rutinaOrder){
   if(!rows||!rows.length)return'<div style="padding:20px;color:var(--t3);text-align:center">Sin registros</div>';
   
   // Get all semanas present (for column headers)
   var allSems=[...new Set(rows.map(function(r){return r.semana;}))].sort(function(a,b){return a-b;});
   
-  // Group by dia then by ejercicio (preserving order)
+  // Group by dia then by ejercicio
   var byDia={};
   rows.forEach(function(r){
     var dia=r.dia!=null?r.dia:0;
@@ -1272,6 +1275,20 @@ function buildHistTable(rows){
     if(!byDia[dia].find(function(x){return x===r.ejercicio;}))
       byDia[dia].push(r.ejercicio);
   });
+  // Re-order exercises by rutina order if available
+  if(rutinaOrder){
+    Object.keys(byDia).forEach(function(dia){
+      var rutDia=rutinaOrder[dia]||[];
+      if(rutDia.length){
+        byDia[dia].sort(function(a,b){
+          var ia=rutDia.findIndex(function(e){return e.nom===a;});
+          var ib=rutDia.findIndex(function(e){return e.nom===b;});
+          if(ia<0)ia=999;if(ib<0)ib=999;
+          return ia-ib;
+        });
+      }
+    });
+  }
   
   var DIAS=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
   var html='<div style="padding:14px">';
