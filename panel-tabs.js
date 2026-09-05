@@ -1244,7 +1244,7 @@ function tEntrenoHistorial(c){
         // Build rutina order map from RUTINAS
           var rut=RUTINAS[c.id]||{};
           var rutSem=rut[RUT_SEM]||rut[1]||{};
-          el.innerHTML=buildHistTable(rows,rutSem);
+          el.innerHTML=buildHistTable(rows,rutSem,c.semTotal||13);
       }).catch(e=>{
         const el=document.getElementById('hist-body');
         if(el)el.innerHTML='<div style="padding:20px;color:var(--rj)">Error: '+e.message+'</div>';
@@ -1261,21 +1261,20 @@ function tEntrenoHistorial(c){
   '</div>';
 }
 
-function buildHistTable(rows,rutinaOrder){
-  if(!rows||!rows.length)return'<div style="padding:20px;color:var(--t3);text-align:center">Sin registros</div>';
-  
-  // Get all semanas present (for column headers)
-  var allSems=[...new Set(rows.map(function(r){return r.semana;}))].sort(function(a,b){return a-b;});
-  
-  // Group by dia then by ejercicio
+function buildHistTable(rows,rutinaOrder,semTotal){
+  if(!rows||!rows.length)return'<div style="padding:20px;color:var(--t3);text-align:center">Sin registros aún</div>';
+  var totalSems=semTotal||13;
+  // All semanas S1..Stotal as fixed columns
+  var allSems=Array.from({length:totalSems},function(_,i){return i+1;});
+  // Group by dia then ejercicio
   var byDia={};
   rows.forEach(function(r){
-    var dia=r.dia!=null?r.dia:0;
+    var dia=r.dia!=null?parseInt(r.dia):0;
     if(!byDia[dia])byDia[dia]=[];
     if(!byDia[dia].find(function(x){return x===r.ejercicio;}))
       byDia[dia].push(r.ejercicio);
   });
-  // Re-order exercises by rutina order if available
+  // Order exercises by rutina
   if(rutinaOrder){
     Object.keys(byDia).forEach(function(dia){
       var rutDia=rutinaOrder[dia]||[];
@@ -1289,47 +1288,45 @@ function buildHistTable(rows,rutinaOrder){
       }
     });
   }
-  
-  var DIAS=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+  var DIAS_NOM=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
   var html='<div style="padding:14px">';
-  
-  // Column header explanation
-  html+='<div style="font-size:10px;color:var(--t3);margin-bottom:12px">Formato: <b>kg</b> × reps · — = sin registro</div>';
-  
+  html+='<div style="font-size:10px;color:var(--t3);margin-bottom:16px">Kg × reps por serie · — = sin registro</div>';
   Object.keys(byDia).sort(function(a,b){return parseInt(a)-parseInt(b);}).forEach(function(diaStr){
     var dia=parseInt(diaStr);
     var ejsInDia=byDia[diaStr];
-    
-    html+='<div style="margin-bottom:20px">';
-    html+='<div style="background:var(--az);color:#fff;font-weight:700;font-size:12px;padding:7px 12px;border-radius:7px 7px 0 0">'+(DIAS[dia]||'Día '+dia)+'</div>';
-    
-    ejsInDia.forEach(function(ej){
-      var ejRows=rows.filter(function(r){return r.ejercicio===ej&&(r.dia==dia||r.dia==null);});
-      var maxSeries=Math.max.apply(null,ejRows.map(function(r){return r.serie;}));
-      
-      html+='<div style="border:1px solid var(--bor);border-top:none;padding:8px 12px;background:#fff">';
-      html+='<div style="font-weight:600;font-size:12.5px;color:var(--t1);margin-bottom:6px">'+ej+'</div>';
-      html+='<div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:11.5px;width:100%">';
-      html+='<thead><tr>';
-      html+='<th style="padding:4px 6px;text-align:left;color:var(--t3);font-weight:600;font-size:10px;white-space:nowrap">Serie</th>';
+    html+='<div style="margin-bottom:24px">';
+    html+='<div style="background:var(--az);color:#fff;font-weight:700;font-size:12px;padding:8px 14px;border-radius:8px 8px 0 0;letter-spacing:.3px">'+(DIAS_NOM[dia]||'Día '+dia)+'</div>';
+    ejsInDia.forEach(function(ej,ejIdx){
+      var ejRows=rows.filter(function(r){return r.ejercicio===ej&&parseInt(r.dia)==dia;});
+      var maxSeries=ejRows.length?Math.max.apply(null,ejRows.map(function(r){return r.serie;})):3;
+      var bg=ejIdx%2===0?'#fff':'#f9fafc';
+      html+='<div style="border:1px solid var(--bor);border-top:'+(ejIdx===0?'none':'1px solid var(--bor2)')+';background:'+bg+'">';
+      html+='<div style="font-weight:600;font-size:12px;color:var(--t1);padding:7px 12px 4px;border-bottom:1px solid var(--bor2)">'+ej+'</div>';
+      html+='<div style="overflow-x:auto">';
+      html+='<table style="border-collapse:collapse;font-size:11px;width:100%;min-width:'+(allSems.length*56+60)+'px">';
+      // Header row
+      html+='<thead><tr style="background:#f0f4fa">';
+      html+='<th style="padding:5px 8px;text-align:left;color:var(--t3);font-weight:600;font-size:10px;white-space:nowrap;border-right:1px solid var(--bor2);min-width:40px">Serie</th>';
       allSems.forEach(function(s){
-        html+='<th style="padding:4px 8px;text-align:center;color:var(--az2);font-size:10px;white-space:nowrap">S'+s+'</th>';
+        var hasDat=ejRows.some(function(r){return r.semana===s;});
+        html+='<th style="padding:5px 6px;text-align:center;font-size:10px;white-space:nowrap;min-width:52px;color:'+(hasDat?'var(--az)':'var(--t3)')+'">';
+        html+='S'+s+'</th>';
       });
       html+='</tr></thead><tbody>';
-      
       for(var si=1;si<=maxSeries;si++){
         html+='<tr style="border-top:1px solid var(--bor2)">';
-        html+='<td style="padding:4px 6px;color:var(--t3);font-size:10px">'+si+'ª</td>';
+        html+='<td style="padding:5px 8px;color:var(--t3);font-size:10px;font-weight:600;border-right:1px solid var(--bor2);text-align:center">'+si+'</td>';
         allSems.forEach(function(s){
           var reg=ejRows.find(function(r){return r.semana===s&&r.serie===si;});
           if(!reg){
-            html+='<td style="padding:4px 8px;text-align:center;color:var(--bor2)">—</td>';
+            html+='<td style="padding:5px 6px;text-align:center;color:var(--bor2);font-size:11px">—</td>';
           } else {
-            // Format kg: remove decimals if .00
             var kg=parseFloat(reg.kg);
-            var kgStr=kg===Math.floor(kg)?Math.floor(kg)+'':kg+'';
-            var reps=reg.reps_reales;
-            html+='<td style="padding:4px 8px;text-align:center"><b>'+kgStr+'</b><span style="color:var(--t3);font-size:9px">×'+reps+'</span></td>';
+            var kgStr=kg===Math.floor(kg)?Math.floor(kg)+'':kg.toFixed(1).replace(/\.0$/,'');
+            html+='<td style="padding:5px 6px;text-align:center">';
+            html+='<span style="font-weight:700;color:var(--az);font-size:12px">'+kgStr+'</span>';
+            html+='<span style="color:var(--t3);font-size:9px">×'+reg.reps_reales+'</span>';
+            html+='</td>';
           }
         });
         html+='</tr>';
