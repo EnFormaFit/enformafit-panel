@@ -131,11 +131,12 @@ async function loadClientesFromAPI(){
         }
       }catch(e){}
       
-      // Parse notas cliente JSON — extract real comentario, medidas_s0, etc.
+      // Parse notas cliente JSON — extract all formulario fields
       let notasCliente={}, comentarioReal='', medidasS0=null;
       try{
         if(r.notas){
           const nc=JSON.parse(r.notas);
+          notasCliente=nc;
           comentarioReal=nc.comentarios||'';
           medidasS0=nc.medidas_s0||null;
         }
@@ -148,6 +149,7 @@ async function loadClientesFromAPI(){
       return{
         id:r.id,
         nom,init,
+        notas:notasCliente,
         tipo:r.tipo==='1a1'?'uno':'programa',
         email:r.email||'',
         fechaNac:toDate(r.fecha_nacimiento),
