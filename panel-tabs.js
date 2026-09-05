@@ -1266,28 +1266,23 @@ function buildHistTable(rows,rutinaOrder,semTotal){
   var totalSems=semTotal||13;
   // All semanas S1..Stotal as fixed columns
   var allSems=Array.from({length:totalSems},function(_,i){return i+1;});
-  // Group by dia then ejercicio
+  // Build byDia from rutina first (all exercises), then add any from rows not in rutina
   var byDia={};
+  if(rutinaOrder){
+    Object.keys(rutinaOrder).forEach(function(dia){
+      var rutDia=rutinaOrder[dia]||[];
+      if(rutDia.length){
+        byDia[dia]=rutDia.map(function(e){return e.nom;});
+      }
+    });
+  }
+  // Add any exercises from rows not already in byDia (edge case)
   rows.forEach(function(r){
     var dia=r.dia!=null?parseInt(r.dia):0;
     if(!byDia[dia])byDia[dia]=[];
     if(!byDia[dia].find(function(x){return x===r.ejercicio;}))
       byDia[dia].push(r.ejercicio);
   });
-  // Order exercises by rutina
-  if(rutinaOrder){
-    Object.keys(byDia).forEach(function(dia){
-      var rutDia=rutinaOrder[dia]||[];
-      if(rutDia.length){
-        byDia[dia].sort(function(a,b){
-          var ia=rutDia.findIndex(function(e){return e.nom===a;});
-          var ib=rutDia.findIndex(function(e){return e.nom===b;});
-          if(ia<0)ia=999;if(ib<0)ib=999;
-          return ia-ib;
-        });
-      }
-    });
-  }
   var DIAS_NOM=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
   var html='<div style="padding:14px">';
   html+='<div style="font-size:10px;color:var(--t3);margin-bottom:16px">Kg × reps por serie · — = sin registro</div>';
@@ -1298,7 +1293,9 @@ function buildHistTable(rows,rutinaOrder,semTotal){
     html+='<div style="background:var(--az);color:#fff;font-weight:700;font-size:12px;padding:8px 14px;border-radius:8px 8px 0 0;letter-spacing:.3px">'+(DIAS_NOM[dia]||'Día '+dia)+'</div>';
     ejsInDia.forEach(function(ej,ejIdx){
       var ejRows=rows.filter(function(r){return r.ejercicio===ej&&parseInt(r.dia)==dia;});
-      var maxSeries=ejRows.length?Math.max.apply(null,ejRows.map(function(r){return r.serie;})):3;
+      // maxSeries: use rutina sets if available, else rows, else 3
+      var rutEj=rutinaOrder&&rutinaOrder[dia]?rutinaOrder[dia].find(function(e){return e.nom===ej;}):null;
+      var maxSeries=ejRows.length?Math.max.apply(null,ejRows.map(function(r){return r.serie;})):(rutEj?rutEj.sets:3);
       var bg=ejIdx%2===0?'#fff':'#f9fafc';
       html+='<div style="border:1px solid var(--bor);border-top:'+(ejIdx===0?'none':'1px solid var(--bor2)')+';background:'+bg+'">';
       html+='<div style="font-weight:600;font-size:12px;color:var(--t1);padding:7px 12px 4px;border-bottom:1px solid var(--bor2)">'+ej+'</div>';
