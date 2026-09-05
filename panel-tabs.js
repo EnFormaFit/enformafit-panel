@@ -318,7 +318,7 @@ function tRevision(c){
   <div class="sec-t">Evolución del peso</div>
   <div style="margin-bottom:10px">${miniChart(c)}</div>
   <div class="sec-t" style="margin-bottom:6px">Registro de pesos <button class="btn bo bs" style="float:right;margin-top:-4px" onclick="loadPesosCliente('${c.id}')">🔄 Actualizar</button></div>
-  ${buildPesoGrid(c.histPesos&&c.histPesos.length?c.histPesos:[],c.inicioBloque,c.semana)}`;
+  ${buildPesoGrid(c.histPesos&&c.histPesos.length?c.histPesos:[],c.inicioBloque,c.semana,c.semTotal||13)}`;
 
   // Auto-load pesos if empty
     
@@ -485,11 +485,11 @@ function phZoom(id,delta,dir){
   img.style.transform=`scale(${sc}) translateX(${tx/sc}px) translateY(${ty/sc}px)`;
 }
 
-function buildPesoGrid(pesoRows,inicioBloque,semanaActual){
+function buildPesoGrid(pesoRows,inicioBloque,semanaActual,semTotal){
   var DIAS=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
   var fi=inicioBloque?new Date(inicioBloque):null;
   var pm={};
-  var maxSem=semanaActual||1;
+  var maxSem=semTotal||semanaActual||13; // Show all semanas of the block
   (pesoRows||[]).forEach(function(p){
     var d=new Date(p.f);var sem=1;
     if(fi){var diff=Math.floor((d-fi)/(7*24*60*60*1000));sem=Math.max(0,diff+1);}
