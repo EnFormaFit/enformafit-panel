@@ -706,7 +706,16 @@ async function guardarEditar(id){
   if(c.obj!==undefined&&c.obj!==null)patch.objetivo_kg=parseFloat(c.obj);
   if(c.pesoIni!==undefined&&c.pesoIni!==null)patch.peso_inicial=parseFloat(c.pesoIni);
   if(c.inicioBloque){patch.fecha_inicio=c.inicioBloque;patch.bloque_fecha_inicio=c.inicioBloque;}
-  if(c.macros){patch.kcal_asignadas=c.macros.kcal;patch.macros_p=c.macros.p;patch.macros_c=c.macros.c;patch.macros_g=c.macros.g;}
+  if(c.macros){
+    patch.kcal_asignadas=c.macros.kcal;
+    // Also save full macros to planes_nutricion
+    apiCall('PATCH','/api/bd/plan-nutricion/'+id,{
+      kcal_total: c.macros.kcal,
+      proteina_g: c.macros.p,
+      carbos_g: c.macros['c'],
+      grasas_g: c.macros.g
+    }).catch(function(e){console.warn('Error guardando macros en plan:',e);});
+  }
   // Fase y objetivo semanal
   const faseEl=document.getElementById('fase-'+id);
   const objSemEl=document.getElementById('obj-sem-'+id);
