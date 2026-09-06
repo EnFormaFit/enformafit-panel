@@ -713,8 +713,9 @@ async function guardarEditar(id){
     // If nutrition was recalculated, update local macros
     if(resp && resp._nutri_recalculada && c){
       const nr = resp._nutri_recalculada;
-      c.macros = {kcal: nr.kcal, p: nr.proteina, c: nr.carbos, g: nr.grasa};
+      c.macros = {kcal: nr.kcal, p: nr.p, c: nr.c, g: nr.g};
       toast('✅ Cambios guardados · Nutrición recalculada','vd');
+      render();
     } else {
       toast('✅ Cambios guardados','vd');
     }
