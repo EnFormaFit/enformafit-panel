@@ -709,8 +709,15 @@ async async async function guardarEditar(id){
   if(faseEl){const fv=faseEl.value;c.fase=fv;patch.fase=fv;}
   if(objSemEl&&objSemEl.value!==''){const osv=parseFloat(objSemEl.value);c.objSemKg=osv;patch.obj_sem_kg=osv;}
   try{
-    await apiCall('PATCH',`/api/clientes/${id}`,patch);
-    toast('✅ Cambios guardados','vd');
+    const resp = await apiCall('PATCH',`/api/clientes/${id}`,patch);
+    // If nutrition was recalculated, update local macros
+    if(resp && resp._nutri_recalculada && c){
+      const nr = resp._nutri_recalculada;
+      c.macros = {kcal: nr.kcal, p: nr.proteina, c: nr.carbos, g: nr.grasa};
+      toast('✅ Cambios guardados · Nutrición recalculada','vd');
+    } else {
+      toast('✅ Cambios guardados','vd');
+    }
   }catch(e){
     toast('⚠️ Error guardando: '+e.message,'nr');
   }
