@@ -701,6 +701,9 @@ async function guardarEditar(id){
   if(c.nivel!==undefined)patch.nivel=c.nivel;
   if(c.rutina!==undefined)patch.rutina_actual=c.rutina;
   if(c.pasos!==undefined)patch.pasos_objetivo=c.pasos;
+  if(c.obj!==undefined&&c.obj!==null)patch.objetivo_kg=parseFloat(c.obj);
+  if(c.pesoAct!==undefined&&c.pesoAct!==null)patch.peso_actual=parseFloat(c.pesoAct);
+  if(c.pesoIni!==undefined&&c.pesoIni!==null)patch.peso_inicial=parseFloat(c.pesoIni);
   if(c.inicioBloque){patch.fecha_inicio=c.inicioBloque;patch.bloque_fecha_inicio=c.inicioBloque;}
   if(c.macros){patch.kcal_asignadas=c.macros.kcal;patch.macros_p=c.macros.p;patch.macros_c=c.macros.c;patch.macros_g=c.macros.g;}
   // Fase y objetivo semanal
