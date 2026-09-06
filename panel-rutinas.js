@@ -556,6 +556,18 @@ function cpImportConfirm(sem,idx){
 }
 
 // ═══ TAB: EDITAR ═══
+
+function borrarCliente(id, nom){
+  if(!confirm('¿Eliminar a '+nom+'?\n\nEsta acción borrará todos sus datos (nutrición, entrenos, revisiones, fotos). No se puede deshacer.'))return;
+  if(!confirm('Confirma: ¿seguro que quieres eliminar a '+nom+' definitivamente?'))return;
+  apiCall('DELETE','/api/clientes/'+id).then(function(){
+    toast('Cliente eliminado','vd');
+    VIEW='list';CLI_ID=null;
+    C.splice(C.findIndex(function(c){return c.id===id;}),1);
+    render();
+  }).catch(function(e){toast('Error: '+e.message,'rj');});
+}
+
 function tEditar(c){
   const ed=EDITING;
   // On entering edit mode, save a snapshot for cancel
