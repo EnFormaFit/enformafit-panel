@@ -40,15 +40,16 @@ function tFormulario(c){
 
   const entreno=section('🏋️ Entrenamiento',[
     row('Días entreno/sem',c.diasSemana||n.dias_entreno),
-    row('Lugar',LUGAR_NOM[n.lugar]||n.lugar||c.equipamiento),
-    row('Tiempo por sesión',n.tiempo_ent?n.tiempo_ent+'min':'—'),
-    row('Nivel',NIVEL_NOM[n.nivel]||n.nivel),
+    row('Lugar',LUGAR_NOM[n.lugar]||LUGAR_NOM[c.equipamiento]||n.lugar||c.equipamiento),
+    row('Tiempo por sesión',(c.tiempoEnt||n.tiempo_ent)?(c.tiempoEnt||n.tiempo_ent)+'min':'—'),
+    row('Nivel',NIVEL_NOM[c.nivel]||NIVEL_NOM[n.nivel]||n.nivel),
     row('Material libre',n.material_libre||'—'),
   ]);
 
+  const actVal=c.actividad||n.actividad;
   const nutri=section('🥗 Nutrición y salud',[
-    row('Nº comidas/día',c.comidas),
-    row('Actividad diaria',ACT_NOM[String(n.actividad)]||n.actividad),
+    row('Nº comidas/día',c.comidas||n.comidas),
+    row('Actividad diaria',ACT_NOM[String(actVal)]||String(actVal)),
     row('Objetivo',n.objetivo==='def'?'Bajar grasa (déficit)':n.objetivo==='sup'?'Ganar músculo (superávit)':n.objetivo||'—'),
     row('Fecha inicio deseada',n.fecha_inicio_deseada||'—'),
   ]);
