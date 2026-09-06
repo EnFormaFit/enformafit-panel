@@ -592,7 +592,7 @@ function tEditar(c){
     <div style="display:flex;gap:8px">
       ${ed?`<button class="btn bo bs" onclick="cancelEditar('${c.id}')">Cancelar</button>
              <button class="btn bp bs" onclick="guardarEditar('${c.id}')">Guardar ✓</button>`
-         :`<button class="btn bp bs" onclick="EDITING=true;setTab('editar')">✏️ Editar</button>`}
+         :`<button class="btn bp bs" onclick="EDITING=true;var _sc=byId(CLI_ID);window._editSnapshot=_sc?{actividad:_sc.actividad}:{};setTab('editar')">✏️ Editar</button>`}
     </div>
   </div>
   <div class="rg">
