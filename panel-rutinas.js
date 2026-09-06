@@ -783,7 +783,8 @@ function rNuevo(){
   <div style="margin-top:32px;padding-top:20px;border-top:2px solid #fee2e2;text-align:center">
     <div style="font-size:12px;color:var(--t3);margin-bottom:10px">⚠️ Zona de peligro</div>
     <button onclick="borrarCliente('${c.id}','${c.nom}')" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;padding:8px 20px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit">🗑️ Eliminar cliente permanentemente</button>
-  </div>`;
+  </div>
+  <div style="margin-top:32px;padding-top:20px;border-top:2px solid #fee2e2;text-align:center"><div style="font-size:12px;color:var(--t3);margin-bottom:10px">⚠️ Zona de peligro</div><button onclick="borrarCliente('${c.id}','${c.nom}')" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;padding:8px 20px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit">🗑️ Eliminar cliente permanentemente</button></div>`;
 }
 
 function crearCliente(){
