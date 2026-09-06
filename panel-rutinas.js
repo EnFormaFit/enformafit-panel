@@ -696,7 +696,14 @@ async function guardarEditar(id){
   const c=byId(id);
   if(!c){setTab('editar');return;}
   const patch={};
-  if(c.actividad!==undefined){patch.actividad=parseFloat(c.actividad);patch.recalcular_nutri=true;}
+  if(c.actividad!==undefined){
+    patch.actividad=parseFloat(c.actividad);
+    // Only recalculate if actividad changed from the snapshot (original value)
+    const snapActividad=window._editSnapshot&&window._editSnapshot.actividad;
+    if(snapActividad&&Math.abs(parseFloat(c.actividad)-parseFloat(snapActividad))>0.001){
+      patch.recalcular_nutri=true;
+    }
+  }
   if(c.semana!==undefined)patch.semana_actual=c.semana;
   if(c.nivel!==undefined)patch.nivel=c.nivel;
   if(c.rutina!==undefined)patch.rutina_actual=c.rutina;
