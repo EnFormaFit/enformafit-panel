@@ -690,7 +690,7 @@ function editRedo(){
   toast('↪ Rehecho','vd');
   setTab('editar');
 }
-async function guardarEditar(id){
+async async function guardarEditar(id){
   window._editSnapshot=null;
   EDITING=false;
   const c=byId(id);
