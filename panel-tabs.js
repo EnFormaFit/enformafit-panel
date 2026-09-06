@@ -4,7 +4,7 @@ var MEAL_NOMS_MAP={desayuno:'☀️ Desayuno',comida:'🌞 Comida',cena:'🌙 Ce
 function tFormulario(c){
   const n=c.notas||{};
   const NIVEL_NOM={0:'Principiante (0-1 año)',1:'Intermedio (1-3 años)',2:'Avanzado (3+ años)'};
-  const LUGAR_NOM={gym:'Gimnasio completo',sinmat:'Casa sin material',band:'Casa con bandas',bym:'Casa con bandas y mancuernas'};
+  const LUGAR_NOM={gym:'Gimnasio completo',sinmat:'Casa sin material',casa_sin:'Casa sin material',band:'Casa con bandas',casa_bandas:'Casa con bandas',bym:'Casa con bandas y mancuernas',casa_mancuernas:'Casa con mancuernas'};
   const ACT_NOM={'1.2':'Sedentario','1.375':'Ligeramente activo','1.55':'Moderadamente activo','1.725':'Muy activo'};
 
   function row(label, val){
