@@ -603,6 +603,7 @@ function tEditar(c){
       </div></div>
       <div class="sec-t">Plan</div>
       <div class="card" style="margin-bottom:12px"><div class="cb" style="padding:0 14px">
+        <div class="dato"><label>Factor actividad</label>${inp('actividad',c.actividad,'number','step=0.01 min=1.2 max=2.0 placeholder="1.375"')}</div>
         <div class="dato"><label>Pasos/día</label>${inp('pasosObj',c.pasosObj)}</div>
         <div class="dato"><label>Días entreno/sem</label>${inp('diasSemana',c.diasSemana,'number','min=1 max=6')}</div>
         <div class="dato"><label>Semana actual</label>${inp('semana',c.semana,'number','min=1 max='+c.semTotal)}</div>
@@ -695,6 +696,7 @@ async function guardarEditar(id){
   const c=byId(id);
   if(!c){setTab('editar');return;}
   const patch={};
+  if(c.actividad!==undefined){patch.actividad=parseFloat(c.actividad);patch.recalcular_nutri=true;}
   if(c.semana!==undefined)patch.semana_actual=c.semana;
   if(c.nivel!==undefined)patch.nivel=c.nivel;
   if(c.rutina!==undefined)patch.rutina_actual=c.rutina;
