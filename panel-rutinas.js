@@ -702,9 +702,9 @@ async function guardarEditar(id){
   if(c.rutina!==undefined)patch.rutina_actual=c.rutina;
   if(c.pasos!==undefined)patch.pasos_objetivo=c.pasos;
   if(c.obj!==undefined&&c.obj!==null)patch.objetivo_kg=parseFloat(c.obj);
-  if(c.pesoIni!==undefined&&c.pesoIni!==null)patch.peso_inicial=parseFloat(c.pesoIni);
+
   if(c.obj!==undefined&&c.obj!==null)patch.objetivo_kg=parseFloat(c.obj);
-  if(c.pesoIni!==undefined&&c.pesoIni!==null)patch.peso_inicial=parseFloat(c.pesoIni);
+
   if(c.inicioBloque){patch.fecha_inicio=c.inicioBloque;patch.bloque_fecha_inicio=c.inicioBloque;}
   if(c.macros){
     patch.kcal_asignadas=c.macros.kcal;
