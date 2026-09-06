@@ -151,6 +151,7 @@ async function loadClientesFromAPI(){
         nom,init,
         notas:notasCliente,
         tipo:r.tipo==='1a1'?'uno':'programa',
+        actividad:parseFloat(r.actividad)||1.375,
         email:r.email||'',
         fechaNac:toDate(r.fecha_nacimiento),
         pesoIni,
