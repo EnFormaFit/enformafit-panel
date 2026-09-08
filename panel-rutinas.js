@@ -224,7 +224,7 @@ function ejRow(ej,ei){
       <input class="ei" value="${ej.nom}" placeholder="Nombre ejercicio..."
         oninput="acSearch(this,${ei});ejUpd(${ei},'nom',this.value)"
         onfocus="acSearch(this,${ei})"
-        onblur="setTimeout(()=>{acHide(${ei});if(!_blockEjSave)ejSave(${ei},'nom',this.value);_blockEjSave=false;},200)">
+        onblur="var _inp=this;setTimeout(()=>{var acList=document.getElementById('ac-${ei}');var acVisible=acList&&acList.style.display!=='none';acHide(${ei});if(!acVisible)ejSave(${ei},'nom',_inp.value);},200)">
       <div class="ac-list" id="ac-${ei}" style="display:none"></div>
       ${lastLogH}
     </div>
