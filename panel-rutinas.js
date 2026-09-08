@@ -292,8 +292,12 @@ function acSearch(inp,ei){
   list.style.display='block';
 }
 function acHide(ei){const l=document.getElementById('ac-'+ei);if(l)l.style.display='none';}
+let _acSelLock=false;
 function acSel(ei,nom){
-  const ej=EJ.find(e=>e.nombre===nom);if(!ej)return;
+  if(_acSelLock)return;
+  _acSelLock=true;
+  setTimeout(()=>{_acSelLock=false;},500);
+  const ej=EJ.find(e=>e.nombre===nom);if(!ej){_acSelLock=false;return;}
   rutPush();
   // Mark this slot as just selected from autocomplete — ejSave should not overwrite
   window._acJustSelected = window._acJustSelected || {};
