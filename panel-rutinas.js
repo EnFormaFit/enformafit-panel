@@ -299,6 +299,11 @@ function acSel(ei,nom){
   const row=document.getElementById('ejr-'+ei);
   if(row)row.outerHTML=ejRow(ejes[ei],ei);
   toast(nom+' ✓','vd');
+  // Force save to BD after delay to overwrite any truncated name from onblur
+  clearTimeout(window._ejSaveBD);
+  window._ejSaveBD=setTimeout(()=>{
+    if(API_TOKEN&&RUT_CLI){guardarRutinaEnBD(RUT_CLI);}
+  },500);
 }
 
 function addEj(){
