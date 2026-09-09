@@ -94,7 +94,19 @@ const fotos=n.fotos_count>0?'<div class="alert aaz" style="margin-bottom:12px">�
   const medidas=c.medidasS0&&Object.keys(c.medidasS0).length?section('📏 Medidas S0',
     Object.entries(c.medidasS0).map(function(e){return row(e[0],typeof e[1]==='object'?Object.values(e[1])[0]+' cm':e[1]+' cm');})
   ):'';
-  return'<div style="padding:16px">'+fotos+personal+objetivos+entreno+nutri+salud+mentalidad+medidas+'</div>';
+
+  // Fotos S0 grid
+  const fotosS0 = (function(){
+    var fotoMap = c.revHistorial&&c.revHistorial[0]&&c.revHistorial[0].fotos ? c.revHistorial[0].fotos : {};
+    var urls = [fotoMap.rev_0,fotoMap.rev_1,fotoMap.rev_2,fotoMap.rev_3].filter(Boolean);
+    if(!urls.length) return '';
+    return '<div class="card" style="margin-bottom:12px"><div class="ch"><span style="font-weight:700;font-size:13px">📸 Fotos iniciales S0</span></div>'+
+      '<div class="cb" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px">'+
+      urls.map(function(u){return '<img src="'+u+'" style="width:100%;border-radius:8px;object-fit:cover;aspect-ratio:3/4">';}).join('')+
+      '</div></div>';
+  })();
+
+  return'<div style="padding:16px">'+fotos+personal+objetivos+entreno+nutri+salud+mentalidad+medidas+fotosS0+'</div>';
 }
 
 // ═══ TAB: RESUMEN ═══
