@@ -91,6 +91,9 @@ function tFormulario(c){
   ]);
 
 const fotos=n.fotos_count>0?'<div class="alert aaz" style="margin-bottom:12px">📸 '+n.fotos_count+' foto(s) enviadas con el formulario</div>':'';
+  const medidas=c.medidasS0&&Object.keys(c.medidasS0).length?section('📏 Medidas S0',
+    Object.entries(c.medidasS0).map(function(e){return row(e[0],typeof e[1]==='object'?Object.values(e[1])[0]+' cm':e[1]+' cm');})
+  ):'';
   return'<div style="padding:16px">'+fotos+personal+objetivos+entreno+nutri+salud+mentalidad+medidas+'</div>';
 }
 
