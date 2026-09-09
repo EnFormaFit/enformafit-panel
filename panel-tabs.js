@@ -28,6 +28,7 @@ function tFormulario(c){
   const fechaNac=c.fechaNac?c.fechaNac.split('T')[0].split('-').reverse().join('/'):'—';
   const edad=c.fechaNac?Math.floor((new Date()-new Date(c.fechaNac))/31557600000)+'años':'—';
 
+    // Step 1: Datos personales + contacto
   const personal=section('👤 Datos personales',[
     row('Nombre',c.nom),
     row('Email',c.email),
@@ -36,69 +37,60 @@ function tFormulario(c){
     row('Peso inicial',c.pesoIni?c.pesoIni+'kg':'—'),
     row('Altura',c.altura?c.altura+'cm':'—'),
     row('Objetivo peso',c.obj?c.obj+'kg':'—'),
+    c.tipo==='uno'?row('Teléfono',n.telefono||'—'):'',
+    c.tipo==='uno'?row('Dirección',n.direccion+(n.cp?' '+n.cp:'')+(n.ciudad?', '+n.ciudad:'')):'',
   ]);
 
+  // Step 2: Objetivos y actividad
+  const objetivos=section('🎯 Objetivos',[
+    row('Objetivo principal',n.objetivo==='def'?'Bajar grasa (déficit)':n.objetivo==='sup'?'Ganar músculo (superávit)':n.objetivo||'—'),
+    c.tipo==='uno'?row('Objetivos detallados',n.objetivos_detallado||'—'):'',
+    row('Actividad diaria',ACT_NOM[String(c.actividad||n.actividad)]||String(c.actividad||n.actividad)),
+    row('Fecha inicio deseada',n.fecha_inicio_deseada||'—'),
+    c.tipo==='uno'?row('Horas de sueño',n.horas_sueno||'—'):'',
+    c.tipo==='uno'?row('Nivel de estrés',n.estres||'—'):'',
+  ]);
+
+  // Step 3: Entrenamiento
   const entreno=section('🏋️ Entrenamiento',[
     row('Días entreno/sem',c.diasSemana||n.dias_entreno),
     row('Lugar',LUGAR_NOM[n.lugar]||LUGAR_NOM[c.equipamiento]||n.lugar||c.equipamiento),
     row('Tiempo por sesión',(c.tiempoEnt||n.tiempo_ent)?(c.tiempoEnt||n.tiempo_ent)+'min':'—'),
     row('Nivel',NIVEL_NOM[c.nivel]||NIVEL_NOM[n.nivel]||n.nivel),
-    row('Material libre',n.material_libre||'—'),
+    c.tipo==='uno'?row('Material libre',n.material_libre||'—'):'',
+    c.tipo==='uno'?row('Historial de entreno',n.historial_entreno||'—'):'',
+    c.tipo==='uno'?row('Preferencias ejercicios',n.preferencias_ejercicios||'—'):'',
+    c.tipo==='uno'?row('Ejercicios a excluir',n.excluir_ejercicios||'—'):'',
   ]);
 
-  const actVal=c.actividad||n.actividad;
-  const nutri=section('🥗 Nutrición y salud',[
+  // Step 4: Alimentación
+  const nutri=section('🥗 Alimentación',[
     row('Nº comidas/día',c.comidas||n.comidas),
-    row('Actividad diaria',ACT_NOM[String(actVal)]||String(actVal)),
-    row('Objetivo',n.objetivo==='def'?'Bajar grasa (déficit)':n.objetivo==='sup'?'Ganar músculo (superávit)':n.objetivo||'—'),
-    row('Fecha inicio deseada',n.fecha_inicio_deseada||'—'),
+    c.tipo==='uno'?row('Alimentación actual',n.alimentacion_actual||'—'):'',
+    row('Alimentos a excluir',n.excluir_alimentos&&n.excluir_alimentos.length?n.excluir_alimentos.join(', '):'Ninguno'),
+    row('Intolerancias/alergias',n.intolerancia_comida||c.lesiones||'Ninguna'),
   ]);
 
+  // Step 5: Salud
   const salud=section('🩺 Salud',[
     row('Lesiones/molestias',c.lesiones||'Ninguna'),
-    row('Alimentos a excluir',n.excluir_alimentos&&n.excluir_alimentos.length?n.excluir_alimentos.join(', '):'Ninguno'),
     row('Patología',n.patologia||'Ninguna'),
     row('Medicación',n.medicacion||'Ninguna'),
-    row('Horas de sueño',n.horas_sueno||'—'),
-    row('Nivel de estrés',n.estres||'—'),
-    row('Intolerancia alimentaria',n.intolerancia_comida||'—'),
+    c.tipo==='uno'?row('Ejercicios a excluir',n.excluir_ejercicios||'—'):'',
+  ]);
+
+  // Step 6: Mentalidad (solo 1:1)
+  const mentalidad=c.tipo==='uno'?section('🧠 Mentalidad y relación con el entrenador',[
+    row('Mentalidad / Descripción personal',n.mentalidad||'—'),
+    row('Historial con entrenadores',n.historial_entrenador||'—'),
+    row('Qué busca del entrenador',n.que_busca_entrenador||'—'),
+    row('Permiso Instagram',n.ig_permiso||'No indicado'),
+    row('Comentarios',n.comentarios||'—'),
+  ]):section('💬 Comentarios',[
     row('Comentarios',n.comentarios||'—'),
   ]);
 
-  // Extra 1:1 fields
-  const contacto=c.tipo==='uno'?section('📞 Contacto',[
-    row('Teléfono',n.telefono||'—'),
-    row('Dirección',n.direccion||'—'),
-    row('CP',n.cp||'—'),
-    row('Ciudad',n.ciudad||'—'),
-  ]):'';
-
-  const objetivos1a1=c.tipo==='uno'?section('🎯 Objetivos y mentalidad',[
-    row('Objetivos detallados',n.objetivos_detallado||'—'),
-    row('Mentalidad',n.mentalidad||'—'),
-    row('Qué busca del entrenador',n.que_busca_entrenador||'—'),
-    row('Historial con entrenadores',n.historial_entrenador||'—'),
-    row('Permiso Instagram',n.ig_permiso?'Sí':'No indicado'),
-  ]):'';
-
-  const habitos=c.tipo==='uno'?section('🏃 Hábitos y entrenamiento',[
-    row('Historial de entreno',n.historial_entreno||'—'),
-    row('Preferencias ejercicios',n.preferencias_ejercicios||'—'),
-    row('Ejercicios a excluir',n.excluir_ejercicios||'—'),
-    row('Alimentación actual',n.alimentacion_actual||'—'),
-  ]):'';
-
-  const medidas=c.medidasS0&&Object.keys(c.medidasS0).length?section('📏 Medidas S0',
-    Object.entries(c.medidasS0).map(([k,v])=>row(k,typeof v==='object'?Object.values(v)[0]+' cm':v+' cm'))
-  ):'';
-
-  const fotos=n.fotos_count>0?'<div class="alert aaz" style="margin-bottom:12px">📸 '+n.fotos_count+' foto(s) enviadas con el formulario</div>':'';
-
-  if(!personal&&!entreno&&!nutri&&!salud){
-    return'<div style="padding:20px;color:var(--t3);text-align:center">Este cliente no fue creado mediante formulario o no hay datos del formulario disponibles.</div>';
-  }
-
-  return'<div style="padding:16px">'+fotos+personal+entreno+nutri+salud+contacto+objetivos1a1+habitos+medidas+'</div>';
+return'<div style="padding:16px">'+fotos+personal+entreno+nutri+salud+contacto+objetivos1a1+habitos+medidas+'</div>';
 }
 
 // ═══ TAB: RESUMEN ═══
