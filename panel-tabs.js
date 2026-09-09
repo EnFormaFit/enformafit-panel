@@ -98,7 +98,7 @@ function tFormulario(c){
     return'<div style="padding:20px;color:var(--t3);text-align:center">Este cliente no fue creado mediante formulario o no hay datos del formulario disponibles.</div>';
   }
 
-  return'<div style="padding:16px">'+fotos+personal+entreno+nutri+salud+medidas+'</div>';
+  return'<div style="padding:16px">'+fotos+personal+entreno+nutri+salud+contacto+objetivos1a1+habitos+medidas+'</div>';
 }
 
 // ═══ TAB: RESUMEN ═══
