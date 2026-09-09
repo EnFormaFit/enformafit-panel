@@ -90,7 +90,8 @@ function tFormulario(c){
     row('Comentarios',n.comentarios||'—'),
   ]);
 
-return'<div style="padding:16px">'+fotos+personal+entreno+nutri+salud+contacto+objetivos1a1+habitos+medidas+'</div>';
+const fotos=n.fotos_count>0?'<div class="alert aaz" style="margin-bottom:12px">📸 '+n.fotos_count+' foto(s) enviadas con el formulario</div>':'';
+  return'<div style="padding:16px">'+fotos+personal+objetivos+entreno+nutri+salud+mentalidad+medidas+'</div>';
 }
 
 // ═══ TAB: RESUMEN ═══
