@@ -222,7 +222,7 @@ function tCheckin(c){
   var adh=Math.round(pEnt+pNut+pPas);
   var adhCol=adh>=80?'var(--vd)':adh>=50?'var(--nr)':'var(--rj)';
 
-  var html='<div style="padding:4px">';
+  var html='<div style="padding:4px;max-width:600px;margin:0 auto">';
 
   // Adherencia header
   html+='<div style="background:var(--az3);border-radius:12px;padding:16px;text-align:center;margin-bottom:14px">'
@@ -259,10 +259,10 @@ function tCheckin(c){
   if(c.tipo==='uno'){
     html+='<div class="sec-t" style="margin-top:14px;margin-bottom:8px">Respuestas</div>';
     var pregs=[
-      ['¿Cómo fue la semana?', ci.como_semana||ci.como||''],
-      ['Orgullo de la semana', ci.orgullos||ci.orgullo||''],
-      ['Compromiso esta semana', ci.compromisos||ci.compromiso||''],
-      ['Sensaciones generales', ci.sensaciones||''],
+      ['¿Cómo fue la semana anterior?', ci.como_semana||ci.como||''],
+      ['¿De qué te enorgulleces esta semana?', ci.orgullos||ci.orgullo||''],
+      ['¿Compromiso esta semana?', ci.compromisos||ci.compromiso||''],
+      ['¿Sensaciones generales?', ci.sensaciones||''],
     ];
     pregs.forEach(function(p){
       if(!p[1])return;
