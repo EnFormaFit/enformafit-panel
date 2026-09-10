@@ -622,7 +622,8 @@ function tEditar(c){
     <div>
       <div class="sec-t">Composición corporal</div>
       <div class="card" style="margin-bottom:12px"><div class="cb" style="padding:0 14px">
-        ${[['pesoAct','Peso actual (kg)'],['obj','Objetivo (kg)'],['pesoIni','Peso inicial (kg)']].map(([k,l])=>`<div class="dato"><label>${l}</label>${inp(k,c[k],'number','step=0.1')}</div>`).join('')}
+        ${[['pesoAct','Peso actual (kg)'],['obj','Objetivo (kg)'],['pesoIni','Peso inicial (kg)']].map(([k,l])=>`<div class="dato"><label>${l}</label>${inp(k,c[k],'number','step=0.1')}</div>`).join('')}+
+      `<div class="dato"><label>Fecha nacimiento</label><input class="ci" type="date" value="${c.fechaNac||c.init&&''||''}" oninput="byId(CLI_ID).fechaNac=this.value"></div>`
       <div class="dato"><label>Fecha nacimiento</label><input class="ci" type="date" value="${c.fechaNac||''}" oninput="byId(CLI_ID).fechaNac=this.value"></div>
       </div></div>
       <div class="sec-t">Plan</div>
