@@ -733,6 +733,7 @@ async function guardarEditar(id){
   if(c.rutina!==undefined)patch.rutina_actual=c.rutina;
   if(c.pasos!==undefined)patch.pasos_objetivo=c.pasos;
   if(c.obj!==undefined&&c.obj!==null)patch.objetivo_kg=parseFloat(c.obj);
+  if(c.pesoIni!==undefined&&c.pesoIni!==null&&c.pesoIni!=='')patch.peso_inicial=parseFloat(c.pesoIni);
 
   if(c.obj!==undefined&&c.obj!==null)patch.objetivo_kg=parseFloat(c.obj);
 
