@@ -885,6 +885,7 @@ function crearCliente(){
       objetivo:'def',actividad:1.375,comidas:3,
       dias_entreno:dias,lugar:g('nc-equip')||'gym',nivel:1,
       lesiones:g('nc-lesiones')||'',
+      fecha_nacimiento:g('nc-fnac')||null,
       fecha_inicio:g('nc-inicio')||new Date().toISOString().split('T')[0],
       semanas_bloque:tipo==='uno'?13:14,
     }).then(r=>toast('✅ '+nom+' creado en BD también','vd'))
