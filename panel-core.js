@@ -128,6 +128,7 @@ async function loadClientesFromAPI(){
           objetivoKg=notas.objetivo_kg||null;
           semanaActual=notas.semana_actual||semana;
           entrenadorAsignado=notas.entrenador||'alvaro';
+          if(notas.pasos_objetivo)r.pasos_obj=parseInt(notas.pasos_objetivo)||8000;
         }
       }catch(e){}
       
