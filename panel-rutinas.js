@@ -400,6 +400,7 @@ function cpPegarSel(){
   });
   toast('S'+CP_DATA.sem+' pegada en semanas: '+[..._cpDest].sort((a,b)=>a-b).join(', ') +' ✓','vd');
   CP_MODE=null;CP_DATA=null;_cpDest.clear();
+  if(API_TOKEN&&RUT_CLI)guardarRutinaEnBD(RUT_CLI);
   if(VIEW==='client')setTab('entreno');else render();
 }
 
@@ -412,6 +413,7 @@ function cpPegar(sem,dia){
   RUTINAS[RUT_CLI][sem][dia]=JSON.parse(JSON.stringify(CP_DATA.ejes));
   toast('Pegado en '+DIAS_BASE[dia].nom+' S'+sem+' ✓','vd');
   CP_MODE=null;CP_DATA=null;
+  if(API_TOKEN&&RUT_CLI)guardarRutinaEnBD(RUT_CLI);
   rutRefresh();
 }
 
