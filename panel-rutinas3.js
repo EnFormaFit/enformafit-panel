@@ -367,12 +367,13 @@ function cpCancel(){CP_MODE=null;CP_DATA=null;_cpDest.clear();if(VIEW==='client'
 function resetMacrosAuto(id){
   const c=byId(id);if(!c)return;
   if(!confirm('¿Volver a macros automáticos según el factor de actividad? Se perderán los macros manuales.'))return;
-  apiCall('PATCH','/api/clientes/'+id,{recalcular_nutri:true,actividad:c.actividad}).then(r=>{
+  apiCall('PATCH','/api/clientes/'+id,{recalcular_nutri:true,actividad:c.actividad}).then(async r=>{
     c.macros_manuales=false;
-    toast('✅ Macros en modo automático — recarga para ver los nuevos valores','vd');
-    // Also reset macros_manuales in BD via plan-nutricion endpoint
-    apiCall('PATCH','/api/bd/plan-nutricion/'+id,{macros_manuales:false}).catch(function(){});
-    render();
+    toast('✅ Recalculando macros automáticamente...','vd');
+    // Reload clients from BD to get updated macros
+    await loadClientesFromAPI();
+    setTab('editar');
+    toast('✅ Macros en modo automático','vd');
   }).catch(e=>toast('Error al recalcular: '+e.message,'rj'));
 }
 
