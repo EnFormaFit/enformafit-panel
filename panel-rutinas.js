@@ -926,7 +926,7 @@ window.addEventListener('DOMContentLoaded',async()=>{
       await apiCall('GET','/api/clientes?limit=1');
       // Token valid — auto-login ok
       nav('ci');
-      await loadClientesFromAPI();
+      showShell(); await loadClientesFromAPI();
       // Restore last open client only if trainer matches
       try{
         const savedCli=localStorage.getItem('ef_cli');
