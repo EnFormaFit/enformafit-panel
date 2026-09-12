@@ -181,6 +181,7 @@ async function loadClientesFromAPI(){
         revDone:false,
         diasSinPeso:0,
         macros:{kcal,p:prot,c:carbs,g:grasa},
+        macros_manuales:r.macros_manuales||false,
         planPublicado:r.plan_publicado||r.visible_cliente||false,
         bloque:parseInt(r.numero_bloque)||1,
         bloqueHistorial:[],
