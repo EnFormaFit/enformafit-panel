@@ -39,6 +39,8 @@ async function apiCall(method,path,body){
   }
 }
 
+function showShell(){const s=document.getElementById('main-shell');if(s)s.style.display='';}
+
 function showLogin(){
   // Hide sidebar when not logged in
   const sb=document.getElementById('sb');
@@ -89,7 +91,7 @@ async function doLogin(){
     // Show sidebar after successful login
     const sb=document.getElementById('sb');
     if(sb)sb.style.display='';
-    const sbEl=document.getElementById('sb');if(sbEl)sbEl.style.display='';
+    showShell();
     await loadClientesFromAPI();
     nav('ci');
   }catch(e){
