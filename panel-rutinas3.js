@@ -733,6 +733,8 @@ function editRedo(){
   setTab('editar');
 }
 async function guardarEditar(id){
+  // Save snapshot BEFORE clearing it
+  const snap=window._editSnapshot||{};
   window._editSnapshot=null;
   EDITING=false;
   const c=byId(id);
@@ -740,9 +742,8 @@ async function guardarEditar(id){
   const patch={};
   if(c.actividad!==undefined){
     patch.actividad=parseFloat(c.actividad);
-    // Only recalculate if actividad changed from the snapshot (original value)
-    const snapActividad=window._editSnapshot&&window._editSnapshot.actividad;
-    if(snapActividad&&Math.abs(parseFloat(c.actividad)-parseFloat(snapActividad))>0.001){
+    // Recalculate if actividad changed from snapshot AND macros are not manually overridden
+    if(!c.macros_manuales&&snap.actividad&&Math.abs(parseFloat(c.actividad)-parseFloat(snap.actividad))>0.001){
       patch.recalcular_nutri=true;
     }
   }
@@ -750,37 +751,19 @@ async function guardarEditar(id){
   if(c.nivel!==undefined)patch.nivel=c.nivel;
   if(c.rutina!==undefined)patch.rutina_actual=c.rutina;
   if(c.pasosObj!==undefined&&c.pasosObj!==null)patch.pasos_objetivo=parseInt(c.pasosObj)||0;
-  else if(c.pasos!==undefined)patch.pasos_objetivo=c.pasos;
-  if(c.pasosObj!==undefined)patch.pasos_objetivo=parseInt(c.pasosObj)||c.pasosObj;
   if(c.obj!==undefined&&c.obj!==null)patch.objetivo_kg=parseFloat(c.obj);
   if(c.pesoIni!==undefined&&c.pesoIni!==null&&c.pesoIni!=='')patch.peso_inicial=parseFloat(c.pesoIni);
-
-  if(c.obj!==undefined&&c.obj!==null)patch.objetivo_kg=parseFloat(c.obj);
-
+  if(c.fechaNac)patch.fecha_nacimiento=c.fechaNac;
   if(c.inicioBloque){patch.fecha_inicio=c.inicioBloque;patch.bloque_fecha_inicio=c.inicioBloque;}
+  // Macros: only save to plan-nutricion if user directly edited them
   if(c.macros){
     patch.kcal_asignadas=c.macros.kcal;
     if(c.macrosEditadosManuales){
-      // User edited macros directly — save as manual
       apiCall('PATCH','/api/bd/plan-nutricion/'+id,{
-        kcal_total: c.macros.kcal,
-        proteina_g: c.macros.p,
-        carbos_g: c.macros['c'],
-        grasas_g: c.macros.g,
-        macros_manuales: true
-      }).then(function(){
-        c.macros_manuales=true;
-        c.macrosEditadosManuales=false;
-        render();
-      }).catch(function(e){console.warn('[Macros manual]',e);});
-    } else if(patch.recalcular_nutri){
-      // Actividad changed — backend recalculates, reload after to show new values
-      setTimeout(function(){
-        loadClientesFromAPI().then(function(){
-          CLI_TAB='editar';
-          render();
-        });
-      },2000);
+        kcal_total:c.macros.kcal, proteina_g:c.macros.p,
+        carbos_g:c.macros['c'], grasas_g:c.macros.g, macros_manuales:true
+      }).then(function(){c.macros_manuales=true;c.macrosEditadosManuales=false;render();})
+        .catch(function(e){console.warn('[Macros manual]',e);});
     }
   }
   // Fase y objetivo semanal
@@ -789,22 +772,20 @@ async function guardarEditar(id){
   if(faseEl){const fv=faseEl.value;c.fase=fv;patch.fase=fv;}
   if(objSemEl&&objSemEl.value!==''){const osv=parseFloat(objSemEl.value);c.objSemKg=osv;patch.obj_sem_kg=osv;}
   try{
-    const resp = await apiCall('PATCH',`/api/clientes/${id}`,patch);
-    // If nutrition was recalculated, update local macros
-    if(resp && resp._nutri_recalculada && c){
-      const nr = resp._nutri_recalculada;
-      const newMacros = {kcal: nr.kcal, p: nr.p, g: nr.g};
-      newMacros['c'] = nr.c;
-      c.macros = newMacros;
-      toast('✅ Cambios guardados · Nutrición recalculada','vd');
+    const resp=await apiCall('PATCH',`/api/clientes/${id}`,patch);
+    if(patch.recalcular_nutri){
+      // Reload to show recalculated macros
+      toast('✅ Actividad guardada · Recalculando macros...','vd');
+      await loadClientesFromAPI();
+      CLI_TAB='editar';
       render();
     } else {
       toast('✅ Cambios guardados','vd');
+      setTab('editar');
     }
   }catch(e){
     toast('⚠️ Error guardando: '+e.message,'nr');
   }
-  setTab('editar');
 }
 function editC(id,k,v){
   const c=byId(id);if(!c)return;
