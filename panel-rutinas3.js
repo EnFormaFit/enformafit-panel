@@ -806,6 +806,7 @@ function editM(id,k,v){
   UNDO_EDIT.push({id,k:'macros.'+k,v:prev});REDO_EDIT.length=0;
   if(UNDO_EDIT.length>UNDO_MAX)UNDO_EDIT.shift();
   c.macros[k]=newVal;
+  c.macrosEditadosManuales=true; // flag manual macro edit
   // Recalcular kcal automáticamente: P×4 + C×4 + G×9
   c.macros.kcal=Math.round((c.macros.p||0)*4+(c.macros.c||0)*4+(c.macros.g||0)*9);
   // Update kcal input if visible
