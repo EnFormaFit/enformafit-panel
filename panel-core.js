@@ -89,6 +89,7 @@ async function doLogin(){
     // Show sidebar after successful login
     const sb=document.getElementById('sb');
     if(sb)sb.style.display='';
+    const sbEl=document.getElementById('sb');if(sbEl)sbEl.style.display='';
     await loadClientesFromAPI();
     nav('ci');
   }catch(e){
