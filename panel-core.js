@@ -40,6 +40,9 @@ async function apiCall(method,path,body){
 }
 
 function showLogin(){
+  // Hide sidebar when not logged in
+  const sb=document.getElementById('sb');
+  if(sb)sb.style.display='none';
   const ct=document.getElementById('ct');
   if(!ct)return;
   ct.innerHTML=`<div style="display:flex;align-items:center;justify-content:center;height:100%;min-height:400px">
@@ -83,6 +86,9 @@ async function doLogin(){
       toast('✅ Bienvenido Álvaro','vd');
       const tb=document.getElementById('tb-trainer');if(tb)tb.textContent='👤 Álvaro Casal';
     }
+    // Show sidebar after successful login
+    const sb=document.getElementById('sb');
+    if(sb)sb.style.display='';
     await loadClientesFromAPI();
     nav('ci');
   }catch(e){
