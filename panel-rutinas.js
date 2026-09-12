@@ -364,6 +364,19 @@ const _cpDest=new Set();
 
 function cpCancel(){CP_MODE=null;CP_DATA=null;_cpDest.clear();if(VIEW==='client')setTab('entreno');else render();}
 
+function resetMacrosAuto(id){
+  const c=byId(id);if(!c)return;
+  if(!confirm('¿Volver a macros automáticos según el factor de actividad? Se perderán los macros manuales.'))return;
+  apiCall('PATCH','/api/clientes/'+id,{recalcular_nutri:true,actividad:c.actividad}).then(r=>{
+    if(r && r.nutri_recalculada){
+      c.macros={kcal:r.nutri_recalculada.kcal,p:r.nutri_recalculada.p,c:r.nutri_recalculada.c,g:r.nutri_recalculada.g};
+      c.macros_manuales=false;
+      toast('✅ Macros recalculados automáticamente','vd');
+      render();
+    }
+  }).catch(e=>toast('Error al recalcular: '+e.message,'rj'));
+}
+
 function cpSem(sem){
   const data={};
   DIAS_BASE.forEach((_,di)=>{data[di]=JSON.parse(JSON.stringify(getRut(RUT_CLI,sem,di)));});
@@ -646,7 +659,13 @@ function tEditar(c){
       </div></div>
     </div>
     <div>
-      <div class="sec-t">Fase y objetivo semanal</div><div class="card" style="margin-bottom:12px"><div class="cb" style="padding:0 14px"><div class="dato"><label>Fase actual</label><select id="fase-${c.id}" style="font-size:14px;padding:4px 8px;border:1px solid var(--bor);border-radius:6px;background:#fff"><option value="deficit" ${(c.fase||'deficit')==='deficit'?'selected':''}>📉 Déficit</option><option value="reconstruccion" ${(c.fase||'')=='reconstruccion'?'selected':''}>🔄 Reconstrucción metabólica</option><option value="superavit" ${(c.fase||'')=='superavit'?'selected':''}>📈 Superávit</option></select></div><div class="dato" style="margin-top:8px"><label>Objetivo semanal (kg)</label><input type="number" step="0.1" id="obj-sem-${c.id}" value="${c.objSemKg!=null?c.objSemKg:''}" placeholder="ej: -0.5" style="width:120px;font-size:14px;padding:4px 8px;border:1px solid var(--bor);border-radius:6px"></div></div></div><div class="sec-t">Macros objetivo <span style="font-size:9px;font-weight:400;color:var(--t3)">(independientes de Nutrición)</span></div>
+      <div class="sec-t">Fase y objetivo semanal</div><div class="card" style="margin-bottom:12px"><div class="cb" style="padding:0 14px"><div class="dato"><label>Fase actual</label><select id="fase-${c.id}" style="font-size:14px;padding:4px 8px;border:1px solid var(--bor);border-radius:6px;background:#fff"><option value="deficit" ${(c.fase||'deficit')==='deficit'?'selected':''}>📉 Déficit</option><option value="reconstruccion" ${(c.fase||'')=='reconstruccion'?'selected':''}>🔄 Reconstrucción metabólica</option><option value="superavit" ${(c.fase||'')=='superavit'?'selected':''}>📈 Superávit</option></select></div><div class="dato" style="margin-top:8px"><label>Objetivo semanal (kg)</label><input type="number" step="0.1" id="obj-sem-${c.id}" value="${c.objSemKg!=null?c.objSemKg:''}" placeholder="ej: -0.5" style="width:120px;font-size:14px;padding:4px 8px;border:1px solid var(--bor);border-radius:6px"></div></div></div><div class="sec-t">Macros objetivo <span style="font-size:9px;font-weight:400;color:var(--t3)">(independientes de Nutrición)</span>
+      ${c.macros_manuales ? 
+        '<span class="badge bnr" style="font-size:10px;margin-left:8px">⚙️ Manual</span>' : 
+        '<span class="badge bvd" style="font-size:10px;margin-left:8px">🤖 Automático</span>'}
+      </div>
+      ${c.macros_manuales ? `<div style="padding:4px 14px 8px"><button class="cp-btn" style="background:var(--vd);color:#fff;border:none;padding:6px 12px;border-radius:8px;cursor:pointer;font-size:12px" onclick="resetMacrosAuto('${c.id}')">↺ Volver a automático</button></div>` : ''}
+      <div style="display:none">
       <div class="card" style="margin-bottom:12px"><div class="cb" style="padding:0 14px">
         <div class="dato">
         <label>Calorías <span style="font-size:9px;color:var(--vd)">(calculadas automáticamente)</span></label>
