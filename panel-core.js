@@ -40,7 +40,7 @@ async function apiCall(method,path,body){
 }
 
 function showShell(){
-  const s=document.getElementById('main-shell');if(s)s.style.display='';
+  const s=document.getElementById('main-shell');if(s)s.classList.remove('ef-hidden');
   const o=document.getElementById('login-overlay');if(o)o.style.display='none';
 }
 
