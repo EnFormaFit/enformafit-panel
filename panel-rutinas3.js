@@ -765,8 +765,9 @@ async function guardarEditar(id){
       kcal_total: c.macros.kcal,
       proteina_g: c.macros.p,
       carbos_g: c.macros['c'],
-      grasas_g: c.macros.g
-    }).catch(function(e){console.warn('Error guardando macros en plan:',e);});
+      grasas_g: c.macros.g,
+      macros_manuales: true
+    }).then(function(){c.macros_manuales=true;render();}).catch(function(e){console.warn('Error guardando macros en plan:',e);});
   }
   // Fase y objetivo semanal
   const faseEl=document.getElementById('fase-'+id);
