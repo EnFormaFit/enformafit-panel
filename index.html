@@ -110,7 +110,7 @@
       <input id="login-pass" type="password" placeholder="Contraseña" autocomplete="current-password"
         style="width:100%;padding:12px;border-radius:8px;border:1.5px solid #2a3a4a;background:#0f1923;color:#fff;font-size:14px;box-sizing:border-box;outline:none">
     </div>
-    <button onclick="doLogin()"
+    <button id="login-btn"
       style="width:100%;padding:13px;border-radius:8px;border:none;background:#1d9e75;color:#fff;font-size:15px;font-weight:700;cursor:pointer">
       Entrar
     </button>
@@ -136,6 +136,11 @@ function doLogin(){
     document.getElementById('login-err').style.display='block';
   }
 }
+
+document.addEventListener('DOMContentLoaded', function(){
+  var btn = document.getElementById('login-btn');
+  if(btn) btn.addEventListener('click', doLogin);
+});
 
 document.addEventListener('keydown', function(e){
   var ls = document.getElementById('login-screen');
