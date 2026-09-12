@@ -102,22 +102,26 @@
       <div style="font-size:20px;font-weight:800;color:#fff">EnFormaFit Panel</div>
       <div style="font-size:12px;color:#8899aa;margin-top:4px">Acceso restringido al equipo</div>
     </div>
-    <div style="margin-bottom:16px">
-      <input id="login-user" type="text" placeholder="Usuario" autocomplete="username"
-        style="width:100%;padding:12px;border-radius:8px;border:1.5px solid #2a3a4a;background:#0f1923;color:#fff;font-size:14px;box-sizing:border-box;outline:none">
-    </div>
-    <div style="margin-bottom:24px">
-      <input id="login-pass" type="password" placeholder="Contraseña" autocomplete="current-password"
-        style="width:100%;padding:12px;border-radius:8px;border:1.5px solid #2a3a4a;background:#0f1923;color:#fff;font-size:14px;box-sizing:border-box;outline:none">
-    </div>
-    <button id="login-btn"
-      style="width:100%;padding:13px;border-radius:8px;border:none;background:#1d9e75;color:#fff;font-size:15px;font-weight:700;cursor:pointer">
-      Entrar
-    </button>
+    <form id="login-form" onsubmit="doLogin();return false;">
+      <div style="margin-bottom:16px">
+        <input id="login-user" type="text" placeholder="Usuario" autocomplete="username"
+          style="width:100%;padding:12px;border-radius:8px;border:1.5px solid #2a3a4a;background:#0f1923;color:#fff;font-size:14px;box-sizing:border-box;outline:none">
+      </div>
+      <div style="margin-bottom:24px">
+        <input id="login-pass" type="password" placeholder="Contraseña" autocomplete="current-password"
+          style="width:100%;padding:12px;border-radius:8px;border:1.5px solid #2a3a4a;background:#0f1923;color:#fff;font-size:14px;box-sizing:border-box;outline:none">
+      </div>
+      <button type="submit"
+        style="width:100%;padding:13px;border-radius:8px;border:none;background:#1d9e75;color:#fff;font-size:15px;font-weight:700;cursor:pointer">
+        Entrar
+      </button>
+    </form>
     <div id="login-err" style="color:#e55;font-size:12px;text-align:center;margin-top:12px;display:none">
       Usuario o contraseña incorrectos
     </div>
   </div>
+</div>
+
 </div>
 
 <script>
