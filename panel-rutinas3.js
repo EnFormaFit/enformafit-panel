@@ -760,14 +760,16 @@ async function guardarEditar(id){
   if(c.inicioBloque){patch.fecha_inicio=c.inicioBloque;patch.bloque_fecha_inicio=c.inicioBloque;}
   if(c.macros){
     patch.kcal_asignadas=c.macros.kcal;
+    // Only mark as manual if actividad didn't change (no recalculate)
+    const isManual = !patch.recalcular_nutri;
     // Also save full macros to planes_nutricion
     apiCall('PATCH','/api/bd/plan-nutricion/'+id,{
       kcal_total: c.macros.kcal,
       proteina_g: c.macros.p,
       carbos_g: c.macros['c'],
       grasas_g: c.macros.g,
-      macros_manuales: true
-    }).then(function(){c.macros_manuales=true;render();}).catch(function(e){console.warn('Error guardando macros en plan:',e);});
+      macros_manuales: isManual
+    }).then(function(){c.macros_manuales=isManual;render();}).catch(function(e){console.warn('Error guardando macros en plan:',e);});
   }
   // Fase y objetivo semanal
   const faseEl=document.getElementById('fase-'+id);
