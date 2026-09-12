@@ -760,15 +760,28 @@ async function guardarEditar(id){
   if(c.inicioBloque){patch.fecha_inicio=c.inicioBloque;patch.bloque_fecha_inicio=c.inicioBloque;}
   if(c.macros){
     patch.kcal_asignadas=c.macros.kcal;
-    // Only send macros to plan-nutricion if manually edited (not when actividad recalculates)
     if(c.macrosEditadosManuales){
+      // User edited macros directly — save as manual
       apiCall('PATCH','/api/bd/plan-nutricion/'+id,{
         kcal_total: c.macros.kcal,
         proteina_g: c.macros.p,
         carbos_g: c.macros['c'],
         grasas_g: c.macros.g,
         macros_manuales: true
-      }).then(function(){c.macros_manuales=true;c.macrosEditadosManuales=false;render();}).catch(function(e){console.warn('Error guardando macros en plan:',e);});
+      }).then(function(){
+        c.macros_manuales=true;
+        c.macrosEditadosManuales=false;
+        render();
+      }).catch(function(e){console.warn('[Macros manual]',e);});
+    } else if(patch.recalcular_nutri){
+      // Actividad changed — backend recalculates, reload after to show new values
+      setTimeout(function(){
+        loadClientesFromAPI().then(function(){
+          CLI_TAB='editar';
+          render();
+        });
+      },2000);
+    }
   }
   // Fase y objetivo semanal
   const faseEl=document.getElementById('fase-'+id);
