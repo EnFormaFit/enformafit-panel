@@ -761,7 +761,7 @@ async function guardarEditar(id){
   if(c.macros){
     patch.kcal_asignadas=c.macros.kcal;
     // Only mark as manual if actividad didn't change (no recalculate)
-    const isManual = !patch.recalcular_nutri;
+    const isManual = c.macrosEditadosManuales === true;
     // Also save full macros to planes_nutricion
     apiCall('PATCH','/api/bd/plan-nutricion/'+id,{
       kcal_total: c.macros.kcal,
@@ -769,7 +769,7 @@ async function guardarEditar(id){
       carbos_g: c.macros['c'],
       grasas_g: c.macros.g,
       macros_manuales: isManual
-    }).then(function(){c.macros_manuales=isManual;render();}).catch(function(e){console.warn('Error guardando macros en plan:',e);});
+    }).then(function(){c.macros_manuales=isManual;c.macrosEditadosManuales=false;render();}).catch(function(e){console.warn('Error guardando macros en plan:',e);});
   }
   // Fase y objetivo semanal
   const faseEl=document.getElementById('fase-'+id);
@@ -802,6 +802,8 @@ function editC(id,k,v){
   UNDO_EDIT.push({id,k,v:prev});REDO_EDIT.length=0;
   if(UNDO_EDIT.length>UNDO_MAX)UNDO_EDIT.shift();
   c[k]=newVal;
+  // Flag manual macro edit only when p, c, g are directly edited
+  if(k==='p'||k==='c'||k==='g'||k==='kcal')c.macrosEditadosManuales=true;
 }
 function editM(id,k,v){
   const c=byId(id);if(!c||!c.macros)return;
