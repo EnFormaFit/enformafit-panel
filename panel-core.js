@@ -39,13 +39,22 @@ async function apiCall(method,path,body){
   }
 }
 
-function showShell(){const s=document.getElementById('main-shell');if(s)s.style.display='';}
+function showShell(){
+  const s=document.getElementById('main-shell');if(s)s.style.display='';
+  const o=document.getElementById('login-overlay');if(o)o.style.display='none';
+}
 
 function showLogin(){
-  // Hide sidebar when not logged in
-  const sb=document.getElementById('sb');
-  if(sb)sb.style.display='none';
-  const ct=document.getElementById('ct');
+  // Render login in overlay div outside shell
+  let overlay=document.getElementById('login-overlay');
+  if(!overlay){
+    overlay=document.createElement('div');
+    overlay.id='login-overlay';
+    overlay.style.cssText='position:fixed;inset:0;background:#0f1923;z-index:9999;display:flex;align-items:center;justify-content:center';
+    document.body.appendChild(overlay);
+  }
+  overlay.style.display='flex';
+  const ct=overlay;
   if(!ct)return;
   ct.innerHTML=`<div style="display:flex;align-items:center;justify-content:center;height:100%;min-height:400px">
     <div style="background:#fff;border-radius:12px;padding:32px;width:340px;box-shadow:0 4px 24px rgba(0,0,0,.1)">
