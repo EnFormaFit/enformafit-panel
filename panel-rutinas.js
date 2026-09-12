@@ -665,7 +665,6 @@ function tEditar(c){
         '<span class="badge bvd" style="font-size:10px;margin-left:8px">🤖 Automático</span>'}
       </div>
       ${c.macros_manuales ? `<div style="padding:4px 14px 8px"><button class="cp-btn" style="background:var(--vd);color:#fff;border:none;padding:6px 12px;border-radius:8px;cursor:pointer;font-size:12px" onclick="resetMacrosAuto('${c.id}')">↺ Volver a automático</button></div>` : ''}
-      <div style="display:none">
       <div class="card" style="margin-bottom:12px"><div class="cb" style="padding:0 14px">
         <div class="dato">
         <label>Calorías <span style="font-size:9px;color:var(--vd)">(calculadas automáticamente)</span></label>
