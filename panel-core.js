@@ -101,8 +101,8 @@ async function doLogin(){
     const sb=document.getElementById('sb');
     if(sb)sb.style.display='';
     showShell();
-    await loadClientesFromAPI();
     nav('ci');
+    await loadClientesFromAPI();
   }catch(e){
     if(errEl)errEl.textContent=e.message||'Error de acceso';
   }
