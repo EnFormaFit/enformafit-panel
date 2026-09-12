@@ -368,12 +368,11 @@ function resetMacrosAuto(id){
   const c=byId(id);if(!c)return;
   if(!confirm('¿Volver a macros automáticos según el factor de actividad? Se perderán los macros manuales.'))return;
   apiCall('PATCH','/api/clientes/'+id,{recalcular_nutri:true,actividad:c.actividad}).then(r=>{
-    if(r && r.nutri_recalculada){
-      c.macros={kcal:r.nutri_recalculada.kcal,p:r.nutri_recalculada.p,c:r.nutri_recalculada.c,g:r.nutri_recalculada.g};
-      c.macros_manuales=false;
-      toast('✅ Macros recalculados automáticamente','vd');
-      render();
-    }
+    c.macros_manuales=false;
+    toast('✅ Macros en modo automático — recarga para ver los nuevos valores','vd');
+    // Also reset macros_manuales in BD via plan-nutricion endpoint
+    apiCall('PATCH','/api/bd/plan-nutricion/'+id,{macros_manuales:false}).catch(function(){});
+    render();
   }).catch(e=>toast('Error al recalcular: '+e.message,'rj'));
 }
 
