@@ -802,9 +802,9 @@ function guardarFeedback(id){
 // Estado: NE[cliId] = { meals: [{id,nom,items:[{cat,catNom,nom,cantidad,p100,c100,g100,k100,u}]}] }
 // Orden fijo de categorías: hidratos → proteina → verd/fruta → grasa
 
-const CAT_ORDER_NUT=['hidrat','prot','verd','fat','fruta'];
-const CAT_NOM_NUT={prot:'Proteína',hidrat:'Hidratos',fat:'Grasa',verd:'Verdura',fruta:'Fruta'};
-const CAT_KEY_NUT={prot:'proteinas_magras',hidrat:'hidratos',fat:'grasas',verd:'verduras',fruta:'frutas'};
+const CAT_ORDER_NUT=['prot','prot_g','hidrat','fat','verd','fruta'];
+const CAT_NOM_NUT={prot:'Proteínas magras',prot_g:'Proteínas grasas',hidrat:'Hidratos',fat:'Grasas',verd:'Verduras',fruta:'Frutas'};
+const CAT_KEY_NUT={prot:'proteinas_magras',prot_g:'proteinas_grasas',hidrat:'hidratos',fat:'grasas',verd:'verduras',fruta:'frutas'};
 const MEAL_ORDER_NUT=['desayuno','comida','cena','snack'];
 const MEAL_NOM_NUT={desayuno:'☀️ Desayuno',comida:'🌞 Comida',cena:'🌙 Cena',snack:'🍎 Snack'};
 
