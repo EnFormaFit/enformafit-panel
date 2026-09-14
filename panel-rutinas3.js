@@ -350,7 +350,8 @@ function convTrain(dia){
   if(!RUTINAS[RUT_CLI][RUT_SEM])RUTINAS[RUT_CLI][RUT_SEM]={};
   RUTINAS[RUT_CLI][RUT_SEM][dia]=JSON.parse(JSON.stringify(EJ_DEF[0]||[]));
   DIAS_BASE[dia].rest=false;DIAS_BASE[dia].tipo='Entreno';
-  if(VIEW==='client')setTab('entreno');else render(); // full re-render needed (day structure changed)
+  if(API_TOKEN&&RUT_CLI)guardarRutinaEnBD(RUT_CLI);
+  if(VIEW==='client')setTab('entreno');else render();
 }
 function convRest(dia){
   rutPush();
@@ -358,7 +359,8 @@ function convRest(dia){
   if(!RUTINAS[RUT_CLI][RUT_SEM])RUTINAS[RUT_CLI][RUT_SEM]={};
   RUTINAS[RUT_CLI][RUT_SEM][dia]=[];
   DIAS_BASE[dia].rest=true;DIAS_BASE[dia].tipo='Descanso';
-  if(VIEW==='client')setTab('entreno');else render(); // full re-render needed (day structure changed)
+  if(API_TOKEN&&RUT_CLI)guardarRutinaEnBD(RUT_CLI);
+  if(VIEW==='client')setTab('entreno');else render();
 }
 
 // Destination week selection set
