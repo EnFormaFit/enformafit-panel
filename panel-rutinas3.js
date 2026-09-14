@@ -304,11 +304,13 @@ function acSel(ei,nom){
   window._acJustSelected[ei] = {nom: ej.nombre, ts: Date.now()};
   const ejes=getRut(RUT_CLI,RUT_SEM,RUT_DIA);
   if(ejes[ei]){
-    ejes[ei].nom=ej.nombre;ejes[ei].sets=parseInt(ej.series)||3;
-    ejes[ei].reps=ej.reps||'8-10';ejes[ei].rir=parseInt(ej.rir)||2;
+    ejes[ei].nom=ej.nombre;
+    ejes[ei].sets=parseInt(ej.sets)||3;
+    ejes[ei].reps=ej.reps||'8-10';
+    ejes[ei].rir=parseFloat(ej.rir)||2;
     ejes[ei].url=ej.url||'';
-    const restMap={compound:180,maquina:120,aislamiento:90,abdomen:60,gemelos:60};
-    ejes[ei].rest=restMap[ej.tipo?.toLowerCase()]||90;
+    ejes[ei].acl=ej.aclaraciones||'';
+    ejes[ei].rest=ej.rest||90;
   }
   acHide(ei);
   // Patch just this row
