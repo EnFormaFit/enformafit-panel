@@ -721,28 +721,44 @@ function renderBDEjercicios(){
     <button class="btn bo bs" onclick="_BD_TAB='rutinas';render()">← Rutinas</button>
     <input class="tb-search" style="max-width:220px" placeholder="Buscar ejercicio..." 
       value="${_BD_EJ_SEARCH}" oninput="_BD_EJ_SEARCH=this.value;render()">
-    <button class="btn bo bs" style="margin-left:auto" onclick="bdNuevoEjercicio()">+ Nuevo ejercicio</button>
+    <button class="btn bo bs" style="margin-left:auto" onclick="bdSyncEjercicios()">🔄 Sincronizar desde JSON</button>
+    <button class="btn bo bs" onclick="bdNuevoEjercicio()">+ Nuevo ejercicio</button>
   </div>`;
 
   const filtered=(_BD_EJERCICIOS||[]).filter(e=>
     !_BD_EJ_SEARCH||e.nombre.toLowerCase().includes(_BD_EJ_SEARCH.toLowerCase())
   );
 
+  const headers=`<div style="display:grid;grid-template-columns:2fr 60px 80px 50px 70px 1fr 80px 80px;gap:8px;padding:6px 8px;background:var(--bg);border-radius:6px;font-size:11px;font-weight:700;color:var(--t3);margin-bottom:4px">
+    <span>Nombre</span><span>Series</span><span>Reps</span><span>RIR</span><span>Desc (s)</span><span>Aclaración</span><span>Grupo</span><span></span>
+  </div>`;
+
   const lista=filtered.map(e=>`
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--bor)">
-      <div style="flex:1">
-        <div style="font-size:13px;font-weight:600">${e.nombre}</div>
-        <div style="font-size:11px;color:var(--t3)">${e.sets}×${e.reps} · RIR ${e.rir}${e.aclaraciones?` · ${e.aclaraciones}`:''}</div>
+    <div style="display:grid;grid-template-columns:2fr 60px 80px 50px 70px 1fr 80px 80px;gap:8px;padding:8px;border-bottom:1px solid var(--bor);align-items:center;font-size:12px">
+      <input class="ci" value="${e.nombre||''}" style="font-size:12px" 
+        onblur="bdSaveEj('${e.id}','nombre',this.value)">
+      <input class="ci" type="number" value="${e.sets||3}" style="font-size:12px;text-align:center"
+        onblur="bdSaveEj('${e.id}','sets',parseInt(this.value)||3)">
+      <input class="ci" value="${e.reps||''}" style="font-size:12px;text-align:center"
+        onblur="bdSaveEj('${e.id}','reps',this.value)">
+      <input class="ci" type="number" step="0.5" value="${e.rir??2}" style="font-size:12px;text-align:center"
+        onblur="bdSaveEj('${e.id}','rir',parseFloat(this.value)||2)">
+      <input class="ci" type="number" value="${e.rest||90}" style="font-size:12px;text-align:center"
+        onblur="bdSaveEj('${e.id}','rest',parseInt(this.value)||90)">
+      <input class="ci" value="${e.aclaraciones||''}" style="font-size:12px"
+        onblur="bdSaveEj('${e.id}','aclaraciones',this.value)">
+      <input class="ci" value="${e.grupo_muscular||''}" style="font-size:12px"
+        onblur="bdSaveEj('${e.id}','grupo_muscular',this.value)">
+      <div style="display:flex;gap:4px">
+        <a href="${e.url||'#'}" target="_blank" style="font-size:10px;color:var(--az)" ${!e.url?'hidden':''}>▶</a>
+        <button class="cp-btn" style="font-size:10px;padding:2px 6px;color:var(--rj)" 
+          onclick="bdDelEj('${e.id}')">✕</button>
       </div>
-      ${e.url?`<a href="${e.url}" target="_blank" class="btn bo bs" style="font-size:11px">▶</a>`:''}
-      <button class="btn bo bs" style="font-size:11px" onclick="bdEditarEjercicio(${e.id})">✏️</button>
     </div>`).join('');
 
-  return`<div style="padding:16px">${tabs}
-    <div style="font-size:12px;color:var(--t3);margin-bottom:8px">${filtered.length} ejercicios</div>
-    ${lista}
-  </div>`;
+  return tabs+headers+`<div style="max-height:60vh;overflow-y:auto">${lista}</div>`;
 }
+
 
 function bdEditarRutina(codigo){
   const r=_BD_RUTINAS&&_BD_RUTINAS.find(x=>x.codigo===codigo);
@@ -836,6 +852,26 @@ function bdEditarEjercicio(id){
   apiCall('PATCH','/api/bd/ejercicios/'+id,{nombre,sets:parseInt(sets),reps,rir:parseFloat(rir),aclaraciones:acl,url}).then(()=>{
     _BD_EJERCICIOS=null;toast('Ejercicio actualizado ✓','vd');render();
   }).catch(e=>toast('Error: '+e.message,'rj'));
+}
+
+function bdSaveEj(id, campo, valor){
+  apiCall('PATCH','/api/bd/ejercicios/'+id,{[campo]:valor})
+    .then(()=>{ _BD_EJERCICIOS=null; })
+    .catch(e=>toast('Error: '+e.message,'rj'));
+}
+
+function bdDelEj(id){
+  if(!confirm('¿Eliminar este ejercicio?'))return;
+  apiCall('DELETE','/api/bd/ejercicios/'+id)
+    .then(()=>{ _BD_EJERCICIOS=null; render(); })
+    .catch(e=>toast('Error: '+e.message,'rj'));
+}
+
+function bdSyncEjercicios(){
+  if(!confirm('¿Sincronizar todos los datos desde la base de ejercicios JSON? Se sobrescribirán sets, reps, RIR, descanso y aclaraciones.'))return;
+  apiCall('POST','/api/bd/ejercicios/sync')
+    .then(r=>{ toast('✅ '+r.updated+' ejercicios sincronizados','vd'); _BD_EJERCICIOS=null; render(); })
+    .catch(e=>toast('Error: '+e.message,'rj'));
 }
 
 function bdNuevoEjercicio(){
