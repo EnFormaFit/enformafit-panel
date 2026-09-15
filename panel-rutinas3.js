@@ -911,8 +911,12 @@ function crearCliente(){
       fecha_nacimiento:g('nc-fnac')||null,
       fecha_inicio:g('nc-inicio')||new Date().toISOString().split('T')[0],
       semanas_bloque:tipo==='uno'?13:14,
-    }).then(r=>toast('✅ '+nom+' creado en BD también','vd'))
-      .catch(e=>console.warn('[API] crear cliente:',e.message));
+    }).then(async r=>{
+      // After creating client, reload from BD so bloque exists and panel can save data
+      toast('✅ '+nom+' creado — cargando plan...','vd');
+      await loadClientesFromAPI();
+      toast('✅ '+nom+' listo para configurar','vd');
+    }).catch(e=>console.warn('[API] crear cliente:',e.message));
   }
   toast('✅ '+nom+' añadido','vd');
   nav(tipo==='uno'?'uno':'prog');
