@@ -685,6 +685,9 @@ function editMedidaInput(inp){
   if(UNDO_MED.length>50)UNDO_MED.shift();
   if(newVal!=null)c.revision.medidas[nom][sem]=newVal;
   else delete c.revision.medidas[nom][sem];
+  // Auto-save with debounce
+  clearTimeout(window._medSave);
+  window._medSave=setTimeout(function(){guardarMedidasBD(cliId);},1500);
 }
 function medUndo(){
   if(!UNDO_MED.length){toast('Nada que deshacer en medidas','');return;}
@@ -726,7 +729,10 @@ function editMedida(cliId,nom,semLabel,val){
 }
 
 function guardarMedidasBD(cliId){
-  var c=byId(cliId);if(!c||!c.revision?.medidas)return;
+  var c=byId(cliId);if(!c)return;
+  if(!c.revision)c.revision={medidas:{},preguntas:{},fotos:{}};
+  if(!c.revision.medidas)c.revision.medidas={};
+  if(!Object.keys(c.revision.medidas).length)return;
   // Save each semana as a separate revision entry
   var medidas=c.revision.medidas;
   var semanas=new Set();
