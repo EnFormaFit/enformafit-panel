@@ -1449,7 +1449,7 @@ function editPesoCell(td, cliId, sem, dia) {
       var d = new Date(fi);
       d.setDate(d.getDate() + (sem-1)*7 + dia);
       var fecha = d.toISOString().split('T')[0];
-      apiCall('POST', '/api/entreno/pesos', {cliente_id: cliId, peso: v, fecha: fecha})
+      apiCall('POST', '/api/entreno/pesos/admin', {cliente_id: cliId, peso: v, fecha: fecha})
         .then(function(){
           c.histPesos.push({f: fecha, v: v});
           toast('Peso guardado ✓', 'vd');
