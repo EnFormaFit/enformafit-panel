@@ -174,13 +174,13 @@ function rRutinas(){
   // Day editor
   // Override: if RUTINAS has exercises for this day, treat as training day
   const rutinaEjs=getRut(RUT_CLI,RUT_SEM,RUT_DIA);
-  if(dia.rest && rutinaEjs && rutinaEjs.length>0){
-    dia=Object.assign({},dia,{rest:false,tipo:'Entreno'});
+  const diaEsDescanso = dia.rest && !(rutinaEjs && rutinaEjs.length>0);
+  if(!diaEsDescanso && dia.rest){
     DIAS_BASE[RUT_DIA].rest=false;
     DIAS_BASE[RUT_DIA].tipo='Entreno';
   }
   let dayEditor='';
-  if(dia.rest){
+  if(diaEsDescanso){
     dayEditor=`<div class="card"><div class="cb" style="text-align:center;padding:22px">
       <div style="font-size:36px;margin-bottom:8px">😴</div>
       <div style="font-weight:700;color:var(--t2);margin-bottom:8px">Día de descanso</div>
