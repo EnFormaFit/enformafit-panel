@@ -1432,6 +1432,37 @@ function loadHistorialAPI(rows, cliId){
   setTab('entreno');
 }
 
+function editPesoCell(td, cliId, sem, dia) {
+  if(td.querySelector('input'))return; // already editing
+  var prev = parseFloat(td.textContent) || '';
+  td.innerHTML = '<input type="number" step="0.1" value="'+prev+'" style="width:46px;text-align:center;border:1px solid var(--az);border-radius:4px;padding:2px;font-size:11px;font-weight:700" autofocus>';
+  var inp = td.querySelector('input');
+  inp.focus(); inp.select();
+  function save() {
+    var v = parseFloat(inp.value);
+    if(!isNaN(v) && v > 0 && v !== prev) {
+      // Save to BD
+      var c = byId(cliId); if(!c)return;
+      if(!c.histPesos) c.histPesos = [];
+      // Calculate date from inicioBloque + sem + dia
+      var fi = c.inicioBloque ? new Date(c.inicioBloque) : new Date();
+      var d = new Date(fi);
+      d.setDate(d.getDate() + (sem-1)*7 + dia);
+      var fecha = d.toISOString().split('T')[0];
+      apiCall('POST', '/api/entreno/pesos', {cliente_id: cliId, peso: v, fecha: fecha})
+        .then(function(){
+          c.histPesos.push({f: fecha, v: v});
+          toast('Peso guardado ✓', 'vd');
+          setTab('revision');
+        }).catch(function(e){ toast('Error: '+e.message, 'rj'); });
+    }
+    td.textContent = (!isNaN(v) && v > 0) ? v : (prev || '—');
+  }
+  inp.addEventListener('blur', save);
+  inp.addEventListener('keydown', function(e){ if(e.key==='Enter')inp.blur(); if(e.key==='Escape'){td.textContent=prev||'—';} });
+}
+
+
 function tEntrenoGrid(c){
   const rs=revSems(c.tipo),st=c.semTotal;
   const semH=Array.from({length:st},(_,i)=>{
