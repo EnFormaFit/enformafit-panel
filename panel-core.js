@@ -428,15 +428,26 @@ function setTab(t){
         apiCall('GET','/api/entreno/revisiones/'+CLI_ID).then(rows=>{
           if(rows&&rows.length){
             const medidas={};const fotos=c.revision?.fotos||{};
+            const preguntas={};const fotosRev={};
             rows.forEach(r=>{
+              // Medidas
               const meds=typeof r.medidas==='string'?JSON.parse(r.medidas||'{}'):(r.medidas||{});
               Object.entries(meds).forEach(([nom,vals])=>{
                 if(!medidas[nom])medidas[nom]={};
                 if(typeof vals==='object'&&vals!==null)Object.assign(medidas[nom],vals);
                 else if(vals!=null)medidas[nom]['S'+r.semana]=vals;
               });
+              // Preguntas
+              const pregs=typeof r.preguntas==='string'?JSON.parse(r.preguntas||'{}'):(r.preguntas||{});
+              if(Object.keys(pregs).length)preguntas['S'+r.semana]=pregs;
+              // Fotos
+              const fots=typeof r.fotos==='string'?JSON.parse(r.fotos||'{}'):(r.fotos||{});
+              Object.entries(fots).forEach(([k,url])=>{
+                const key='rev_S'+r.semana+'_'+k;
+                fotosRev[key]=url;
+              });
             });
-            c.revision={medidas,preguntas:{},fotos};
+            c.revision={medidas,preguntas,fotos:fotosRev,rows};
             // Update medidas div directly if visible
             const medDiv=document.getElementById('medidas-'+CLI_ID);
             if(medDiv)medDiv.innerHTML=renderMedidasTable(medidas,CLI_ID);
