@@ -436,7 +436,11 @@ function setTab(t){
                 else if(vals!=null)medidas[nom]['S'+r.semana]=vals;
               });
             });
-            c.revision={medidas,preguntas:{},fotos};render();
+            c.revision={medidas,preguntas:{},fotos};
+            // Update medidas div directly if visible
+            const medDiv=document.getElementById('medidas-'+CLI_ID);
+            if(medDiv)medDiv.innerHTML=renderMedidasTable(medidas,CLI_ID);
+            else render();
           }
         }).catch(()=>{});
       }
