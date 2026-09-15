@@ -423,7 +423,7 @@ function setTab(t){
         }).catch(()=>{});
       }
       // Load revisiones (medidas + preguntas) if needed
-      if(!c._revLoaded&&(!c.revision||!c.revision.medidas||!Object.keys(c.revision.medidas).length)){
+      if(!c._revLoaded||!c.revision?.medidas||!Object.keys(c.revision.medidas||{}).length){
         c._revLoaded=true;
         apiCall('GET','/api/entreno/revisiones/'+CLI_ID).then(rows=>{
           if(rows&&rows.length){
