@@ -438,7 +438,10 @@ function tRevision(c){
   const respsH=`<div class="sec-t" style="margin-bottom:8px">Preguntas de revisión</div>
   <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
     ${PP.map((q,i)=>{
-      const ans=rev?.preguntas?.[i]||'';
+      // preguntas may be nested as {S3:{0:'...'}} or flat {0:'...'}
+      const pregSem=rev?.preguntas?.['S'+c.nextRev]||rev?.preguntas?.['S3']||rev?.preguntas?.['S7']||rev?.preguntas?.['S11']||rev?.preguntas?.['S4']||rev?.preguntas?.['S8']||rev?.preguntas?.['S12']||rev?.preguntas||{};
+      const ans=pregSem[i]||pregSem[String(i)]||'';
+
       return`<div style="background:var(--bg);border-radius:8px;padding:10px;border:1px solid var(--bor)">
         <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:4px">P${i+1}. ${q[0]}</div>
         <div style="font-size:13px;color:${ans?'var(--t1)':'var(--bor)'}">${ans||'Sin respuesta aún'}</div>
