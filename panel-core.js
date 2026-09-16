@@ -111,7 +111,7 @@ async function doLogin(){
 async function loadClientesFromAPI(){
   console.log('[API] Cargando clientes desde BD...');
   try{
-    const rows=await apiCall('GET','/api/clientes');
+    const rows=await apiCall('GET','/api/clientes'+(ROL==='ceo'?'?ceo=1':''));
     console.log('[API] Respuesta BD:',rows?.length,'clientes');
     if(!rows||!rows.length)return;
 
@@ -384,6 +384,7 @@ function setRol(r){
   document.querySelectorAll('.sb-rol').forEach(b=>b.classList.toggle('on',b.id==='rol-'+r));
   document.getElementById('sb-rol-lbl').textContent=r==='ceo'?'CEO · Admin':'Entrenador';
   toast(r==='ceo'?'Vista CEO':'Vista Entrenador');
+  loadClientesFromAPI();
 }
 
 // ═══ CLIENT FULLSCREEN ═══
