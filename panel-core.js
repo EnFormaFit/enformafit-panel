@@ -145,7 +145,7 @@ async function loadClientesFromAPI(){
           rutinaSemanas=notas.rutina_semanas||{};
           objetivoKg=notas.objetivo_kg||null;
           semanaActual=notas.semana_actual||semana;
-          entrenadorAsignado=notas.entrenador||'alvaro';
+          entrenadorAsignado=r.entrenador_id||notas.entrenador||'alvaro';
           if(notas.pasos_objetivo)r.pasos_obj=parseInt(notas.pasos_objetivo)||8000;
           if(notas.pasos_objetivo)r.pasos_obj=parseInt(notas.pasos_objetivo)||8000;
         }
@@ -207,7 +207,7 @@ async function loadClientesFromAPI(){
         checkIn:null,
         revision:null,
         inicioBloque:toDate(r.bloque_inicio||r.fecha_inicio),
-        entrenador:'alvaro',
+        entrenador:r.entrenador_id||'alvaro',
         nivel:parseInt(r.nivel)||1,
         rutina:r.rutina_cod||r.rutina_actual||'4D.TP',
         rutinaBase:rutinaDias,
