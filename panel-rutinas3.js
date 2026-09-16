@@ -766,6 +766,7 @@ async function guardarEditar(id){
   if(c.pesoIni!==undefined&&c.pesoIni!==null&&c.pesoIni!=='')patch.peso_inicial=parseFloat(c.pesoIni);
   if(c.fechaNac)patch.fecha_nacimiento=c.fechaNac;
   if(c.inicioBloque){patch.fecha_inicio=c.inicioBloque;patch.bloque_fecha_inicio=c.inicioBloque;}
+  if(c.entrenador!==undefined&&c.entrenador!==null)patch.entrenador_id=c.entrenador;
   if(c.entrenador!==undefined)patch.entrenador_id=c.entrenador;
   // Macros: only save to plan-nutricion if user directly edited them
   if(c.macros){
