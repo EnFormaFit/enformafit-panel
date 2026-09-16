@@ -39,8 +39,22 @@ async function apiCall(method,path,body){
   }
 }
 
+function showShell(){
+  const s=document.getElementById('main-shell');if(s){s.style.visibility='visible';s.style.pointerEvents='all';}
+  const o=document.getElementById('login-overlay');if(o)o.style.display='none';
+}
+
 function showLogin(){
-  const ct=document.getElementById('ct');
+  // Render login in overlay div outside shell
+  let overlay=document.getElementById('login-overlay');
+  if(!overlay){
+    overlay=document.createElement('div');
+    overlay.id='login-overlay';
+    overlay.style.cssText='position:fixed;inset:0;background:#0f1923;z-index:9999;display:flex;align-items:center;justify-content:center';
+    document.body.appendChild(overlay);
+  }
+  overlay.style.display='flex';
+  const ct=overlay;
   if(!ct)return;
   ct.innerHTML=`<div style="display:flex;align-items:center;justify-content:center;height:100%;min-height:400px">
     <div style="background:#fff;border-radius:12px;padding:32px;width:340px;box-shadow:0 4px 24px rgba(0,0,0,.1)">
@@ -83,8 +97,12 @@ async function doLogin(){
       toast('✅ Bienvenido Álvaro','vd');
       const tb=document.getElementById('tb-trainer');if(tb)tb.textContent='👤 Álvaro Casal';
     }
-    await loadClientesFromAPI();
+    // Show sidebar after successful login
+    const sb=document.getElementById('sb');
+    if(sb)sb.style.display='';
+    showShell();
     nav('ci');
+    await loadClientesFromAPI();
   }catch(e){
     if(errEl)errEl.textContent=e.message||'Error de acceso';
   }
@@ -181,6 +199,7 @@ async function loadClientesFromAPI(){
         revDone:false,
         diasSinPeso:0,
         macros:{kcal,p:prot,c:carbs,g:grasa},
+        macros_manuales:r.macros_manuales||false,
         planPublicado:r.plan_publicado||r.visible_cliente||false,
         bloque:parseInt(r.numero_bloque)||1,
         bloqueHistorial:[],
@@ -404,20 +423,35 @@ function setTab(t){
         }).catch(()=>{});
       }
       // Load revisiones (medidas + preguntas) if needed
-      if(!c.revision&&!c._revLoaded){
+      if(!c._revLoaded||!c.revision?.medidas||!Object.keys(c.revision.medidas||{}).length){
         c._revLoaded=true;
         apiCall('GET','/api/entreno/revisiones/'+CLI_ID).then(rows=>{
           if(rows&&rows.length){
             const medidas={};const fotos=c.revision?.fotos||{};
+            const preguntas={};const fotosRev={};
             rows.forEach(r=>{
+              // Medidas
               const meds=typeof r.medidas==='string'?JSON.parse(r.medidas||'{}'):(r.medidas||{});
               Object.entries(meds).forEach(([nom,vals])=>{
                 if(!medidas[nom])medidas[nom]={};
                 if(typeof vals==='object'&&vals!==null)Object.assign(medidas[nom],vals);
                 else if(vals!=null)medidas[nom]['S'+r.semana]=vals;
               });
+              // Preguntas
+              const pregs=typeof r.preguntas==='string'?JSON.parse(r.preguntas||'{}'):(r.preguntas||{});
+              if(Object.keys(pregs).length)preguntas['S'+r.semana]=pregs;
+              // Fotos
+              const fots=typeof r.fotos==='string'?JSON.parse(r.fotos||'{}'):(r.fotos||{});
+              Object.entries(fots).forEach(([k,url])=>{
+                const key='rev_S'+r.semana+'_'+k;
+                fotosRev[key]=url;
+              });
             });
-            c.revision={medidas,preguntas:{},fotos};render();
+            c.revision={medidas,preguntas,fotos:fotosRev,rows};
+            // Update medidas div directly if visible
+            const medDiv=document.getElementById('medidas-'+CLI_ID);
+            if(medDiv)medDiv.innerHTML=renderMedidasTable(medidas,CLI_ID);
+            else render();
           }
         }).catch(()=>{});
       }
@@ -702,28 +736,44 @@ function renderBDEjercicios(){
     <button class="btn bo bs" onclick="_BD_TAB='rutinas';render()">← Rutinas</button>
     <input class="tb-search" style="max-width:220px" placeholder="Buscar ejercicio..." 
       value="${_BD_EJ_SEARCH}" oninput="_BD_EJ_SEARCH=this.value;render()">
-    <button class="btn bo bs" style="margin-left:auto" onclick="bdNuevoEjercicio()">+ Nuevo ejercicio</button>
+    <button class="btn bo bs" style="margin-left:auto" onclick="bdSyncEjercicios()">🔄 Sincronizar desde JSON</button>
+    <button class="btn bo bs" onclick="bdNuevoEjercicio()">+ Nuevo ejercicio</button>
   </div>`;
 
   const filtered=(_BD_EJERCICIOS||[]).filter(e=>
     !_BD_EJ_SEARCH||e.nombre.toLowerCase().includes(_BD_EJ_SEARCH.toLowerCase())
   );
 
+  const headers=`<div style="display:grid;grid-template-columns:2fr 60px 80px 50px 70px 1fr 80px 80px;gap:8px;padding:6px 8px;background:var(--bg);border-radius:6px;font-size:11px;font-weight:700;color:var(--t3);margin-bottom:4px">
+    <span>Nombre</span><span>Series</span><span>Reps</span><span>RIR</span><span>Desc (s)</span><span>Aclaración</span><span>Grupo</span><span></span>
+  </div>`;
+
   const lista=filtered.map(e=>`
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--bor)">
-      <div style="flex:1">
-        <div style="font-size:13px;font-weight:600">${e.nombre}</div>
-        <div style="font-size:11px;color:var(--t3)">${e.sets}×${e.reps} · RIR ${e.rir}${e.aclaraciones?` · ${e.aclaraciones}`:''}</div>
+    <div style="display:grid;grid-template-columns:2fr 60px 80px 50px 70px 1fr 80px 80px;gap:8px;padding:8px;border-bottom:1px solid var(--bor);align-items:center;font-size:12px">
+      <input class="ci" value="${e.nombre||''}" style="font-size:12px" 
+        onblur="bdSaveEj('${e.id}','nombre',this.value)">
+      <input class="ci" type="number" value="${e.sets||3}" style="font-size:12px;text-align:center"
+        onblur="bdSaveEj('${e.id}','sets',parseInt(this.value)||3)">
+      <input class="ci" value="${e.reps||''}" style="font-size:12px;text-align:center"
+        onblur="bdSaveEj('${e.id}','reps',this.value)">
+      <input class="ci" type="number" step="0.5" value="${e.rir??2}" style="font-size:12px;text-align:center"
+        onblur="bdSaveEj('${e.id}','rir',parseFloat(this.value)||2)">
+      <input class="ci" type="number" value="${e.rest||90}" style="font-size:12px;text-align:center"
+        onblur="bdSaveEj('${e.id}','rest',parseInt(this.value)||90)">
+      <input class="ci" value="${e.aclaraciones||''}" style="font-size:12px"
+        onblur="bdSaveEj('${e.id}','aclaraciones',this.value)">
+      <input class="ci" value="${e.grupo_muscular||''}" style="font-size:12px"
+        onblur="bdSaveEj('${e.id}','grupo_muscular',this.value)">
+      <div style="display:flex;gap:4px">
+        <a href="${e.url||'#'}" target="_blank" style="font-size:10px;color:var(--az)" ${!e.url?'hidden':''}>▶</a>
+        <button class="cp-btn" style="font-size:10px;padding:2px 6px;color:var(--rj)" 
+          onclick="bdDelEj('${e.id}')">✕</button>
       </div>
-      ${e.url?`<a href="${e.url}" target="_blank" class="btn bo bs" style="font-size:11px">▶</a>`:''}
-      <button class="btn bo bs" style="font-size:11px" onclick="bdEditarEjercicio(${e.id})">✏️</button>
     </div>`).join('');
 
-  return`<div style="padding:16px">${tabs}
-    <div style="font-size:12px;color:var(--t3);margin-bottom:8px">${filtered.length} ejercicios</div>
-    ${lista}
-  </div>`;
+  return tabs+headers+`<div style="max-height:60vh;overflow-y:auto">${lista}</div>`;
 }
+
 
 function bdEditarRutina(codigo){
   const r=_BD_RUTINAS&&_BD_RUTINAS.find(x=>x.codigo===codigo);
@@ -817,6 +867,26 @@ function bdEditarEjercicio(id){
   apiCall('PATCH','/api/bd/ejercicios/'+id,{nombre,sets:parseInt(sets),reps,rir:parseFloat(rir),aclaraciones:acl,url}).then(()=>{
     _BD_EJERCICIOS=null;toast('Ejercicio actualizado ✓','vd');render();
   }).catch(e=>toast('Error: '+e.message,'rj'));
+}
+
+function bdSaveEj(id, campo, valor){
+  apiCall('PATCH','/api/bd/ejercicios/'+id,{[campo]:valor})
+    .then(()=>{ _BD_EJERCICIOS=null; })
+    .catch(e=>toast('Error: '+e.message,'rj'));
+}
+
+function bdDelEj(id){
+  if(!confirm('¿Eliminar este ejercicio?'))return;
+  apiCall('DELETE','/api/bd/ejercicios/'+id)
+    .then(()=>{ _BD_EJERCICIOS=null; render(); })
+    .catch(e=>toast('Error: '+e.message,'rj'));
+}
+
+function bdSyncEjercicios(){
+  if(!confirm('¿Sincronizar todos los datos desde la base de ejercicios JSON? Se sobrescribirán sets, reps, RIR, descanso y aclaraciones.'))return;
+  apiCall('POST','/api/bd/ejercicios/sync')
+    .then(r=>{ toast('✅ '+r.updated+' ejercicios sincronizados','vd'); _BD_EJERCICIOS=null; render(); })
+    .catch(e=>toast('Error: '+e.message,'rj'));
 }
 
 function bdNuevoEjercicio(){
