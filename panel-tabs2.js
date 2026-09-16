@@ -1,3 +1,9 @@
+// ── PREGUNTAS REVISIÓN ─────────────────────────────────────────────────────
+const PP_UNO = ['¿Cómo te sientes esta semana?','¿Cuáles fueron tus mayores éxitos?','¿Cómo te sentiste con ellos?','¿Qué tal los entrenamientos?','¿Qué tal la nutrición?','¿Qué mejorarías?','¿Algo más que quieras compartir?'];
+const PP_PROG = ['¿Cómo te sientes esta semana?','¿Cómo han ido los entrenamientos?','¿Cómo ha ido la nutrición?','¿Qué funcionó mejor?','¿Qué cambiarías?'];
+const PP_UNO_FINAL = ['¿Cómo ha sido tu experiencia general?','¿Qué logros destacarías?','¿Qué ha sido lo más difícil?','¿Cómo han mejorado tus hábitos?','¿Cómo te encuentras físicamente?','¿Qué harías diferente?','¿Continuarías con el programa?'];
+const PP_PROG_FINAL = ['¿Cómo ha sido tu experiencia general?','¿Qué logros destacarías?','¿Qué ha sido lo más difícil?','¿Cómo han mejorado tus hábitos?','¿Continuarías con el programa?'];
+
 var MEAL_NOMS_MAP={desayuno:'☀️ Desayuno',comida:'🌞 Comida',cena:'🌙 Cena',snack:'🍎 Snack',snack_am:'🍎 Snack mañana',snack_pm:'🍎 Snack tarde',post_entreno:'💪 Post-entreno',desayuno_extra:'☀️ Desayuno extra',comida_extra:'🌞 Comida extra',cena_extra:'🌙 Cena extra'};
 
 // ═══ TAB: FORMULARIO INICIAL ═══
@@ -438,7 +444,10 @@ function tRevision(c){
   const respsH=`<div class="sec-t" style="margin-bottom:8px">Preguntas de revisión</div>
   <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
     ${PP.map((q,i)=>{
-      const ans=rev?.preguntas?.[i]||'';
+      // preguntas may be nested as {S3:{0:'...'}} or flat {0:'...'}
+      const pregSem=rev?.preguntas?.['S'+c.nextRev]||rev?.preguntas?.['S3']||rev?.preguntas?.['S7']||rev?.preguntas?.['S11']||rev?.preguntas?.['S4']||rev?.preguntas?.['S8']||rev?.preguntas?.['S12']||rev?.preguntas||{};
+      const ans=pregSem[i]||pregSem[String(i)]||'';
+
       return`<div style="background:var(--bg);border-radius:8px;padding:10px;border:1px solid var(--bor)">
         <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:4px">P${i+1}. ${q[0]}</div>
         <div style="font-size:13px;color:${ans?'var(--t1)':'var(--bor)'}">${ans||'Sin respuesta aún'}</div>
@@ -685,6 +694,9 @@ function editMedidaInput(inp){
   if(UNDO_MED.length>50)UNDO_MED.shift();
   if(newVal!=null)c.revision.medidas[nom][sem]=newVal;
   else delete c.revision.medidas[nom][sem];
+  // Auto-save with debounce
+  clearTimeout(window._medSave);
+  window._medSave=setTimeout(function(){guardarMedidasBD(cliId);},1500);
 }
 function medUndo(){
   if(!UNDO_MED.length){toast('Nada que deshacer en medidas','');return;}
@@ -726,7 +738,10 @@ function editMedida(cliId,nom,semLabel,val){
 }
 
 function guardarMedidasBD(cliId){
-  var c=byId(cliId);if(!c||!c.revision?.medidas)return;
+  var c=byId(cliId);if(!c)return;
+  if(!c.revision)c.revision={medidas:{},preguntas:{},fotos:{}};
+  if(!c.revision.medidas)c.revision.medidas={};
+  if(!Object.keys(c.revision.medidas).length)return;
   // Save each semana as a separate revision entry
   var medidas=c.revision.medidas;
   var semanas=new Set();
@@ -802,9 +817,9 @@ function guardarFeedback(id){
 // Estado: NE[cliId] = { meals: [{id,nom,items:[{cat,catNom,nom,cantidad,p100,c100,g100,k100,u}]}] }
 // Orden fijo de categorías: hidratos → proteina → verd/fruta → grasa
 
-const CAT_ORDER_NUT=['hidrat','prot','verd','fat','fruta'];
-const CAT_NOM_NUT={prot:'Proteína',hidrat:'Hidratos',fat:'Grasa',verd:'Verdura',fruta:'Fruta'};
-const CAT_KEY_NUT={prot:'proteinas_magras',hidrat:'hidratos',fat:'grasas',verd:'verduras',fruta:'frutas'};
+const CAT_ORDER_NUT=['prot','prot_g','hidrat','fat','verd','fruta'];
+const CAT_NOM_NUT={prot:'Proteínas magras',prot_g:'Proteínas grasas',hidrat:'Hidratos',fat:'Grasas',verd:'Verduras',fruta:'Frutas'};
+const CAT_KEY_NUT={prot:'proteinas_magras',prot_g:'proteinas_grasas',hidrat:'hidratos',fat:'grasas',verd:'verduras',fruta:'frutas'};
 const MEAL_ORDER_NUT=['desayuno','comida','cena','snack'];
 const MEAL_NOM_NUT={desayuno:'☀️ Desayuno',comida:'🌞 Comida',cena:'🌙 Cena',snack:'🍎 Snack'};
 
@@ -1425,6 +1440,37 @@ function loadHistorialAPI(rows, cliId){
   toast('✅ '+rows.length+' registros cargados','vd');
   setTab('entreno');
 }
+
+function editPesoCell(td, cliId, sem, dia) {
+  if(td.querySelector('input'))return; // already editing
+  var prev = parseFloat(td.textContent) || '';
+  td.innerHTML = '<input type="number" step="0.1" value="'+prev+'" style="width:46px;text-align:center;border:1px solid var(--az);border-radius:4px;padding:2px;font-size:11px;font-weight:700" autofocus>';
+  var inp = td.querySelector('input');
+  inp.focus(); inp.select();
+  function save() {
+    var v = parseFloat(inp.value);
+    if(!isNaN(v) && v > 0 && v !== prev) {
+      // Save to BD
+      var c = byId(cliId); if(!c)return;
+      if(!c.histPesos) c.histPesos = [];
+      // Calculate date from inicioBloque + sem + dia
+      var fi = c.inicioBloque ? new Date(c.inicioBloque) : new Date();
+      var d = new Date(fi);
+      d.setDate(d.getDate() + (sem-1)*7 + dia);
+      var fecha = d.toISOString().split('T')[0];
+      apiCall('POST', '/api/entreno/pesos/admin', {cliente_id: cliId, peso: v, fecha: fecha})
+        .then(function(){
+          c.histPesos.push({f: fecha, v: v});
+          toast('Peso guardado ✓', 'vd');
+          setTab('revision');
+        }).catch(function(e){ toast('Error: '+e.message, 'rj'); });
+    }
+    td.textContent = (!isNaN(v) && v > 0) ? v : (prev || '—');
+  }
+  inp.addEventListener('blur', save);
+  inp.addEventListener('keydown', function(e){ if(e.key==='Enter')inp.blur(); if(e.key==='Escape'){td.textContent=prev||'—';} });
+}
+
 
 function tEntrenoGrid(c){
   const rs=revSems(c.tipo),st=c.semTotal;
