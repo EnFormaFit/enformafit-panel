@@ -625,7 +625,10 @@ function renderMedidasTable(medidas,cliId){
     {label:'Gemelo izq.', keys:['gemeloi','gemelo_i','gemelo izq.']},
     {label:'Gemelo dcho.',keys:['gemelod','gemelo_d','gemelo dcho.']},
   ];
-  var sems=new Set(['S0','S4','S8','S12']);
+  // Use client's revision semanas for column headers
+  var c=cliId?byId(cliId):null;
+  var revSems=c&&c.tipo==='1a1'?['S3','S7','S11']:['S4','S8','S12'];
+  var sems=new Set(['S0'].concat(revSems));
   Object.values(medidas).forEach(function(v){if(typeof v==='object')Object.keys(v).forEach(function(k){sems.add(k);});});
   var sa=[...sems].sort(function(a,b){return parseInt(a.replace('S',''))-parseInt(b.replace('S',''));});
   var mf={};
