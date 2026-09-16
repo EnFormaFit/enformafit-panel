@@ -1,9 +1,3 @@
-// ── PREGUNTAS REVISIÓN ─────────────────────────────────────────────────────
-var PP_UNO = ['¿Cómo te sientes esta semana?','¿Cuáles fueron tus mayores éxitos?','¿Cómo te sentiste con ellos?','¿Qué tal los entrenamientos?','¿Qué tal la nutrición?','¿Qué mejorarías?','¿Algo más que quieras compartir?'];
-var PP_PROG = ['¿Cómo te sientes esta semana?','¿Cómo han ido los entrenamientos?','¿Cómo ha ido la nutrición?','¿Qué funcionó mejor?','¿Qué cambiarías?'];
-var PP_UNO_FINAL = ['¿Cómo ha sido tu experiencia general?','¿Qué logros destacarías?','¿Qué ha sido lo más difícil?','¿Cómo han mejorado tus hábitos?','¿Cómo te encuentras físicamente?','¿Qué harías diferente?','¿Continuarías con el programa?'];
-var PP_PROG_FINAL = ['¿Cómo ha sido tu experiencia general?','¿Qué logros destacarías?','¿Qué ha sido lo más difícil?','¿Cómo han mejorado tus hábitos?','¿Continuarías con el programa?'];
-
 var MEAL_NOMS_MAP={desayuno:'☀️ Desayuno',comida:'🌞 Comida',cena:'🌙 Cena',snack:'🍎 Snack',snack_am:'🍎 Snack mañana',snack_pm:'🍎 Snack tarde',post_entreno:'💪 Post-entreno',desayuno_extra:'☀️ Desayuno extra',comida_extra:'🌞 Comida extra',cena_extra:'🌙 Cena extra'};
 
 // ═══ TAB: FORMULARIO INICIAL ═══
