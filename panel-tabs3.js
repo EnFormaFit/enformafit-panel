@@ -3,7 +3,7 @@ var MEAL_NOMS_MAP={desayuno:'☀️ Desayuno',comida:'🌞 Comida',cena:'🌙 Ce
 // ═══ TAB: FORMULARIO INICIAL ═══
 function tFormulario(c){
   const n=c.notas||{};
-  const es1a1=c.tipo==='1a1';
+  const es1a1=c.tipo==='1a1'||c.tipo==='uno'||c.tipo==='1a1';
 
   function row(label,val){
     if(val===undefined||val===null||String(val).trim()==='')return '';
@@ -34,7 +34,7 @@ function tFormulario(c){
   h+=sec('👤 Datos personales');
   h+=row('Nombre y apellidos',c.nom);
   h+=row('Email',c.email);
-  h+=row('Tipo de plan',es1a1?'1:1 Coaching':'Programa');
+  h+=row('Tipo de plan',(es1a1||c.tipo==='uno')?'1:1 Coaching':'Programa');
   h+=row('Teléfono',n.telefono);
   h+=row('Fecha de nacimiento',c.dob?(()=>{const d=new Date(c.dob);const age=Math.floor((Date.now()-d)/(365.25*24*3600*1000));return d.toLocaleDateString('es')+' · '+age+' años';})():'');
   h+=row('Peso actual en ayunas',c.pesoIni?c.pesoIni+' kg':'');
