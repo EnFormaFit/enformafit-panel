@@ -3,113 +3,84 @@ var MEAL_NOMS_MAP={desayuno:'☀️ Desayuno',comida:'🌞 Comida',cena:'🌙 Ce
 // ═══ TAB: FORMULARIO INICIAL ═══
 function tFormulario(c){
   const n=c.notas||{};
-  const NIVEL_NOM={0:'Principiante (0-1 año)',1:'Intermedio (1-3 años)',2:'Avanzado (3+ años)'};
-  const LUGAR_NOM={gym:'Gimnasio completo',sinmat:'Casa sin material',casa_sin:'Casa sin material',band:'Casa con bandas',casa_bandas:'Casa con bandas',bym:'Casa con bandas y mancuernas',casa_mancuernas:'Casa con mancuernas'};
-  const ACT_NOM={'1.2':'Sedentario','1.375':'Ligeramente activo','1.55':'Moderadamente activo','1.725':'Muy activo'};
-
-  function row(label, val){
-    if(!val&&val!==0)return'';
-    return'<div style="display:flex;gap:12px;padding:8px 0;border-bottom:1px solid var(--bor)">'+
-      '<div style="width:160px;font-size:11px;font-weight:700;color:var(--t3);flex-shrink:0">'+label+'</div>'+
-      '<div style="font-size:13px;color:var(--t1)">'+val+'</div>'+
-    '</div>';
+  const es1a1=c.tipo==='1a1';
+  function row(label,val){
+    if(val===undefined||val===null||val==='')return '';
+    return `<div class="frow"><span class="flbl">${label}</span><span class="fval">${val}</span></div>`;
   }
-
-  function section(title, rows){
-    const content=rows.filter(Boolean).join('');
-    if(!content)return'';
-    return'<div class="card" style="margin-bottom:12px">'+
-      '<div class="ch"><span style="font-weight:700;font-size:13px">'+title+'</span></div>'+
-      '<div class="cb" style="padding:0 14px">'+content+'</div>'+
-    '</div>';
+  function sec(title){return `<div class="fsec">${title}</div>`;}
+  let h='';
+  // ── Fotos S0
+  const fotos=c.fotosS0||{};
+  const fUrls=Object.values(fotos).filter(Boolean);
+  if(fUrls.length){
+    h+=`<div style="margin-bottom:12px"><b>📸 ${fUrls.length} foto(s) enviadas con el formulario</b></div>`;
+    h+=`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">${fUrls.map(u=>`<img src="${u}" style="height:120px;border-radius:8px;object-fit:cover">`).join('')}</div>`;
   }
-
-  // Parse datos personales
-  const fechaNac=c.fechaNac?c.fechaNac.split('T')[0].split('-').reverse().join('/'):'—';
-  const edad=c.fechaNac?Math.floor((new Date()-new Date(c.fechaNac))/31557600000)+'años':'—';
-
-    // Step 1: Datos personales + contacto (ambos tipos)
-  const personal=section('👤 Datos personales',[
-    row('Nombre',c.nom),
-    row('Email',c.email),
-    row('Tipo de plan',c.tipo==='uno'?'1:1 Coaching':'Programa Grupal'),
-    row('Fecha nacimiento',fechaNac+' ('+edad+')'),
-    row('Peso inicial',c.pesoIni?c.pesoIni+'kg':'—'),
-    row('Altura',c.altura?c.altura+'cm':'—'),
-    row('Objetivo peso',c.obj?c.obj+'kg':'—'),
-    row('Teléfono',n.telefono||'—'),
-    c.tipo==='uno'?row('Dirección',[(n.direccion||''),(n.cp||''),(n.ciudad||'')].filter(Boolean).join(', ')||'—'):'',
-  ]);
-
-  // Step 2: Objetivos
-  const objetivos=section('🎯 Objetivos',[
-    row('Objetivo principal',n.objetivo==='def'?'Bajar grasa (déficit)':n.objetivo==='sup'?'Ganar músculo (superávit)':n.objetivo||'—'),
-    c.tipo==='uno'?row('Objetivos detallados',n.objetivos_detallado||'—'):'',
-    row('Actividad diaria',ACT_NOM[String(c.actividad||n.actividad)]||String(c.actividad||n.actividad)),
-    row('Fecha inicio deseada',n.fecha_inicio_deseada||'—'),
-    c.tipo==='uno'?row('Horas de sueño',n.horas_sueno||'—'):'',
-    c.tipo==='uno'?row('Nivel de estrés',n.estres||'—'):'',
-  ]);
-
-  // Step 3: Entrenamiento
-  const entreno=section('🏋️ Entrenamiento',[
-    row('Días entreno/sem',c.diasSemana||n.dias_entreno),
-    row('Lugar',LUGAR_NOM[n.lugar]||LUGAR_NOM[c.equipamiento]||n.lugar||c.equipamiento),
-    row('Tiempo por sesión',(c.tiempoEnt||n.tiempo_ent)?(c.tiempoEnt||n.tiempo_ent)+'min':'—'),
-    row('Nivel',NIVEL_NOM[c.nivel]||NIVEL_NOM[n.nivel]||n.nivel),
-    row('Material libre',n.material_libre||'—'),
-    row('Ejercicios a excluir',n.excluir_ejercicios||'—'),
-    c.tipo==='uno'?row('Historial de entreno',n.historial_entreno||'—'):'',
-    c.tipo==='uno'?row('Preferencias ejercicios',n.preferencias_ejercicios||'—'):'',
-  ]);
-
-  // Step 4: Alimentación
-  const nutri=section('🥗 Alimentación',[
-    row('Nº comidas/día',c.comidas||n.comidas),
-    c.tipo==='uno'?row('Alimentación actual',n.alimentacion_actual||'—'):'',
-    row('Alimentos a excluir',n.excluir_alimentos&&n.excluir_alimentos.length?n.excluir_alimentos.join(', '):'Ninguno'),
-    row('Intolerancias/alergias',n.intolerancia_comida||'Ninguna'),
-  ]);
-
-  // Step 5: Salud
-  const salud=section('🩺 Salud',[
-    row('Lesiones/molestias',c.lesiones||'Ninguna'),
-    row('Patología',n.patologia||'Ninguna'),
-    row('Medicación',n.medicacion||'Ninguna'),
-  ]);
-
-  // Step 6: Mentalidad (1:1) / Comentarios (programa)
-  const mentalidad=c.tipo==='uno'?section('🧠 Mentalidad',[
-    row('Mentalidad / Descripción personal',n.mentalidad||'—'),
-    row('Historial con entrenadores',n.historial_entrenador||'—'),
-    row('Qué busca del entrenador',n.que_busca_entrenador||'—'),
-    row('¿Permiso Instagram?',n.ig_permiso||'No indicado'),
-    row('Comentarios',n.comentarios||'—'),
-  ]):section('💬 Otros',[
-    row('¿Permiso Instagram?',n.ig_permiso||'No indicado'),
-    row('Comentarios',n.comentarios||'—'),
-  ]);
-
-const fotos=n.fotos_count>0?'<div class="alert aaz" style="margin-bottom:12px">📸 '+n.fotos_count+' foto(s) enviadas con el formulario</div>':'';
-  const medidas=c.medidasS0&&Object.keys(c.medidasS0).length?section('📏 Medidas S0',
-    Object.entries(c.medidasS0).map(function(e){return row(e[0],typeof e[1]==='object'?Object.values(e[1])[0]+' cm':e[1]+' cm');})
-  ):'';
-
-  // Fotos S0 grid
-  const fotosS0 = (function(){
-    var fotoMap = c.revHistorial&&c.revHistorial[0]&&c.revHistorial[0].fotos ? c.revHistorial[0].fotos : {};
-    var urls = [fotoMap.rev_0,fotoMap.rev_1,fotoMap.rev_2,fotoMap.rev_3].filter(Boolean);
-    if(!urls.length) return '';
-    return '<div class="card" style="margin-bottom:12px"><div class="ch"><span style="font-weight:700;font-size:13px">📸 Fotos iniciales S0</span></div>'+
-      '<div class="cb" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px">'+
-      urls.map(function(u){return '<img src="'+u+'" style="width:100%;border-radius:8px;object-fit:cover;aspect-ratio:3/4">';}).join('')+
-      '</div></div>';
-  })();
-
-  return'<div style="padding:16px">'+fotos+personal+objetivos+entreno+nutri+salud+mentalidad+medidas+fotosS0+'</div>';
+  // ── Datos personales
+  h+=sec('👤 Datos personales');
+  h+=row('Nombre',c.nom);
+  h+=row('Email',c.email);
+  h+=row('Tipo de plan',es1a1?'1:1 Coaching':'Programa');
+  h+=row('Fecha nacimiento',c.dob?(()=>{const d=new Date(c.dob);const age=Math.floor((Date.now()-d)/(365.25*24*3600*1000));return d.toLocaleDateString('es')+'  ('+age+'años)';})():'');
+  h+=row('Peso inicial',c.pesoIni?c.pesoIni+'kg':'');
+  h+=row('Altura',c.altura?c.altura+'cm':'');
+  h+=row('Objetivo peso',c.objKg?c.objKg+'kg':'');
+  h+=row('Teléfono',n.telefono);
+  if(n.direccion||n.cp||n.ciudad)h+=row('Dirección',[n.direccion,n.cp,n.ciudad].filter(Boolean).join(', '));
+  // ── Objetivos
+  h+=sec('🎯 Objetivos');
+  h+=row('Objetivo principal',n.objetivo_principal||c.objetivo);
+  if(es1a1)h+=row('Objetivos detallados',n.objetivos_detallado);
+  h+=row('Actividad diaria',c.actividad);
+  if(es1a1)h+=row('Fecha inicio deseada',n.fecha_inicio_deseada);
+  if(es1a1)h+=row('Horas de sueño',n.horas_sueno);
+  if(es1a1)h+=row('Nivel de estrés',n.estres);
+  // ── Entrenamiento
+  h+=sec('🏋️ Entrenamiento');
+  h+=row('Días entreno/sem',c.diasEntreno);
+  h+=row('Lugar',n.lugar_entrena||c.lugar);
+  h+=row('Tiempo por sesión',n.tiempo_sesion||c.tiempoEnt);
+  h+=row('Nivel',n.nivel||c.nivel);
+  h+=row('Material disponible',n.material_libre||n.material);
+  h+=row('Lesiones/molestias',n.lesiones||c.lesiones);
+  h+=row('Ejercicios a excluir',n.excluir_ejercicios||n.ejercicios_excluir);
+  if(es1a1){
+    h+=row('Historial de entreno',n.historial_entreno);
+    h+=row('Preferencias ejercicios',n.preferencias_ejercicios);
+  }
+  // ── Nutrición
+  h+=sec('🥗 Alimentación');
+  h+=row('Nº comidas/día',c.comidas);
+  if(es1a1)h+=row('Alimentación actual',n.alimentacion_actual);
+  h+=row('Alimentos a excluir',n.excluir_alimentos||c.excluirAlimentos);
+  if(es1a1)h+=row('¿Mala relación con la comida?',n.mala_relacion_comida||n.intolerancia_comida);
+  else h+=row('Intolerancias/alergias',n.excluir_alimentos_extra||n.intolerancia);
+  // ── Salud
+  h+=sec('🩺 Salud');
+  h+=row('Patología',n.patologia);
+  if(es1a1)h+=row('Medicación',n.medicacion);
+  // ── Mentalidad (solo 1:1)
+  if(es1a1){
+    h+=sec('🧠 Mentalidad');
+    h+=row('Mentalidad / Descripción personal',n.mentalidad);
+    h+=row('Historial con entrenadores',n.historial_entrenador);
+    h+=row('Qué busca del entrenador',n.que_busca_entrenador);
+  }
+  // ── Otros
+  h+=sec('📋 Otros');
+  h+=row('¿Permiso Instagram?',n.ig_permiso||n.permiso_ig);
+  h+=row('Comentarios',n.comentarios);
+  // ── Medidas S0
+  const med=c.medidasS0||{};
+  if(Object.keys(med).length){
+    h+=sec('📏 Medidas S0');
+    const MNAMES={hombros:'Hombros',pecho:'Pecho',brazod:'Brazo dcho.',brazoi:'Brazo izq.',brazo_d:'Brazo dcho.',brazo_i:'Brazo izq.',cintura:'Abdomen',abdomen:'Abdomen',muslod:'Muslo dcho.',musloi:'Muslo izq.',muslo_d:'Muslo dcho.',muslo_i:'Muslo izq.',gemelod:'Gemelo dcho.',gemeloi:'Gemelo izq.',gemelo_d:'Gemelo dcho.',gemelo_i:'Gemelo izq.'};
+    Object.entries(med).forEach(([k,v])=>{if(v)h+=row(MNAMES[k]||k,v+' cm');});
+  }
+  return`<div class="fwrap">${h}</div>`;
 }
 
-// ═══ TAB: RESUMEN ═══
 function tResumen(c){
   const now=new Date();
   const hist=c.histPesos||[];
