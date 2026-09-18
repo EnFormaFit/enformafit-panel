@@ -15,7 +15,8 @@ function tFormulario(c){
   }
 
   function sec(title){
-    return `<div style="margin:20px -16px 12px;padding:8px 16px;background:linear-gradient(135deg,#667eea,#764ba2);font-weight:700;font-size:12px;color:#fff;letter-spacing:.5px;text-transform:uppercase">${title}</div>`;
+    return `</div><div style="margin:16px 0 0;background:#fff;border-radius:12px;padding:0 16px;box-shadow:0 1px 4px rgba(0,0,0,.08)">
+      <div style="margin:0 -16px 0;padding:8px 16px;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:12px 12px 0 0;font-weight:700;font-size:12px;color:#fff;letter-spacing:.5px;text-transform:uppercase">${title}</div>`;
   }
 
   let h=`<div style="padding:0 2px;font-family:-apple-system,BlinkMacSystemFont,sans-serif">`;
@@ -24,16 +25,15 @@ function tFormulario(c){
   const fotos=c.fotosS0||{};
   const fUrls=Object.values(fotos).filter(Boolean);
   if(fUrls.length){
-    h+=`<div style="margin-bottom:16px;padding:12px;background:#f8f9ff;border-radius:12px;border:1px solid #e8ebff">
+    h+=`<div style="margin-bottom:14px;padding:12px;background:#f8f9ff;border-radius:12px;border:1px solid #e8ebff">
       <div style="font-weight:700;font-size:12px;color:#667eea;margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px">📸 ${fUrls.length} foto(s) de inicio</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">${fUrls.map(u=>`<img src="${u}" style="height:120px;border-radius:8px;object-fit:cover;box-shadow:0 3px 12px rgba(0,0,0,.15)">`).join('')}</div>
     </div>`;
   }
 
-  // Card container
-  h+=`<div style="background:#fff;border-radius:12px;padding:0 16px;box-shadow:0 1px 4px rgba(0,0,0,.08)">`;
-
-  h+=sec('👤 Datos personales');
+  // DATOS PERSONALES
+  h+=`<div style="background:#fff;border-radius:12px;padding:0 16px;box-shadow:0 1px 4px rgba(0,0,0,.08)">
+    <div style="margin:0 -16px 0;padding:8px 16px;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:12px 12px 0 0;font-weight:700;font-size:12px;color:#fff;letter-spacing:.5px;text-transform:uppercase">👤 Datos personales</div>`;
   h+=row('Nombre',c.nom);
   h+=row('Email',c.email);
   h+=row('Tipo de plan',es1a1?'1:1 Coaching':'Programa');
@@ -44,18 +44,20 @@ function tFormulario(c){
   h+=row('Objetivo de peso',c.objKg?c.objKg+' kg':'');
   const dir=[n.direccion,n.cp,n.ciudad].filter(Boolean).join(', ');
   if(dir)h+=row('Dirección',dir);
+
+  // OBJETIVOS Y ESTILO DE VIDA
+  h+=sec('🎯 Objetivos y estilo de vida');
   h+=row('Objetivo principal',n.objetivo==='def'?'Perder grasa / definir':n.objetivo==='sup'?'Ganar masa muscular':n.objetivo||c.objetivo);
   const actMap={'1.2':'Sedentario (trabajo sentado)','1.375':'Ligeramente activo','1.55':'Moderadamente activo','1.725':'Muy activo','1.37':'Ligeramente activo'};
   h+=row('Actividad diaria',actMap[String(n.actividad||c.actividad)]||(n.actividad||c.actividad));
-
   if(es1a1){
-    h+=sec('🎯 Objetivos y estilo de vida');
     h+=row('Objetivos a 3 meses y un año',n.objetivos_detallado);
     h+=row('Horas de sueño al día',n.horas_sueno);
     h+=row('Nivel de estrés habitual',n.estres);
   }
   h+=row('Fecha deseada de inicio',n.fecha_inicio_deseada);
 
+  // ENTRENAMIENTO
   h+=sec('🏋️ Entrenamiento');
   h+=row('Días de entrenamiento / sem',c.diasEntreno);
   h+=row('Tiempo por sesión',n.tiempo_ent?n.tiempo_ent+' min':c.tiempoEnt);
@@ -63,50 +65,55 @@ function tFormulario(c){
   h+=row('Material disponible',n.material_libre);
   const nivMap={0:'Principiante (0-1 año)',1:'Intermedio (1-3 años)',2:'Avanzado (+3 años)'};
   h+=row('Nivel / Experiencia',nivMap[Number(n.nivel)]||n.nivel||c.nivel);
-  h+=row('Lesiones y molestias',n.lesiones||c.lesiones);
-  h+=row('Ejercicios a excluir',n.excluir_ejercicios);
   if(es1a1){
     h+=row('Historial de entrenamiento',n.historial_entreno);
     h+=row('Ejercicios favoritos / problemáticos',n.preferencias_ejercicios);
   }
+  h+=row('Dolores, molestias o lesiones entrenando',n.lesiones||c.lesiones);
+  h+=row('Patología o enfermedad relevante',n.patologia);
+  h+=row('Ejercicios a excluir por lesiones',n.excluir_ejercicios);
 
+  // ALIMENTACIÓN
   h+=sec('🥗 Alimentación');
   h+=row('Nº de comidas al día',c.comidas);
   if(es1a1)h+=row('Todo lo que comió ayer',n.alimentacion_actual);
-  h+=row('Alimentos a excluir',n.excluir_alimentos||c.excluirAlimentos);
+  h+=row('Alimentos a excluir (intolerancias, alergias, preferencias)',n.excluir_alimentos||c.excluirAlimentos);
   if(es1a1)h+=row('¿Mala relación con la comida?',n.intolerancia_comida);
 
-  h+=sec('🩺 Salud');
-  h+=row('Patología o enfermedad',n.patologia);
-  if(es1a1)h+=row('Medicación',n.medicacion);
+  // SALUD Y MEDICACIÓN
+  if(es1a1){
+    h+=sec('🩺 Salud');
+    h+=row('Medicación',n.medicacion);
+  }
 
+  // MENTALIDAD (1:1 only)
   if(es1a1){
     h+=sec('🧠 Mentalidad');
-    h+=row('Descripción personal',n.mentalidad);
-    h+=row('¿Ha trabajado con entrenador?',n.historial_entrenador);
+    h+=row('Descripción personal, puntos fuertes y débiles',n.mentalidad);
+    h+=row('¿Ha trabajado con entrenador antes? ¿Cómo fue?',n.historial_entrenador);
     h+=row('¿Qué busca en un entrenador?',n.que_busca_entrenador);
   }
 
+  // OTROS
   h+=sec('📋 Otros');
   h+=row('¿Permiso Instagram?',n.ig_permiso);
   h+=row('Comentarios',n.comentarios);
+  h+='</div>';
 
-  h+='</div>'; // close card
-
-  // MEDIDAS S0
+  // MEDIDAS S0 — una fila compacta
   const med=c.medidasS0||n.medidas_s0||{};
   const medObj=typeof med==='object'&&med!==null?med:{};
   const medEntries=Object.entries(medObj).filter(([k,v])=>v!==null&&v!==undefined&&v!=='');
   if(medEntries.length){
     const MNAMES={hombros:'Hombros',pecho:'Pecho',brazod:'Brazo D',brazoi:'Brazo I',brazo_d:'Brazo D',brazo_i:'Brazo I',cintura:'Cintura',abdomen:'Abdomen',muslod:'Muslo D',musloi:'Muslo I',muslo_d:'Muslo D',muslo_i:'Muslo I',gemelod:'Gemelo D',gemeloi:'Gemelo I',gemelo_d:'Gemelo D',gemelo_i:'Gemelo I'};
-    h+=`<div style="margin-top:16px;background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.08)">
-      <div style="font-weight:700;font-size:12px;color:#667eea;text-transform:uppercase;letter-spacing:.4px;margin-bottom:12px">📏 Medidas iniciales (S0)</div>
-      <div style="display:flex;flex-wrap:wrap;gap:10px">`;
+    h+=`<div style="margin-top:14px;background:#fff;border-radius:12px;padding:12px 16px;box-shadow:0 1px 4px rgba(0,0,0,.08)">
+      <div style="font-weight:700;font-size:12px;color:#667eea;text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">📏 Medidas iniciales (S0)</div>
+      <div style="display:flex;flex-wrap:nowrap;gap:6px;overflow-x:auto;padding-bottom:4px">`;
     medEntries.forEach(([k,v])=>{
-      h+=`<div style="background:linear-gradient(135deg,#f8f9ff,#eef0ff);border:1px solid #dde0ff;border-radius:10px;padding:12px 16px;text-align:center;min-width:75px">
-        <div style="font-size:10px;color:#888;font-weight:700;text-transform:uppercase;margin-bottom:4px">${MNAMES[k]||k}</div>
-        <div style="font-size:22px;font-weight:800;color:#667eea;line-height:1">${v}</div>
-        <div style="font-size:10px;color:#aaa;margin-top:2px">cm</div>
+      h+=`<div style="background:linear-gradient(135deg,#f8f9ff,#eef0ff);border:1px solid #dde0ff;border-radius:8px;padding:8px 10px;text-align:center;min-width:62px;flex-shrink:0">
+        <div style="font-size:9px;color:#888;font-weight:700;text-transform:uppercase;margin-bottom:3px">${MNAMES[k]||k}</div>
+        <div style="font-size:17px;font-weight:800;color:#667eea;line-height:1">${v}</div>
+        <div style="font-size:9px;color:#aaa;margin-top:2px">cm</div>
       </div>`;
     });
     h+='</div></div>';
