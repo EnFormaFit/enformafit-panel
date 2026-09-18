@@ -3,113 +3,119 @@ var MEAL_NOMS_MAP={desayuno:'☀️ Desayuno',comida:'🌞 Comida',cena:'🌙 Ce
 // ═══ TAB: FORMULARIO INICIAL ═══
 function tFormulario(c){
   const n=c.notas||{};
-  const NIVEL_NOM={0:'Principiante (0-1 año)',1:'Intermedio (1-3 años)',2:'Avanzado (3+ años)'};
-  const LUGAR_NOM={gym:'Gimnasio completo',sinmat:'Casa sin material',casa_sin:'Casa sin material',band:'Casa con bandas',casa_bandas:'Casa con bandas',bym:'Casa con bandas y mancuernas',casa_mancuernas:'Casa con mancuernas'};
-  const ACT_NOM={'1.2':'Sedentario','1.375':'Ligeramente activo','1.55':'Moderadamente activo','1.725':'Muy activo'};
+  const es1a1=c.tipo==='1a1'||c.tipo==='uno'||c.tipo==='1a1';
 
-  function row(label, val){
-    if(!val&&val!==0)return'';
-    return'<div style="display:flex;gap:12px;padding:8px 0;border-bottom:1px solid var(--bor)">'+
-      '<div style="width:160px;font-size:11px;font-weight:700;color:var(--t3);flex-shrink:0">'+label+'</div>'+
-      '<div style="font-size:13px;color:var(--t1)">'+val+'</div>'+
-    '</div>';
+  function row(label,val){
+    if(val===undefined||val===null||String(val).trim()==='')return '';
+    const v=String(val).replace(/\n/g,'<br>');
+    return `<div style="padding:10px 0;border-bottom:1px solid var(--brd)">
+      <div style="font-size:11px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">${label}</div>
+      <div style="font-size:14px;color:var(--t1);line-height:1.5">${v}</div>
+    </div>`;
   }
 
-  function section(title, rows){
-    const content=rows.filter(Boolean).join('');
-    if(!content)return'';
-    return'<div class="card" style="margin-bottom:12px">'+
-      '<div class="ch"><span style="font-weight:700;font-size:13px">'+title+'</span></div>'+
-      '<div class="cb" style="padding:0 14px">'+content+'</div>'+
-    '</div>';
+  function sec(title){
+    return `<div style="margin:20px 0 8px;padding:8px 12px;background:var(--acc);border-radius:8px;font-weight:700;font-size:13px;color:#fff">${title}</div>`;
   }
 
-  // Parse datos personales
-  const fechaNac=c.fechaNac?c.fechaNac.split('T')[0].split('-').reverse().join('/'):'—';
-  const edad=c.fechaNac?Math.floor((new Date()-new Date(c.fechaNac))/31557600000)+'años':'—';
+  let h='<div style="padding:4px 0">';
 
-    // Step 1: Datos personales + contacto (ambos tipos)
-  const personal=section('👤 Datos personales',[
-    row('Nombre',c.nom),
-    row('Email',c.email),
-    row('Tipo de plan',c.tipo==='uno'?'1:1 Coaching':'Programa Grupal'),
-    row('Fecha nacimiento',fechaNac+' ('+edad+')'),
-    row('Peso inicial',c.pesoIni?c.pesoIni+'kg':'—'),
-    row('Altura',c.altura?c.altura+'cm':'—'),
-    row('Objetivo peso',c.obj?c.obj+'kg':'—'),
-    row('Teléfono',n.telefono||'—'),
-    c.tipo==='uno'?row('Dirección',[(n.direccion||''),(n.cp||''),(n.ciudad||'')].filter(Boolean).join(', ')||'—'):'',
-  ]);
+  // Fotos S0
+  const fotos=c.fotosS0||{};
+  const fUrls=Object.values(fotos).filter(Boolean);
+  if(fUrls.length){
+    h+=`<div style="margin-bottom:16px">
+      <div style="font-weight:700;margin-bottom:8px">📸 ${fUrls.length} foto(s) de inicio</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">${fUrls.map(u=>`<img src="${u}" style="height:140px;border-radius:10px;object-fit:cover;box-shadow:0 2px 8px rgba(0,0,0,.15)">`).join('')}</div>
+    </div>`;
+  }
 
-  // Step 2: Objetivos
-  const objetivos=section('🎯 Objetivos',[
-    row('Objetivo principal',n.objetivo==='def'?'Bajar grasa (déficit)':n.objetivo==='sup'?'Ganar músculo (superávit)':n.objetivo||'—'),
-    c.tipo==='uno'?row('Objetivos detallados',n.objetivos_detallado||'—'):'',
-    row('Actividad diaria',ACT_NOM[String(c.actividad||n.actividad)]||String(c.actividad||n.actividad)),
-    row('Fecha inicio deseada',n.fecha_inicio_deseada||'—'),
-    c.tipo==='uno'?row('Horas de sueño',n.horas_sueno||'—'):'',
-    c.tipo==='uno'?row('Nivel de estrés',n.estres||'—'):'',
-  ]);
+  // DATOS PERSONALES
+  h+=sec('👤 Datos personales');
+  h+=row('Nombre y apellidos',c.nom);
+  h+=row('Email',c.email);
+  h+=row('Tipo de plan',(es1a1||c.tipo==='uno')?'1:1 Coaching':'Programa');
+  h+=row('Teléfono',n.telefono);
+  h+=row('Fecha de nacimiento',c.dob?(()=>{const d=new Date(c.dob);const age=Math.floor((Date.now()-d)/(365.25*24*3600*1000));return d.toLocaleDateString('es')+' · '+age+' años';})():'');
+  h+=row('Peso actual en ayunas',c.pesoIni?c.pesoIni+' kg':'');
+  h+=row('Altura',c.altura?c.altura+' cm':'');
+  h+=row('Objetivo de peso',c.objKg?c.objKg+' kg':'');
+  const dir=[n.direccion,n.cp,n.ciudad].filter(Boolean).join(', ');
+  if(dir)h+=row('Dirección',dir);
+  h+=row('Objetivo principal',n.objetivo==='def'?'Perder grasa / definir':n.objetivo==='sup'?'Ganar masa muscular':n.objetivo||c.objetivo);
+  const actMap={'1.2':'Sedentario (trabajo sentado)','1.375':'Ligeramente activo (profesor, paseos)','1.55':'Moderadamente activo (camarero, de pie)','1.725':'Muy activo (trabajo físico intenso)'};
+  h+=row('Actividad diaria',actMap[String(n.actividad||c.actividad)]||(n.actividad||c.actividad));
 
-  // Step 3: Entrenamiento
-  const entreno=section('🏋️ Entrenamiento',[
-    row('Días entreno/sem',c.diasSemana||n.dias_entreno),
-    row('Lugar',LUGAR_NOM[n.lugar]||LUGAR_NOM[c.equipamiento]||n.lugar||c.equipamiento),
-    row('Tiempo por sesión',(c.tiempoEnt||n.tiempo_ent)?(c.tiempoEnt||n.tiempo_ent)+'min':'—'),
-    row('Nivel',NIVEL_NOM[c.nivel]||NIVEL_NOM[n.nivel]||n.nivel),
-    row('Material libre',n.material_libre||'—'),
-    row('Ejercicios a excluir',n.excluir_ejercicios||'—'),
-    c.tipo==='uno'?row('Historial de entreno',n.historial_entreno||'—'):'',
-    c.tipo==='uno'?row('Preferencias ejercicios',n.preferencias_ejercicios||'—'):'',
-  ]);
+  // OBJETIVOS (solo 1:1)
+  if(es1a1){
+    h+=sec('🎯 Objetivos y estilo de vida');
+    h+=row('Objetivos a 3 meses y a un año',n.objetivos_detallado);
+    h+=row('Horas de sueño al día',n.horas_sueno);
+    h+=row('Nivel de estrés habitual',n.estres);
+  }
+  h+=row('Fecha deseada de inicio',n.fecha_inicio_deseada);
 
-  // Step 4: Alimentación
-  const nutri=section('🥗 Alimentación',[
-    row('Nº comidas/día',c.comidas||n.comidas),
-    c.tipo==='uno'?row('Alimentación actual',n.alimentacion_actual||'—'):'',
-    row('Alimentos a excluir',n.excluir_alimentos&&n.excluir_alimentos.length?n.excluir_alimentos.join(', '):'Ninguno'),
-    row('Intolerancias/alergias',n.intolerancia_comida||'Ninguna'),
-  ]);
+  // ENTRENAMIENTO
+  h+=sec('🏋️ Entrenamiento');
+  h+=row('Días de entrenamiento a la semana',c.diasEntreno);
+  h+=row('Tiempo disponible por sesión',n.tiempo_ent?n.tiempo_ent+' min':c.tiempoEnt);
+  h+=row('¿Dónde y con qué entrena?',n.lugar||c.lugar);
+  h+=row('Material disponible',n.material_libre);
+  const nivMap={0:'Principiante (0-1 año)',1:'Intermedio (1-3 años)',2:'Avanzado (más de 3 años)'};
+  h+=row('Nivel / Experiencia',nivMap[Number(n.nivel)]||n.nivel||c.nivel);
+  h+=row('Lesiones y molestias entrenando',n.lesiones||c.lesiones);
+  h+=row('Ejercicios a excluir por lesiones',n.excluir_ejercicios);
+  if(es1a1){
+    h+=row('Historial de entrenamiento (últimos meses)',n.historial_entreno);
+    h+=row('Ejercicios favoritos / que le dan problemas',n.preferencias_ejercicios);
+  }
 
-  // Step 5: Salud
-  const salud=section('🩺 Salud',[
-    row('Lesiones/molestias',c.lesiones||'Ninguna'),
-    row('Patología',n.patologia||'Ninguna'),
-    row('Medicación',n.medicacion||'Ninguna'),
-  ]);
+  // NUTRICIÓN
+  h+=sec('🥗 Alimentación');
+  h+=row('Número de comidas al día',c.comidas);
+  if(es1a1)h+=row('Todo lo que comió ayer',n.alimentacion_actual);
+  h+=row('Alimentos a excluir (intolerancias, alergias, preferencias)',n.excluir_alimentos||c.excluirAlimentos);
+  if(es1a1)h+=row('¿Ha tenido mala relación con la comida?',n.intolerancia_comida);
 
-  // Step 6: Mentalidad (1:1) / Comentarios (programa)
-  const mentalidad=c.tipo==='uno'?section('🧠 Mentalidad',[
-    row('Mentalidad / Descripción personal',n.mentalidad||'—'),
-    row('Historial con entrenadores',n.historial_entrenador||'—'),
-    row('Qué busca del entrenador',n.que_busca_entrenador||'—'),
-    row('¿Permiso Instagram?',n.ig_permiso||'No indicado'),
-    row('Comentarios',n.comentarios||'—'),
-  ]):section('💬 Otros',[
-    row('¿Permiso Instagram?',n.ig_permiso||'No indicado'),
-    row('Comentarios',n.comentarios||'—'),
-  ]);
+  // SALUD
+  h+=sec('🩺 Salud');
+  h+=row('Patología o enfermedad relevante',n.patologia);
+  if(es1a1)h+=row('Medicación',n.medicacion);
 
-const fotos=n.fotos_count>0?'<div class="alert aaz" style="margin-bottom:12px">📸 '+n.fotos_count+' foto(s) enviadas con el formulario</div>':'';
-  const medidas=c.medidasS0&&Object.keys(c.medidasS0).length?section('📏 Medidas S0',
-    Object.entries(c.medidasS0).map(function(e){return row(e[0],typeof e[1]==='object'?Object.values(e[1])[0]+' cm':e[1]+' cm');})
-  ):'';
+  // MENTALIDAD (solo 1:1)
+  if(es1a1){
+    h+=sec('🧠 Mentalidad');
+    h+=row('Puntos fuertes, débiles y descripción personal',n.mentalidad);
+    h+=row('¿Ha trabajado antes con un entrenador?',n.historial_entrenador);
+    h+=row('¿Qué busca en un entrenador?',n.que_busca_entrenador);
+  }
 
-  // Fotos S0 grid
-  const fotosS0 = (function(){
-    var fotoMap = c.revHistorial&&c.revHistorial[0]&&c.revHistorial[0].fotos ? c.revHistorial[0].fotos : {};
-    var urls = [fotoMap.rev_0,fotoMap.rev_1,fotoMap.rev_2,fotoMap.rev_3].filter(Boolean);
-    if(!urls.length) return '';
-    return '<div class="card" style="margin-bottom:12px"><div class="ch"><span style="font-weight:700;font-size:13px">📸 Fotos iniciales S0</span></div>'+
-      '<div class="cb" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px">'+
-      urls.map(function(u){return '<img src="'+u+'" style="width:100%;border-radius:8px;object-fit:cover;aspect-ratio:3/4">';}).join('')+
-      '</div></div>';
-  })();
+  // OTROS
+  h+=sec('📋 Otros');
+  h+=row('¿Permiso para Instagram?',n.ig_permiso);
+  h+=row('Comentarios adicionales',n.comentarios);
 
-  return'<div style="padding:16px">'+fotos+personal+objetivos+entreno+nutri+salud+mentalidad+medidas+fotosS0+'</div>';
+  // MEDIDAS S0
+  const med=c.medidasS0||n.medidas_s0||{};
+  const medObj=typeof med==='object'&&med!==null?med:{};
+  const medEntries=Object.entries(medObj).filter(([k,v])=>v!==null&&v!==undefined&&v!=='');
+  if(medEntries.length){
+    h+=sec('📏 Medidas iniciales (S0)');
+    const MNAMES={hombros:'Hombros',pecho:'Pecho',brazod:'Brazo dcho.',brazoi:'Brazo izq.',brazo_d:'Brazo dcho.',brazo_i:'Brazo izq.',cintura:'Abdomen/Cintura',abdomen:'Abdomen/Cintura',muslod:'Muslo dcho.',musloi:'Muslo izq.',muslo_d:'Muslo dcho.',muslo_i:'Muslo izq.',gemelod:'Gemelo dcho.',gemeloi:'Gemelo izq.',gemelo_d:'Gemelo dcho.',gemelo_i:'Gemelo izq.'};
+    h+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">`;
+    medEntries.forEach(([k,v])=>{
+      h+=`<div style="background:var(--bg);border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:11px;color:var(--t2);margin-bottom:2px">${MNAMES[k]||k}</div>
+        <div style="font-size:18px;font-weight:700;color:var(--acc)">${v} cm</div>
+      </div>`;
+    });
+    h+='</div>';
+  }
+
+  h+='</div>';
+  return h;
 }
 
-// ═══ TAB: RESUMEN ═══
 function tResumen(c){
   const now=new Date();
   const hist=c.histPesos||[];
