@@ -38,7 +38,7 @@ function tFormulario(c){
   h+=row('Email',c.email);
   h+=row('Tipo de plan',es1a1?'1:1 Coaching':'Programa');
   h+=row('Teléfono',n.telefono);
-  h+=row('Fecha nacimiento',c.dob?(()=>{const d=new Date(c.dob);return d.toLocaleDateString('es')+' ('+Math.floor((Date.now()-d)/(365.25*24*3600*1000))+' años)';})():'');
+  h+=row('Fecha nacimiento',(c.fechaNac||c.dob)?(()=>{const d=c.fechaNac?new Date(c.fechaNac):new Date(c.dob);return isNaN(d)?'':(d.toLocaleDateString('es')+' ('+Math.floor((Date.now()-d)/(365.25*24*3600*1000))+' años)');})():'');
   h+=row('Peso actual',c.pesoIni?c.pesoIni+' kg':'');
   h+=row('Altura',c.altura?c.altura+' cm':'');
   h+=row('Objetivo de peso',c.objKg?c.objKg+' kg':'');
