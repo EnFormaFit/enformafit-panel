@@ -41,6 +41,7 @@ function tFormulario(c){
   h+=row('Fecha nacimiento',c.dob?(()=>{const d=new Date(c.dob);return d.toLocaleDateString('es')+' · '+Math.floor((Date.now()-d)/(365.25*24*3600*1000))+' años';})():'');
   h+=row('Peso actual',c.pesoIni?c.pesoIni+' kg':'');
   h+=row('Altura',c.altura?c.altura+' cm':'');
+  h+=row('Fecha nacimiento',c.dob?(()=>{const d=new Date(c.dob);return d.toLocaleDateString('es')+' ('+Math.floor((Date.now()-d)/(365.25*24*3600*1000))+' años)';})():'');
   h+=row('Objetivo de peso',c.objKg?c.objKg+' kg':'');
   const dir=[n.direccion,n.cp,n.ciudad].filter(Boolean).join(', ');
   if(dir)h+=row('Dirección',dir);
@@ -76,6 +77,7 @@ function tFormulario(c){
   // ALIMENTACIÓN
   h+=sec('🥗 Alimentación');
   h+=row('Nº de comidas al día',c.comidas);
+  h+=row('Alimentos a excluir (intolerancias/alergias)',Array.isArray(c.excluirAlim)?c.excluirAlim.join(', '):c.excluirAlim||n.intolerancia_comida);
   if(es1a1)h+=row('Todo lo que comió ayer',n.alimentacion_actual);
   h+=row('Alimentos a excluir (intolerancias, alergias, preferencias)',n.excluir_alimentos||c.excluirAlimentos);
   if(es1a1)h+=row('¿Mala relación con la comida?',n.intolerancia_comida);
