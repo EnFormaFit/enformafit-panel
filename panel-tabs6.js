@@ -77,7 +77,7 @@ function tFormulario(c){
   h+=sec('🥗 Alimentación');
   h+=row('Nº de comidas al día',c.comidas);
   if(es1a1)h+=row('Todo lo que comió ayer',n.alimentacion_actual);
-  h+=row('Alimentos a excluir (intolerancias, alergias, preferencias)',Array.isArray(c.excluirAlim)?c.excluirAlim.join(', '):(c.excluirAlim||n.intolerancia_comida||''));
+  h+=row('Alimentos a excluir (intolerancias, alergias, preferencias)',Array.isArray(c.excluirAlim)?c.excluirAlim.join(', '):(c.excluirAlim||''));
   if(es1a1)h+=row('¿Mala relación con la comida?',n.intolerancia_comida);
 
   // SALUD Y MEDICACIÓN
