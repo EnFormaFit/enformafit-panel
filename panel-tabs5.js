@@ -59,7 +59,7 @@ function tFormulario(c){
 
   // ENTRENAMIENTO
   h+=sec('🏋️ Entrenamiento');
-  h+=row('Días de entrenamiento / sem',c.diasEntreno);
+  h+=row('Días de entrenamiento / sem',c.diasSemana);
   h+=row('Tiempo por sesión',n.tiempo_ent?n.tiempo_ent+' min':c.tiempoEnt);
   h+=row('¿Dónde y con qué entrena?',n.lugar||c.lugar);
   h+=row('Material disponible',n.material_libre);
