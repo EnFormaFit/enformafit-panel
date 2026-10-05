@@ -395,9 +395,14 @@ function tRevision(c){
       rows.forEach(function(r){
         var sem=r.semana;
         var fotos=typeof r.fotos==='string'?JSON.parse(r.fotos||'{}'):r.fotos||{};
+        // Support both formats: rev_0/rev_1 (app) and frente/perfil_d (form)
+        var REV_IDX={'rev_0':0,'rev_1':1,'rev_2':2,'rev_3':3};
         Object.entries(fotos).forEach(function(e){
-          var pi=PM[e[0]];
-          if(e[1])c.revision.fotos[pi!==undefined?'s'+sem+'_'+pi:'s'+sem+'_'+e[0]]=e[1];
+          var key=e[0], url=e[1];
+          if(!url) return;
+          var pi=PM[key]; // frente->0, perfil_d->1, etc
+          if(pi===undefined) pi=REV_IDX[key]; // rev_0->0, rev_1->1, etc
+          if(pi!==undefined) c.revision.fotos['s'+sem+'_'+pi]=url;
         });
       });
       setTab('revision');
