@@ -459,11 +459,15 @@ function setTab(t){
               // Preguntas
               const pregs=typeof r.preguntas==='string'?JSON.parse(r.preguntas||'{}'):(r.preguntas||{});
               if(Object.keys(pregs).length)preguntas['S'+r.semana]=pregs;
-              // Fotos
+              // Fotos - save as s{sem}_{pi} for unified format
               const fots=typeof r.fotos==='string'?JSON.parse(r.fotos||'{}'):(r.fotos||{});
+              const _PM={frente:0,perfil_d:1,perfil_i:2,espalda:3};
+              const _RI={'rev_0':0,'rev_1':1,'rev_2':2,'rev_3':3};
               Object.entries(fots).forEach(([k,url])=>{
-                const key='rev_S'+r.semana+'_'+k;
-                fotosRev[key]=url;
+                if(!url) return;
+                let pi=_PM[k]; // frente->0, perfil_d->1, etc
+                if(pi===undefined) pi=_RI[k]; // rev_0->0, rev_1->1, etc
+                if(pi!==undefined) fotosRev['s'+r.semana+'_'+pi]=url;
               });
             });
             c.revision={medidas,preguntas,fotos:fotosRev,rows};
