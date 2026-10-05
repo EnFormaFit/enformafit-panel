@@ -388,8 +388,29 @@ function tRevision(c){
 
 
   // FOTOS: cada postura en su fila, S0 vs actual lado a lado
-  // object-fit:cover + object-position: permite crop manual
-  // All revision slots for this tipo
+  // Normalize ALL foto keys to s{sem}_{pi} format before rendering
+  if(c.revision&&c.revision.fotos){
+    var _PM2={frente:0,perfil_d:1,perfil_i:2,espalda:3};
+    var _RI2={'rev_0':0,'rev_1':1,'rev_2':2,'rev_3':3};
+    var _normalized={};
+    Object.entries(c.revision.fotos).forEach(function(e){
+      var k=e[0], url=e[1];
+      if(!url) return;
+      // Already correct format s{sem}_{pi}
+      if(/^s\d+_\d+$/.test(k)){_normalized[k]=url;return;}
+      // Format: rev_S{sem}_{pose} e.g. rev_S0_frente or rev_S3_rev_0
+      var m=k.match(/^rev_S(\d+)_(.+)$/);
+      if(m){
+        var sem=m[1], pose=m[2];
+        var pi=_PM2[pose];
+        if(pi===undefined) pi=_RI2[pose];
+        if(pi!==undefined) _normalized['s'+sem+'_'+pi]=url;
+        return;
+      }
+      // Format: frente/perfil_d etc (from form, no sem prefix — skip, sem unknown)
+    });
+    c.revision.fotos=_normalized;
+  }
   const allRevSems=c.tipo==='programa'?[0,4,8,12]:[0,3,7,11];
   const revLabels={0:'S0 Inicio',4:'S4',8:'S8',12:'S12',3:'S3',7:'S7',11:'S11'};
   const revCols=['#0DBF6F','#2E6DA4','#9B59B6','#E74C3C'];
