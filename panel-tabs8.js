@@ -1,3 +1,4 @@
+// panel-tabs8 v1791192527
 var MEAL_NOMS_MAP={desayuno:'☀️ Desayuno',comida:'🌞 Comida',cena:'🌙 Cena',snack:'🍎 Snack',snack_am:'🍎 Snack mañana',snack_pm:'🍎 Snack tarde',post_entreno:'💪 Post-entreno',desayuno_extra:'☀️ Desayuno extra',comida_extra:'🌞 Comida extra',cena_extra:'🌙 Cena extra'};
 
 // ═══ TAB: FORMULARIO INICIAL ═══
@@ -237,15 +238,15 @@ function tCheckin(c){
     apiCall('GET','/api/entreno/checkins/'+c.id).then(function(rows){
       if(rows&&rows.length){
         c.checkIns=rows;
-        c.checkIn=rows[0]; // most recent
+        c.checkIn=rows[0];
         c.checkInDone=true;
-        // Calculate adherencia from last check-in
-        var ci=rows[0];
         var ne=c.diasSemana||4;
-        var pEnt=Math.min(1,(ci.dias_entreno_real||0)/ne)*40;
-        var pNut=Math.min(1,(ci.dias_nutricion||0)/7)*40;
-        var pPas=Math.min(1,(ci.dias_pasos||0)/7)*20;
-        c.adh=Math.round(pEnt+pNut+pPas);
+        var total=0;
+        rows.forEach(function(r){
+          total+=Math.round(Math.min(1,(r.dias_entreno_real||0)/ne)*40+Math.min(1,(r.dias_nutricion||0)/7)*40+Math.min(1,(r.dias_pasos||0)/7)*20);
+        });
+        c.adhMedia=Math.round(total/rows.length);
+        c.adh=Math.round(Math.min(1,(rows[0].dias_entreno_real||0)/ne)*40+Math.min(1,(rows[0].dias_nutricion||0)/7)*40+Math.min(1,(rows[0].dias_pasos||0)/7)*20);
         setTab('checkin');
       }
     }).catch(function(){});
@@ -270,12 +271,18 @@ function tCheckin(c){
   var adh=Math.round(pEnt+pNut+pPas);
   var adhCol=adh>=80?'var(--vd)':adh>=50?'var(--nr)':'var(--rj)';
 
+  var adhMedia=c.adhMedia||adh;
+  var adhMediaCol=adhMedia>=80?'var(--vd)':adhMedia>=50?'var(--nr)':'var(--rj)';
+  var nSems=(c.checkIns||[]).length;
   var html='<div style="padding:4px;max-width:600px;margin:0 auto">';
 
   // Adherencia header
   html+='<div style="background:var(--az3);border-radius:12px;padding:16px;text-align:center;margin-bottom:14px">'
-    +'<div style="font-size:11px;color:var(--t3);margin-bottom:4px">ADHERENCIA SEMANAL</div>'
-    +'<div style="font-size:42px;font-weight:900;color:'+adhCol+'">'+adh+'%</div>'
+    +'<div style="display:flex;justify-content:space-around">'
+    +'<div><div style="font-size:10px;color:var(--t3)">ÚLTIMA SEM</div><div style="font-size:36px;font-weight:900;color:'+adhCol+'">'+adh+'%</div></div>'
+    +'<div style="width:1px;background:var(--bor2)"></div>'
+    +'<div><div style="font-size:10px;color:var(--t3)">MEDIA BLOQUE ('+nSems+' sem)</div><div style="font-size:36px;font-weight:900;color:'+adhMediaCol+'">'+adhMedia+'%</div></div>'
+    +'</div>'
     +'<div style="display:flex;justify-content:center;gap:6px;margin-top:8px">'
       +'<div class="badge" style="background:var(--az2)">🏋️ '+diasEnt+'/'+ne+'</div>'
       +'<div class="badge" style="background:var(--vd)">🥗 '+diasNut+'/7</div>'
@@ -319,20 +326,6 @@ function tCheckin(c){
         +'<div style="font-size:13px;color:var(--t1)">'+p[1]+'</div>'
       +'</div>';
     });
-  }
-
-  // Media adherencia del bloque
-  if(c.checkIns&&c.checkIns.length>0){
-    var ne=c.diasSemana||4;
-    var mediaAdh=Math.round(c.checkIns.reduce(function(sum,r){
-      return sum+Math.min(1,(r.dias_entreno_real||0)/ne)*40+Math.min(1,(r.dias_nutricion||0)/7)*40+Math.min(1,(r.dias_pasos||0)/7)*20;
-    },0)/c.checkIns.length);
-    var mediaCol=mediaAdh>=80?'var(--vd)':mediaAdh>=50?'var(--nr)':'var(--rj)';
-    html+='<div style="display:flex;align-items:center;gap:12px;margin-top:14px;margin-bottom:8px">'
-      +'<div class="sec-t" style="margin:0">Media adherencia bloque</div>'
-      +'<div style="font-size:20px;font-weight:800;color:'+mediaCol+'">'+mediaAdh+'%</div>'
-      +'<div style="font-size:11px;color:var(--t3)">('+c.checkIns.length+' sem.)</div>'
-      +'</div>';
   }
 
   // Historial de check-ins
