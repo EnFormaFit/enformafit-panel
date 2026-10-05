@@ -384,30 +384,7 @@ function tRevision(c){
       if(rows&&rows.length){c.histPesos=rows.map(r=>({f:new Date(r.fecha).toISOString().split('T')[0],v:parseFloat(r.peso)}));setTab('revision');}
     }).catch(()=>{});
   }
-  // Auto-load revisiones y fotos si no están cargadas
-  if(!c._revLoaded&&API_TOKEN){
-    c._revLoaded=true;
-    apiCall('GET','/api/entreno/revisiones/'+c.id).then(function(rows){
-      if(!rows||!rows.length)return;
-      if(!c.revision)c.revision={fotos:{},medidas:{}};
-      if(!c.revision.fotos)c.revision.fotos={};
-      var PM={frente:0,perfil_d:1,perfil_i:2,espalda:3};
-      rows.forEach(function(r){
-        var sem=r.semana;
-        var fotos=typeof r.fotos==='string'?JSON.parse(r.fotos||'{}'):r.fotos||{};
-        // Support both formats: rev_0/rev_1 (app) and frente/perfil_d (form)
-        var REV_IDX={'rev_0':0,'rev_1':1,'rev_2':2,'rev_3':3};
-        Object.entries(fotos).forEach(function(e){
-          var key=e[0], url=e[1];
-          if(!url) return;
-          var pi=PM[key]; // frente->0, perfil_d->1, etc
-          if(pi===undefined) pi=REV_IDX[key]; // rev_0->0, rev_1->1, etc
-          if(pi!==undefined) c.revision.fotos['s'+sem+'_'+pi]=url;
-        });
-      });
-      setTab('revision');
-    }).catch(function(){});
-  }
+  // Fotos loaded by panel-core5 setTab revision handler
 
 
   // FOTOS: cada postura en su fila, S0 vs actual lado a lado
