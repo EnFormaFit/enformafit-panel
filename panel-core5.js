@@ -471,10 +471,8 @@ function setTab(t){
               });
             });
             c.revision={medidas,preguntas,fotos:fotosRev,rows};
-            // Update medidas div directly if visible
-            const medDiv=document.getElementById('medidas-'+CLI_ID);
-            if(medDiv)medDiv.innerHTML=renderMedidasTable(medidas,CLI_ID);
-            else render();
+            // Always re-render to show fotos
+            render();
           }
         }).catch(()=>{});
       }
