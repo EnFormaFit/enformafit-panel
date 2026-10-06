@@ -330,21 +330,38 @@ function tCheckin(c){
 
   // Historial de check-ins
   if(c.checkIns&&c.checkIns.length>1){
-    html+='<div class="sec-t" style="margin-top:14px;margin-bottom:8px">Historial (últimas semanas)</div>';
+    html+='<div class="sec-t" style="margin-top:14px;margin-bottom:8px">Historial semanas anteriores</div>';
+    var _cik='ci_'+c.id;
     c.checkIns.slice(0,8).forEach(function(r,i){
-      var dE=r.dias_entreno_real||0;
-      var dN=r.dias_nutricion||0;
-      var dP=r.dias_pasos||0;
+      var dE=r.dias_entreno_real||0,dN=r.dias_nutricion||0,dP=r.dias_pasos||0;
       var a=Math.round(Math.min(1,dE/ne)*40+Math.min(1,dN/7)*40+Math.min(1,dP/7)*20);
       var col=a>=80?'var(--vd)':a>=50?'var(--nr)':'var(--rj)';
       var fecha=r.semana_inicio?new Date(r.semana_inicio).toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit'}):'S?';
-      html+='<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bor2)">'
-        +'<div style="font-size:11px;color:var(--t3);min-width:40px">'+fecha+'</div>'
-        +'<div style="flex:1;background:var(--bor);border-radius:3px;height:6px">'
-          +'<div style="background:'+col+';height:6px;border-radius:3px;width:'+a+'%"></div>'
-        +'</div>'
-        +'<div style="font-size:12px;font-weight:700;color:'+col+';min-width:36px;text-align:right">'+a+'%</div>'
-      +'</div>';
+      var ok='ci_'+c.id+'_'+i;
+      var isOpen=!!window[ok];
+      var toggleFn='window[\''+ok+'\']=!window[\''+ok+'\'];setTab(\'checkin\')';
+      html+='<div style="border-bottom:1px solid var(--bor2)">';
+      html+='<div style="display:flex;align-items:center;gap:10px;padding:9px 0;cursor:pointer" onclick="'+toggleFn+'">';
+      html+='<div style="font-size:11px;font-weight:700;color:var(--t3);min-width:40px">'+fecha+'</div>';
+      html+='<div style="flex:1;background:var(--bor);border-radius:3px;height:6px">';
+      html+='<div style="background:'+col+';height:6px;border-radius:3px;width:'+a+'%"></div></div>';
+      html+='<div style="font-size:12px;font-weight:800;color:'+col+';min-width:32px;text-align:right">'+a+'%</div>';
+      html+='<div style="font-size:11px;color:var(--t3);margin-left:4px">'+(isOpen?'▲':'▼')+'</div>';
+      html+='</div>';
+      if(isOpen){
+        html+='<div style="padding:0 0 10px 0">';
+        html+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">';
+        html+='<div class="badge" style="background:var(--az2)">🏋️ '+dE+'/'+ne+' ('+Math.round(Math.min(1,dE/ne)*100)+'%)</div>';
+        html+='<div class="badge" style="background:var(--vd)">🥗 '+dN+'/7 ('+Math.round(Math.min(1,dN/7)*100)+'%)</div>';
+        html+='<div class="badge" style="background:var(--nr)">👟 '+dP+'/7 ('+Math.round(Math.min(1,dP/7)*100)+'%)</div>';
+        html+='</div>';
+        [[r.como_semana||r.como,'¿Cómo fue la semana?'],[r.orgullos||r.orgullo,'¿De qué te enorgulleces?'],[r.compromisos||r.compromiso,'¿Compromiso?'],[r.sensaciones,'¿Sensaciones?'],[r.objetivo,'¿Objetivo?']].forEach(function(p){
+          if(!p[0])return;
+          html+='<div style="margin-bottom:8px"><div style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;margin-bottom:2px">'+p[1]+'</div><div style="font-size:12px;color:var(--t1)">'+p[0]+'</div></div>';
+        });
+        html+='</div>';
+      }
+      html+='</div>';
     });
   }
 
