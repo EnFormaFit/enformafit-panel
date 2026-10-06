@@ -558,7 +558,33 @@ function miniChart(c){
 }
 
 // ═══ CHECK-INS ═══
+function loadCISemanaActual(){
+  if(window._ciSemanaLoading) return;
+  window._ciSemanaLoading=true;
+  apiCall('GET','/api/entreno/checkins/semana-actual').then(function(rows){
+    window._ciSemanaLoading=false;
+    if(!rows||!rows.length) return;
+    // Mark clients who submitted this week's CI
+    rows.forEach(function(r){
+      const c=byId(r.cliente_id);
+      if(c){
+        c.checkInDone=true;
+        c.checkIn=r;
+        c.adh=Math.round(Math.min(1,(r.dias_entreno_real||0)/(c.diasSemana||4))*40+Math.min(1,(r.dias_nutricion||0)/7)*40+Math.min(1,(r.dias_pasos||0)/7)*20)/100;
+      }
+    });
+    render();
+  }).catch(function(){window._ciSemanaLoading=false;});
+}
+
 function rCI(){
+  // Load this week's checkins if not done yet
+  if(!window._ciSemanaLoaded){
+    window._ciSemanaLoaded=true;
+    // Reset all to pending first
+    uno().forEach(function(c){c.checkInDone=false;});
+    loadCISemanaActual();
+  }
   const u=uno();
   const env=u.filter(c=>c.checkInDone),pend=u.filter(c=>!c.checkInDone);
   const adhM=u.length?Math.round(u.reduce((s,c)=>s+c.adh,0)/u.length*100):0;
