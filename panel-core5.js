@@ -579,6 +579,10 @@ function loadCISemanaActual(){
 
 function rCI(){
   // Load this week's checkins if not done yet
+  // Always reload on open - reset flag
+  if(!window._ciSemanaLoading){
+    window._ciSemanaLoaded=false;
+  }
   if(!window._ciSemanaLoaded){
     window._ciSemanaLoaded=true;
     // Reset all to pending first
