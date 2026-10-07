@@ -214,7 +214,7 @@ async function loadClientesFromAPI(){
         entrenador:entrenadorAsignado,
         fase:r.fase||'deficit',
         objSemKg:r.obj_sem_kg!=null?parseFloat(r.obj_sem_kg):null,
-        adh:parseFloat(r.adherencia)||0,
+        adh:(parseFloat(r.adherencia)||0)/100,
         checkInDone:false,
         revDone:false,
         diasSinPeso:0,
@@ -358,7 +358,7 @@ const adhBadge=a=>a>=.8?'bvd':a>=.6?'bam':'brj';
 const revSems=t=>t==='programa'?[4,8,12]:[3,7,11];
 const uno=()=>C.filter(c=>c.tipo==='uno');
 const prog=()=>C.filter(c=>c.tipo==='programa');
-const byId=id=>C.find(c=>c.id===id);
+const byId=id=>C.find(c=>String(c.id)===String(id));
 const ciIdx=c=>C.indexOf(c);
 
 function toast(msg,t=''){
@@ -573,7 +573,7 @@ function loadCISemanaActual(){
         c.checkInDone=true;
         c.checkIn=r;
         var ne=c.diasSemana||4;
-        c.adh=Math.round(Math.min(1,(r.dias_entreno_real||0)/ne)*40+Math.min(1,(r.dias_nutricion||0)/7)*40+Math.min(1,(r.dias_pasos||0)/7)*20);
+        c.adh=Math.round(Math.min(1,(r.dias_entreno_real||0)/ne)*40+Math.min(1,(r.dias_nutricion||0)/7)*40+Math.min(1,(r.dias_pasos||0)/7)*20)/100;
       }
     });
     // Update badge counts
