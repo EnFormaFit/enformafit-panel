@@ -261,6 +261,9 @@ async function loadClientesFromAPI(){
     render();
     toast(`✅ ${mapped.length} clientes cargados desde BD`,'vd');
     console.log('[API] Clientes cargados:',mapped.length);
+    // Reload check-ins now that C is populated (may have run before clients loaded)
+    window._ciSemanaLoaded=false;
+    loadCISemanaActual();
   }catch(e){
     console.error('[API] Error cargando clientes:',e.message,e);
     toast('Error cargando clientes: '+e.message,'rj');
