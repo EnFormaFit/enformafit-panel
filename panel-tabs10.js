@@ -276,9 +276,8 @@ function tCheckin(c){
   var adhMedia=c.adhMedia||adh;
   var adhMediaCol=adhMedia>=80?'var(--vd)':adhMedia>=50?'var(--nr)':'var(--rj)';
   var nSems=(c.checkIns||[]).length;
-  // Fecha display: semana_inicio + 7 días = lunes de cierre de esa semana
+  // Fecha display: semana_inicio (lunes de la semana del check-in)
   var _ciDate=ci.semana_inicio?new Date(ci.semana_inicio):null;
-  if(_ciDate)_ciDate.setDate(_ciDate.getDate()+7);
   var ciLabel=_ciDate?('sem '+_ciDate.toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit'})):'';
   var html='<div style="padding:4px;max-width:600px;margin:0 auto">';
 
@@ -343,7 +342,6 @@ function tCheckin(c){
       var a=Math.round(Math.min(1,dE/ne)*40+Math.min(1,dN/7)*40+Math.min(1,dP/7)*20);
       var col=a>=80?'var(--vd)':a>=50?'var(--nr)':'var(--rj)';
       var _rDate=r.semana_inicio?new Date(r.semana_inicio):null;
-      if(_rDate)_rDate.setDate(_rDate.getDate()+7);
       var fecha=_rDate?_rDate.toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit'}):'S?';
       var ok='ci_'+c.id+'_'+i;
       var isOpen=!!window[ok];
