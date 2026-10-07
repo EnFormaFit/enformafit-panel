@@ -244,6 +244,10 @@ async function loadClientesFromAPI(){
     render();
     toast(`✅ ${mapped.length} clientes cargados desde BD`,'vd');
     console.log('[API] Clientes cargados:',mapped.length);
+    // Cargar check-ins semana actual en background
+    window._ciSemanaLoaded=false;
+    window._ciSemanaLoading=false;
+    loadCISemanaActual();
   }catch(e){
     console.error('[API] Error cargando clientes:',e.message,e);
     toast('Error cargando clientes: '+e.message,'rj');
@@ -539,8 +543,31 @@ function miniChart(c){
   </svg>`;
 }
 
+// ═══ CARGA CHECK-INS SEMANA ACTUAL ═══
+function loadCISemanaActual(){
+  if(window._ciSemanaLoading||window._ciSemanaLoaded)return;
+  window._ciSemanaLoading=true;
+  apiCall('GET','/api/entreno/checkins/semana-actual').then(function(rows){
+    window._ciSemanaLoading=false;
+    window._ciSemanaLoaded=true;
+    if(!rows||!rows.length){render();return;}
+    rows.forEach(function(r){
+      const c=byId(r.cliente_id);
+      if(c){
+        c.checkInDone=true;
+        c.checkIn=r;
+        const ne=c.diasSemana||4;
+        c.adh=Math.round(Math.min(1,(r.dias_entreno_real||0)/ne)*40+Math.min(1,(r.dias_nutricion||0)/7)*40+Math.min(1,(r.dias_pasos||0)/7)*20)/100;
+      }
+    });
+    updateBadges();
+    render();
+  }).catch(function(){window._ciSemanaLoading=false;render();});
+}
+
 // ═══ CHECK-INS ═══
 function rCI(){
+  if(!window._ciSemanaLoaded&&!window._ciSemanaLoading)loadCISemanaActual();
   const u=uno();
   const env=u.filter(c=>c.checkInDone),pend=u.filter(c=>!c.checkInDone);
   const adhM=u.length?Math.round(u.reduce((s,c)=>s+c.adh,0)/u.length*100):0;
@@ -567,9 +594,9 @@ function rCI(){
       h+=`<tr onclick="openC('${c.id}','checkin')">
         <td><div style="display:flex;align-items:center;gap:8px"><div class="av" style="background:${gc(ciIdx(c))}">${c.init}</div>${c.nom}</div></td>
         <td><span class="badge ${adhBadge(c.adh)}">${Math.round(c.adh*100)}%</span></td>
-        <td><b>${ci.entrenos||0}</b>/${ne}</td>
-        <td>${ci.nutriDias?.length||0}/7</td>
-        <td>${ci.pasosDias?.length||0}/7</td>
+        <td><b>${ci.dias_entreno_real||0}</b>/${ne}</td>
+        <td>${ci.dias_nutricion||0}/7</td>
+        <td>${ci.dias_pasos||0}/7</td>
         <td>${'⭐'.repeat(ci.estrellas||0)}</td>
       </tr>`;});
     h+=`</tbody></table></div>`;

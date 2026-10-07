@@ -336,6 +336,17 @@ function tCheckin(c){
 
   // Historial de check-ins
   if(c.checkIns&&c.checkIns.length>1){
+    // Detectar si las fechas están una semana adelantada (semana_inicio en el futuro)
+    var sortedCI=c.checkIns.slice().sort(function(a,b){return new Date(b.semana_inicio)-new Date(a.semana_inicio);});
+    var latestSI=sortedCI[0]&&sortedCI[0].semana_inicio?new Date(sortedCI[0].semana_inicio):null;
+    var hoy=new Date();hoy.setHours(0,0,0,0);
+    var fechasAdelantadas=latestSI&&latestSI>hoy;
+    if(fechasAdelantadas){
+      html+='<div style="background:var(--am2);border:1px solid var(--am);border-radius:8px;padding:10px 12px;margin-top:10px;display:flex;align-items:center;gap:8px">';
+      html+='<span style="font-size:13px">⚠️ Las fechas del historial parecen estar una semana adelantadas.</span>';
+      html+='<button class="btn bam bs" style="margin-left:auto;font-size:11.5px" onclick="fixCheckinFechas(\''+c.id+'\')">Corregir fechas −7d</button>';
+      html+='</div>';
+    }
     html+='<div class="sec-t" style="margin-top:14px;margin-bottom:8px">Historial semanas anteriores</div>';
     var _cik='ci_'+c.id;
     c.checkIns.slice().sort(function(a,b){return new Date(b.semana_inicio)-new Date(a.semana_inicio);}).slice(0,8).forEach(function(r,i){
@@ -1602,3 +1613,14 @@ function tEntrenoGrid(c){
   </div>`;
 }
 
+
+function fixCheckinFechas(clienteId){
+  if(!confirm('¿Corregir fechas de check-in de este cliente? Se restará 7 días a cada semana_inicio.'))return;
+  apiCall('POST','/api/entreno/checkins/'+clienteId+'/fix-semana',{}).then(function(r){
+    toast('✅ '+r.fixed+' check-ins corregidos','vd');
+    var c=byId(clienteId);
+    if(c){c._ciLoaded=false;c.checkIns=null;c.checkIn=null;c.checkInDone=false;}
+    window._ciSemanaLoaded=false;
+    setTab('checkin');
+  }).catch(function(e){toast('Error: '+e.message,'rj');});
+}
