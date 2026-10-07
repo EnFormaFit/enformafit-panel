@@ -197,7 +197,7 @@ async function loadClientesFromAPI(){
         entrenador:entrenadorAsignado,
         fase:r.fase||'deficit',
         objSemKg:r.obj_sem_kg!=null?parseFloat(r.obj_sem_kg):null,
-        adh:parseFloat(r.adherencia)||0,
+        adh:(parseFloat(r.adherencia)||0)/100,
         checkInDone:false,
         revDone:false,
         diasSinPeso:0,
