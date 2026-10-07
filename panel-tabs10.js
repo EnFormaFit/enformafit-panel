@@ -276,12 +276,16 @@ function tCheckin(c){
   var adhMedia=c.adhMedia||adh;
   var adhMediaCol=adhMedia>=80?'var(--vd)':adhMedia>=50?'var(--nr)':'var(--rj)';
   var nSems=(c.checkIns||[]).length;
+  // Fecha display: semana_inicio + 7 días = lunes de cierre de esa semana
+  var _ciDate=ci.semana_inicio?new Date(ci.semana_inicio):null;
+  if(_ciDate)_ciDate.setDate(_ciDate.getDate()+7);
+  var ciLabel=_ciDate?('sem '+_ciDate.toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit'})):'';
   var html='<div style="padding:4px;max-width:600px;margin:0 auto">';
 
   // Adherencia header
   html+='<div style="background:var(--az3);border-radius:12px;padding:16px;text-align:center;margin-bottom:14px">'
     +'<div style="display:flex;justify-content:space-around">'
-    +'<div><div style="font-size:10px;color:var(--t3)">ÚLTIMA SEM</div><div style="font-size:36px;font-weight:900;color:'+adhCol+'">'+adh+'%</div></div>'
+    +'<div><div style="font-size:10px;color:var(--t3)">ÚLTIMA SEM</div><div style="font-size:11px;color:var(--t3);margin-bottom:2px">'+ciLabel+'</div><div style="font-size:36px;font-weight:900;color:'+adhCol+'">'+adh+'%</div></div>'
     +'<div style="width:1px;background:var(--bor2)"></div>'
     +'<div><div style="font-size:10px;color:var(--t3)">MEDIA BLOQUE ('+nSems+' sem)</div><div style="font-size:36px;font-weight:900;color:'+adhMediaCol+'">'+adhMedia+'%</div></div>'
     +'</div>'
@@ -338,7 +342,9 @@ function tCheckin(c){
       var dE=r.dias_entreno_real||0,dN=r.dias_nutricion||0,dP=r.dias_pasos||0;
       var a=Math.round(Math.min(1,dE/ne)*40+Math.min(1,dN/7)*40+Math.min(1,dP/7)*20);
       var col=a>=80?'var(--vd)':a>=50?'var(--nr)':'var(--rj)';
-      var fecha=r.semana_inicio?new Date(r.semana_inicio).toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit'}):'S?';
+      var _rDate=r.semana_inicio?new Date(r.semana_inicio):null;
+      if(_rDate)_rDate.setDate(_rDate.getDate()+7);
+      var fecha=_rDate?_rDate.toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit'}):'S?';
       var ok='ci_'+c.id+'_'+i;
       var isOpen=!!window[ok];
       var toggleFn='window[\''+ok+'\']=!window[\''+ok+'\'];setTab(\'checkin\')';
