@@ -621,9 +621,9 @@ function rCI(){
       h+=`<tr onclick="openC('${c.id}','checkin')">
         <td><div style="display:flex;align-items:center;gap:8px"><div class="av" style="background:${gc(ciIdx(c))}">${c.init}</div>${c.nom}</div></td>
         <td><span class="badge ${adhBadge(c.adh)}">${Math.round(c.adh*100)}%</span></td>
-        <td><b>${ci.entrenos||0}</b>/${ne}</td>
-        <td>${ci.nutriDias?.length||0}/7</td>
-        <td>${ci.pasosDias?.length||0}/7</td>
+        <td><b>${ci.dias_entreno_real||0}</b>/${ne}</td>
+        <td>${ci.dias_nutricion||0}/7</td>
+        <td>${ci.dias_pasos||0}/7</td>
         <td>${'⭐'.repeat(ci.estrellas||0)}</td>
       </tr>`;});
     h+=`</tbody></table></div>`;
