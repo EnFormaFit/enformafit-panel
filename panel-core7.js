@@ -566,8 +566,10 @@ function miniChart(c){
 function loadCISemanaActual(){
   if(window._ciSemanaLoading) return;
   window._ciSemanaLoading=true;
+  window._ciSemanaLoaded=false;
   apiCall('GET','/api/entreno/checkins/semana-actual').then(function(rows){
     window._ciSemanaLoading=false;
+    window._ciSemanaLoaded=true;
     if(!rows||!rows.length){render();return;}
     // Mark clients who submitted this week's CI
     rows.forEach(function(r){
@@ -589,11 +591,8 @@ function loadCISemanaActual(){
 }
 
 function rCI(){
-  // Load this week's checkins once per session open
+  // Load this week's checkins once per session
   if(!window._ciSemanaLoaded&&!window._ciSemanaLoading){
-    window._ciSemanaLoaded=true;
-    // Reset all to pending first
-    uno().forEach(function(c){c.checkInDone=false;});
     loadCISemanaActual();
   }
   const u=uno();
