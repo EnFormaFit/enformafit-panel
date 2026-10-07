@@ -248,7 +248,7 @@ function tCheckin(c){
           total+=Math.round(Math.min(1,(r.dias_entreno_real||0)/ne)*40+Math.min(1,(r.dias_nutricion||0)/7)*40+Math.min(1,(r.dias_pasos||0)/7)*20);
         });
         c.adhMedia=Math.round(total/rows.length);
-        c.adh=Math.round(Math.min(1,(rows[0].dias_entreno_real||0)/ne)*40+Math.min(1,(rows[0].dias_nutricion||0)/7)*40+Math.min(1,(rows[0].dias_pasos||0)/7)*20);
+        c.adh=Math.round(Math.min(1,(rows[0].dias_entreno_real||0)/ne)*40+Math.min(1,(rows[0].dias_nutricion||0)/7)*40+Math.min(1,(rows[0].dias_pasos||0)/7)*20)/100;
         setTab('checkin');
       }
     }).catch(function(){});
