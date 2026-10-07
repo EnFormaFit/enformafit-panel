@@ -345,7 +345,7 @@ const adhBadge=a=>a>=.8?'bvd':a>=.6?'bam':'brj';
 const revSems=t=>t==='programa'?[4,8,12]:[3,7,11];
 const uno=()=>C.filter(c=>c.tipo==='uno');
 const prog=()=>C.filter(c=>c.tipo==='programa');
-const byId=id=>C.find(c=>c.id===id);
+const byId=id=>C.find(c=>String(c.id)===String(id));
 const ciIdx=c=>C.indexOf(c);
 
 function toast(msg,t=''){
