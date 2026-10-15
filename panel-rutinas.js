@@ -261,7 +261,27 @@ function ejSave(ei,k,v){
   }
   rutPush();
   const ejes=getRut(RUT_CLI,RUT_SEM,RUT_DIA);
-  if(ejes[ei])ejes[ei][k]=v;
+  if(ejes[ei]){
+    ejes[ei][k]=v;
+    // If saving nom manually (not via acSel), auto-fill all fields from ejercicios_bd
+    // This prevents stale url/acl/reps from a previous exercise contaminating the new one
+    if(k==='nom' && typeof EJ !== 'undefined'){
+      const match=EJ.find(e=>e.nombre.toLowerCase()===v.toLowerCase());
+      if(match){
+        ejes[ei].nom=match.nombre;
+        ejes[ei].sets=parseInt(match.series)||ejes[ei].sets||3;
+        ejes[ei].reps=match.reps||ejes[ei].reps||'8-10';
+        ejes[ei].rir=parseInt(match.rir)||ejes[ei].rir||2;
+        ejes[ei].url=match.url||'';
+        ejes[ei].acl=match.aclaraciones||'';
+        const restMap={compound:180,maquina:120,aislamiento:90,abdomen:60,gemelos:60};
+        ejes[ei].rest=restMap[match.tipo?.toLowerCase()]||ejes[ei].rest||90;
+        // Refresh the row so the user sees updated fields
+        const row=document.getElementById('ejr-'+ei);
+        if(row)row.outerHTML=ejRow(ejes[ei],ei);
+      }
+    }
+  }
   clearTimeout(window._ejSaveBD);
   window._ejSaveBD=setTimeout(()=>{
     if(API_TOKEN&&RUT_CLI){guardarRutinaEnBD(RUT_CLI);registrarCambio(RUT_CLI,'Entreno S'+RUT_SEM+' modificado');}
