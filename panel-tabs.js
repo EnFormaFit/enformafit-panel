@@ -220,13 +220,26 @@ function registrarCambio(cliId, descripcion){
   if(API_TOKEN)apiCall('POST','/api/clientes/'+cliId+'/cambio',{descripcion}).catch(()=>{});
 }
 
-function togglePublicar(id){
+async function togglePublicar(id){
   const c=byId(id);if(!c)return;
-  c.planPublicado=!c.planPublicado;
-  toast(c.planPublicado?'✅ Plan publicado — el cliente ya puede verlo':'Plan despublicado',c.planPublicado?'vd':'');
-  // Sync to API
-  if(API_TOKEN)apiCall('PATCH',`/api/clientes/${id}`,{plan_publicado:c.planPublicado}).catch(e=>console.warn('[API] toggle:',e));
-  render();
+  if(!API_TOKEN){
+    c.planPublicado=!c.planPublicado;
+    toast(c.planPublicado?'✅ Plan publicado (sin BD)':'Plan despublicado',c.planPublicado?'vd':'');
+    render();return;
+  }
+  try{
+    // 1. Obtener el bloque activo del cliente
+    const bloque=await apiCall('GET',`/api/clientes/${id}/bloque-activo`);
+    if(!bloque||!bloque.id){toast('No hay bloque activo para este cliente','rj');return;}
+    // 2. Aprobar el bloque (pone visible_cliente=true en la BD)
+    await apiCall('POST',`/api/clientes/${id}/aprobar-plan/${bloque.id}`);
+    c.planPublicado=true;
+    toast('✅ Plan publicado — el cliente ya puede verlo','vd');
+    render();
+  }catch(e){
+    toast('Error al publicar: '+e.message,'rj');
+    console.warn('[API] togglePublicar error:',e);
+  }
 }
 
 // ═══ TAB: CHECK-IN ═══
