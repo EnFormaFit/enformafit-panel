@@ -278,16 +278,18 @@ function tCheckin(c){
   var adhMedia=c.adhMedia||adh;
   var adhMediaCol=adhMedia>=80?'var(--vd)':adhMedia>=50?'var(--nr)':'var(--rj)';
   var nSems=(c.checkIns||[]).length;
-  // Fecha display: semana_inicio directamente (lunes de la semana descrita)
+  // Fecha display: semana_inicio + 7 días = lunes de la semana real (BD guarda lunesRef-7)
   var _ciDate=ci.semana_inicio?new Date(ci.semana_inicio):null;
+  if(_ciDate)_ciDate.setDate(_ciDate.getDate()+7);
   var ciLabel=_ciDate?('sem '+_ciDate.toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit'})):'';
-  // Determinar si es de esta semana: semana_inicio de hoy-7 a hoy+1
+  // Determinar si es de esta semana: semana_inicio+7 días debe ser entre hoy-6 y hoy+1
   var _esEstaSemana=false;
   if(ci.semana_inicio){
     var _hoy=new Date();_hoy.setHours(0,0,0,0);
     var _siDate=new Date(ci.semana_inicio);
+    _siDate.setDate(_siDate.getDate()+7);
     var _diffDias=Math.round((_hoy-_siDate)/(1000*60*60*24));
-    _esEstaSemana=_diffDias>=0&&_diffDias<=7;
+    _esEstaSemana=_diffDias>=-1&&_diffDias<=6;
   }
   var ciHeaderLabel=_esEstaSemana?'ESTA SEMANA':'ÚLTIMO CHECK-IN';
   var html='<div style="padding:4px;max-width:600px;margin:0 auto">';
@@ -353,6 +355,7 @@ function tCheckin(c){
       var a=Math.round(Math.min(1,dE/ne)*40+Math.min(1,dN/7)*40+Math.min(1,dP/7)*20);
       var col=a>=80?'var(--vd)':a>=50?'var(--nr)':'var(--rj)';
       var _rDate=r.semana_inicio?new Date(r.semana_inicio):null;
+      if(_rDate)_rDate.setDate(_rDate.getDate()+7);
       var fecha=_rDate?_rDate.toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit'}):'S?';
       var ok='ci_'+c.id+'_'+i;
       var isOpen=!!window[ok];
