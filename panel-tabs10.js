@@ -494,22 +494,39 @@ function tRevision(c){
   const MEDS=[['peso','Peso','kg'],['pecho','Pecho','cm'],['cintura','Cintura','cm'],['cadera','Cadera','cm'],['biceps','Bíceps','cm'],['muslo','Muslo','cm'],['gemelo','Gemelo','cm']];
   const medsH=buildMedidasHTML(c);
 
-  const respsH=`<div class="sec-t" style="margin-bottom:8px">Preguntas de revisión</div>
-  <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
-    ${PP.map((q,i)=>{
-      // preguntas: buscar en c.revision.preguntas['S'+nextRev] (guardado por auto-load de panel-core)
-      // o en rev.preguntas plano como fallback
-      const semKey='S'+c.nextRev;
-      const pregSem=c?.revision?.preguntas?.[semKey]
-        ||rev?.preguntas?.[semKey]
-        ||rev?.preguntas||{};
-      const ans=pregSem[i]!=null?pregSem[i]:(pregSem[String(i)]!=null?pregSem[String(i)]:'');
-      // q es un string completo, no un array — usar q directamente
-      const qTexto=typeof q==='string'?q:(q[0]||'');
+  // Preguntas: mostrar TODAS las revisiones con respuestas, agrupadas por semana
+  // Ordenar de más reciente a más antigua
+  const allPregs=c?.revision?.preguntas||rev?.preguntas||{};
+  const semConResp=Object.keys(allPregs)
+    .filter(k=>/^S\d+$/.test(k)&&Object.keys(allPregs[k]||{}).length)
+    .sort((a,b)=>parseInt(b.slice(1))-parseInt(a.slice(1)));
 
-      return`<div style="background:var(--bg);border-radius:8px;padding:10px;border:1px solid var(--bor)">
-        <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:4px">P${i+1}. ${qTexto}</div>
-        <div style="font-size:13px;color:${ans?'var(--t1)':'var(--bor)'}">${ans||'Sin respuesta aún'}</div>
+  // También incluir la revisión actual (nextRev) aunque esté vacía
+  const nextKey='S'+c.nextRev;
+  if(!semConResp.includes(nextKey))semConResp.push(nextKey);
+
+  const respsH=`<div class="sec-t" style="margin-bottom:8px">Preguntas de revisión</div>
+  <div style="margin-bottom:14px">
+    ${semConResp.map(semKey=>{
+      const semNum=semKey.slice(1);
+      const pregSem=allPregs[semKey]||{};
+      const tieneResp=Object.values(pregSem).some(v=>v!=null&&v!=='');
+      const esPendiente=semKey===nextKey&&!tieneResp;
+      return`<div style="margin-bottom:12px">
+        <div style="font-size:11px;font-weight:700;color:var(--az2);margin-bottom:6px;display:flex;align-items:center;gap:6px">
+          <span style="background:var(--az2);color:#fff;padding:2px 8px;border-radius:10px;font-size:10px">S${semNum}</span>
+          ${esPendiente?'<span style="color:var(--t3);font-size:11px">Pendiente de envío</span>':''}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          ${PP.map((q,i)=>{
+            const ans=pregSem[i]!=null?pregSem[i]:(pregSem[String(i)]!=null?pregSem[String(i)]:'');
+            const qTexto=typeof q==='string'?q:(q[0]||'');
+            return`<div style="background:var(--bg);border-radius:8px;padding:10px;border:1px solid ${ans?'var(--bor)':'var(--bor2)'}">
+              <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:4px">P${i+1}. ${qTexto}</div>
+              <div style="font-size:13px;color:${ans?'var(--t1)':'var(--bor)'}">${ans||'Sin respuesta aún'}</div>
+            </div>`;
+          }).join('')}
+        </div>
       </div>`;
     }).join('')}
   </div>`;
