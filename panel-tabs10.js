@@ -501,9 +501,11 @@ function tRevision(c){
     .filter(k=>/^S\d+$/.test(k)&&Object.keys(allPregs[k]||{}).length)
     .sort((a,b)=>parseInt(b.slice(1))-parseInt(a.slice(1)));
 
-  // También incluir la revisión actual (nextRev) aunque esté vacía
-  const nextKey='S'+c.nextRev;
-  if(!semConResp.includes(nextKey))semConResp.push(nextKey);
+  // Pendiente = primera semana del calendario sin respuestas todavía
+  const _semRevCal=(c.tipo==='1a1'||c.tipo==='uno')?[3,7,11]:[4,8,12];
+  const _pendNum=_semRevCal.find(s=>!semConResp.includes('S'+s));
+  const nextKey=_pendNum?'S'+_pendNum:'S'+c.nextRev;
+  if(_pendNum&&!semConResp.includes(nextKey))semConResp.push(nextKey);
 
   const respsH=`<div class="sec-t" style="margin-bottom:8px">Preguntas de revisión</div>
   <div style="margin-bottom:14px">
