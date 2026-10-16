@@ -395,15 +395,38 @@ function tRevision(c){
     c._revLoaded=true;
     apiCall('GET','/api/entreno/revisiones/'+c.id).then(function(rows){
       if(!rows||!rows.length)return;
-      if(!c.revision)c.revision={fotos:{},medidas:{}};
+      if(!c.revision)c.revision={fotos:{},medidas:{},preguntas:{}};
       if(!c.revision.fotos)c.revision.fotos={};
+      if(!c.revision.medidas)c.revision.medidas={};
+      if(!c.revision.preguntas)c.revision.preguntas={};
       rows.forEach(function(r){
         var sem=r.semana;
+        var semLabel='S'+sem;
         // fotos_urls es array en BD [frente_url, perfil_d_url, perfil_i_url, espalda_url]
         var fotsArr=Array.isArray(r.fotos_urls)?r.fotos_urls:[];
         fotsArr.forEach(function(url,pi){
           if(url)c.revision.fotos['s'+sem+'_'+pi]=url;
         });
+        // Medidas: normalizar desde cualquier formato al nested { campo: { S0: val, S3: val } }
+        var meds=r.medidas&&typeof r.medidas==='object'?r.medidas:{};
+        Object.entries(meds).forEach(function(entry){
+          var campo=entry[0], val=entry[1];
+          if(val===null||val===undefined)return;
+          var numVal;
+          if(typeof val==='object'){
+            // Formato nested { S0: 107 } — coger el valor independiente del semLabel
+            numVal=parseFloat(Object.values(val)[0]);
+          } else {
+            numVal=parseFloat(val);
+          }
+          if(isNaN(numVal))return;
+          if(!c.revision.medidas[campo])c.revision.medidas[campo]={};
+          c.revision.medidas[campo][semLabel]=numVal;
+        });
+        // Preguntas: guardar por semana para poder mostrarlas
+        if(r.preguntas&&typeof r.preguntas==='object'){
+          c.revision.preguntas[semLabel]=r.preguntas;
+        }
       });
       setTab('revision');
     }).catch(function(){});
