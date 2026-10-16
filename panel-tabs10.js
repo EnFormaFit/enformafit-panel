@@ -747,15 +747,7 @@ function renderMedidasTable(medidas,cliId){
     sa.forEach(function(s){
       var v=typeof vals==='object'&&vals[s]!=null?vals[s]:null;
       nums.push(v);
-      if(cliId){
-        cells+='<td style="padding:3px 5px;text-align:center">'
-          +'<input type="number" step="0.1" value="'+(v!=null?v:'')+'" placeholder="—" '
-          +'data-cli="'+cliId+'" data-nom="'+nom.replace(/"/g,'&quot;')+'" data-sem="'+s+'" '
-          +'style="width:50px;text-align:center;border:1px solid var(--bor);border-radius:4px;padding:3px;font-size:12px;font-weight:700" '
-          +'onchange="editMedidaInput(this)"></td>';
-      } else {
-        cells+='<td style="padding:5px 10px;text-align:center;font-weight:700">'+(v!=null?v:'<span style="color:var(--bor2)">—</span>')+'</td>';
-      }
+      cells+='<td style="padding:5px 10px;text-align:center;font-weight:700">'+(v!=null?v:'<span style="color:var(--bor2)">—</span>')+'</td>';
     });
     var first=nums.find(function(v){return v!=null;});
     var last=[...nums].reverse().find(function(v){return v!=null;});
@@ -767,7 +759,7 @@ function renderMedidasTable(medidas,cliId){
       +'<td style="padding:5px 8px;text-align:center;font-weight:700;color:'+col+'">'+(cambio!==null?(cambio>0?'+':'')+cambio:'—')+'</td></tr>';
   });
   var hdrs=sa.map(function(s){return'<th style="padding:5px 10px;text-align:center;color:#fff;font-size:11px;min-width:58px">'+s+'</th>';}).join('');
-  var saveBtn=cliId?'<button class="btn bo bs" style="float:right;margin-top:-2px;font-size:10px" data-cid="'+cliId+'" onclick="guardarMedidasBD(this.dataset.cid)">💾 Guardar</button>':'';
+  var saveBtn='';
   return'<div class="sec-t" style="margin-bottom:6px">Medidas (cm)'+saveBtn+'</div>'
     +'<div style="overflow-x:auto;margin-bottom:12px"><table style="border-collapse:collapse;font-size:12px;width:100%">'
     +'<thead><tr style="background:var(--az)"><th style="padding:5px 10px;text-align:left;color:rgba(255,255,255,.8);font-size:10px;min-width:120px">Medida</th>'
