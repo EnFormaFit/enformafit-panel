@@ -514,10 +514,16 @@ function tRevision(c){
       const pregSem=allPregs[semKey]||{};
       const tieneResp=Object.values(pregSem).some(v=>v!=null&&v!=='');
       const esPendiente=semKey===nextKey&&!tieneResp;
+      // Si es la pendiente y no tiene respuestas, solo mostrar header — sin preguntas vacías
+      if(esPendiente)return`<div style="margin-bottom:12px">
+        <div style="font-size:11px;font-weight:700;display:flex;align-items:center;gap:6px">
+          <span style="background:var(--bor);color:var(--t2);padding:2px 8px;border-radius:10px;font-size:10px">S${semNum}</span>
+          <span style="color:var(--t3);font-size:11px">⏳ Pendiente de envío</span>
+        </div>
+      </div>`;
       return`<div style="margin-bottom:12px">
         <div style="font-size:11px;font-weight:700;color:var(--az2);margin-bottom:6px;display:flex;align-items:center;gap:6px">
           <span style="background:var(--az2);color:#fff;padding:2px 8px;border-radius:10px;font-size:10px">S${semNum}</span>
-          ${esPendiente?'<span style="color:var(--t3);font-size:11px">Pendiente de envío</span>':''}
         </div>
         <div style="display:flex;flex-direction:column;gap:6px">
           ${PP.map((q,i)=>{
