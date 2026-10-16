@@ -280,12 +280,21 @@ function tCheckin(c){
   var _ciDate=ci.semana_inicio?new Date(ci.semana_inicio):null;
   if(_ciDate)_ciDate.setDate(_ciDate.getDate()+7);
   var ciLabel=_ciDate?('sem '+_ciDate.toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit'})):'';
+  // Determinar si es de esta semana: semana_inicio de hoy-7 a hoy+1
+  var _esEstaSemana=false;
+  if(ci.semana_inicio){
+    var _hoy=new Date();_hoy.setHours(0,0,0,0);
+    var _siDate=new Date(ci.semana_inicio);
+    var _diffDias=Math.round((_hoy-_siDate)/(1000*60*60*24));
+    _esEstaSemana=_diffDias>=0&&_diffDias<=7;
+  }
+  var ciHeaderLabel=_esEstaSemana?'ESTA SEMANA':'ÚLTIMO CHECK-IN';
   var html='<div style="padding:4px;max-width:600px;margin:0 auto">';
 
   // Adherencia header
   html+='<div style="background:var(--az3);border-radius:12px;padding:16px;text-align:center;margin-bottom:14px">'
     +'<div style="display:flex;justify-content:space-around">'
-    +'<div><div style="font-size:10px;color:var(--t3)">ÚLTIMA SEM</div><div style="font-size:11px;color:var(--t3);margin-bottom:2px">'+ciLabel+'</div><div style="font-size:36px;font-weight:900;color:'+adhCol+'">'+adh+'%</div></div>'
+    +'<div><div style="font-size:10px;color:var(--t3)">'+ciHeaderLabel+'</div><div style="font-size:11px;color:var(--t3);margin-bottom:2px">'+ciLabel+'</div><div style="font-size:36px;font-weight:900;color:'+adhCol+'">'+adh+'%</div></div>'
     +'<div style="width:1px;background:var(--bor2)"></div>'
     +'<div><div style="font-size:10px;color:var(--t3)">MEDIA BLOQUE ('+nSems+' sem)</div><div style="font-size:36px;font-weight:900;color:'+adhMediaCol+'">'+adhMedia+'%</div></div>'
     +'</div>'
