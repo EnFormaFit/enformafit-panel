@@ -441,11 +441,10 @@ function setTab(t){
               // Preguntas
               const pregs=typeof r.preguntas==='string'?JSON.parse(r.preguntas||'{}'):(r.preguntas||{});
               if(Object.keys(pregs).length)preguntas['S'+r.semana]=pregs;
-              // Fotos
-              const fots=typeof r.fotos==='string'?JSON.parse(r.fotos||'{}'):(r.fotos||{});
-              Object.entries(fots).forEach(([k,url])=>{
-                const key='rev_S'+r.semana+'_'+k;
-                fotosRev[key]=url;
+              // Fotos — campo en BD es fotos_urls (array), no fotos
+              const fotsArr=Array.isArray(r.fotos_urls)?r.fotos_urls:[];
+              fotsArr.forEach((url,pi)=>{
+                if(url)fotosRev['s'+r.semana+'_'+pi]=url;
               });
             });
             c.revision={medidas,preguntas,fotos:fotosRev,rows};

@@ -397,13 +397,12 @@ function tRevision(c){
       if(!rows||!rows.length)return;
       if(!c.revision)c.revision={fotos:{},medidas:{}};
       if(!c.revision.fotos)c.revision.fotos={};
-      var PM={frente:0,perfil_d:1,perfil_i:2,espalda:3};
       rows.forEach(function(r){
         var sem=r.semana;
-        var fotos=typeof r.fotos==='string'?JSON.parse(r.fotos||'{}'):r.fotos||{};
-        Object.entries(fotos).forEach(function(e){
-          var pi=PM[e[0]];
-          if(e[1])c.revision.fotos[pi!==undefined?'s'+sem+'_'+pi:'s'+sem+'_'+e[0]]=e[1];
+        // fotos_urls es array en BD [frente_url, perfil_d_url, perfil_i_url, espalda_url]
+        var fotsArr=Array.isArray(r.fotos_urls)?r.fotos_urls:[];
+        fotsArr.forEach(function(url,pi){
+          if(url)c.revision.fotos['s'+sem+'_'+pi]=url;
         });
       });
       setTab('revision');
@@ -798,9 +797,10 @@ function loadMedidasCliente(cliId){
         if(!c.revision.fotos)c.revision.fotos={};
         rows.forEach(function(rev){
           const sem=rev.semana;
-          const fotos=typeof rev.fotos==='string'?JSON.parse(rev.fotos||'{}'):rev.fotos||{};
-          Object.entries(fotos).forEach(([pose,url])=>{
-            if(url)c.revision.fotos['s'+sem+'_'+pose]=url;
+          // fotos_urls es array en BD
+          const fotsArr=Array.isArray(rev.fotos_urls)?rev.fotos_urls:[];
+          fotsArr.forEach((url,pi)=>{
+            if(url)c.revision.fotos['s'+sem+'_'+pi]=url;
           });
         });
       }
