@@ -105,6 +105,17 @@ async function doLogin(){
     showShell();
     nav('ci');
     await loadClientesFromAPI();
+    // Fix semanas_revision en BD — solo una vez (guarda flag en localStorage)
+    if(!localStorage.getItem('ef_fix_semrev_v1')){
+      apiCall('POST','/api/clientes/fix-semanas-revision').then(function(r){
+        console.log('[fix-semrev] OK',r.fix1.count+'fix1,',r.fix2.count+'fix2,',r.fix3.count+'fix3');
+        localStorage.setItem('ef_fix_semrev_v1','done');
+        if(r.fix1.count||r.fix2.count||r.fix3.count){
+          toast('✅ semanas_revision corregidas en BD','vd');
+          loadClientesFromAPI(); // recargar con datos corregidos
+        }
+      }).catch(function(e){console.warn('[fix-semrev]',e.message);});
+    }
   }catch(e){
     if(errEl)errEl.textContent=e.message||'Error de acceso';
   }
