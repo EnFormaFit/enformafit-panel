@@ -486,8 +486,12 @@ function tRevision(c){
   const respsH=`<div class="sec-t" style="margin-bottom:8px">Preguntas de revisión</div>
   <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
     ${PP.map((q,i)=>{
-      // preguntas may be nested as {S3:{0:'...'}} or flat {0:'...'}
-      const pregSem=rev?.preguntas?.['S'+c.nextRev]||rev?.preguntas?.['S3']||rev?.preguntas?.['S7']||rev?.preguntas?.['S11']||rev?.preguntas?.['S4']||rev?.preguntas?.['S8']||rev?.preguntas?.['S12']||rev?.preguntas||{};
+      // preguntas: buscar en c.revision.preguntas['S'+nextRev] (formato nuevo BD)
+      // o en rev.preguntas como fallback (formato plano antiguo)
+      const semKey='S'+c.nextRev;
+      const pregSem=c?.revision?.preguntas?.[semKey]
+        ||rev?.preguntas?.[semKey]
+        ||rev?.preguntas||{};
       const ans=pregSem[i]||pregSem[String(i)]||'';
 
       return`<div style="background:var(--bg);border-radius:8px;padding:10px;border:1px solid var(--bor)">
@@ -675,7 +679,7 @@ function renderMedidasTable(medidas,cliId){
   ];
   // Use client's revision semanas for column headers
   var c=cliId?byId(cliId):null;
-  var revSems=c&&c.tipo==='1a1'?['S3','S7','S11']:['S4','S8','S12'];
+  var revSems=c&&(c.tipo==='1a1'||c.tipo==='uno')?['S3','S7','S11']:['S4','S8','S12'];
   var sems=new Set(['S0'].concat(revSems));
   Object.values(medidas).forEach(function(v){if(typeof v==='object')Object.keys(v).forEach(function(k){sems.add(k);});});
   var sa=[...sems].sort(function(a,b){return parseInt(a.replace('S',''))-parseInt(b.replace('S',''));});
