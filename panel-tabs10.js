@@ -240,7 +240,9 @@ function tCheckin(c){
     apiCall('GET','/api/entreno/checkins/'+c.id).then(function(rows){
       if(rows&&rows.length){
         c.checkIns=rows;
-        c.checkIn=rows[0];
+        // Ordenar por semana_inicio desc para que el más reciente sea [0]
+        var sorted=rows.slice().sort(function(a,b){return new Date(b.semana_inicio)-new Date(a.semana_inicio);});
+        c.checkIn=sorted[0];
         c.checkInDone=true;
         var ne=c.diasSemana||4;
         var total=0;
@@ -248,7 +250,7 @@ function tCheckin(c){
           total+=Math.round(Math.min(1,(r.dias_entreno_real||0)/ne)*40+Math.min(1,(r.dias_nutricion||0)/7)*40+Math.min(1,(r.dias_pasos||0)/7)*20);
         });
         c.adhMedia=Math.round(total/rows.length);
-        c.adh=Math.round(Math.min(1,(rows[0].dias_entreno_real||0)/ne)*40+Math.min(1,(rows[0].dias_nutricion||0)/7)*40+Math.min(1,(rows[0].dias_pasos||0)/7)*20)/100;
+        c.adh=Math.round(Math.min(1,(sorted[0].dias_entreno_real||0)/ne)*40+Math.min(1,(sorted[0].dias_nutricion||0)/7)*40+Math.min(1,(sorted[0].dias_pasos||0)/7)*20)/100;
         setTab('checkin');
       }
     }).catch(function(){});
@@ -344,17 +346,6 @@ function tCheckin(c){
 
   // Historial de check-ins
   if(c.checkIns&&c.checkIns.length>1){
-    // Detectar si las fechas están una semana adelantada (semana_inicio en el futuro)
-    var sortedCI=c.checkIns.slice().sort(function(a,b){return new Date(b.semana_inicio)-new Date(a.semana_inicio);});
-    var latestSI=sortedCI[0]&&sortedCI[0].semana_inicio?new Date(sortedCI[0].semana_inicio):null;
-    var hoy=new Date();hoy.setHours(0,0,0,0);
-    var fechasAdelantadas=latestSI&&latestSI>hoy;
-    if(fechasAdelantadas){
-      html+='<div style="background:var(--am2);border:1px solid var(--am);border-radius:8px;padding:10px 12px;margin-top:10px;display:flex;align-items:center;gap:8px">';
-      html+='<span style="font-size:13px">⚠️ Las fechas del historial parecen estar una semana adelantadas.</span>';
-      html+='<button class="btn bam bs" style="margin-left:auto;font-size:11.5px" onclick="fixCheckinFechas(\''+c.id+'\')">Corregir fechas −7d</button>';
-      html+='</div>';
-    }
     html+='<div class="sec-t" style="margin-top:14px;margin-bottom:8px">Historial semanas anteriores</div>';
     var _cik='ci_'+c.id;
     c.checkIns.slice().sort(function(a,b){return new Date(b.semana_inicio)-new Date(a.semana_inicio);}).slice(0,8).forEach(function(r,i){
