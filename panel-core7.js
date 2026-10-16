@@ -124,7 +124,8 @@ async function loadClientesFromAPI(){
       const toDate=d=>d?new Date(d).toISOString().split('T')[0]:'';
       
       // Semanas revision
-      const semRev=Array.isArray(r.semanas_revision)?r.semanas_revision:[4,8,12];
+      const defaultRev=(r.tipo==='uno'||r.tipo==='1a1')?[3,7,11]:[4,8,12];
+      const semRev=Array.isArray(r.semanas_revision)?r.semanas_revision:defaultRev;
       const semana=parseInt(r.semana_actual)||0;
       const nextRev=semRev.find(s=>s>=semana)||semRev[semRev.length-1];
       
