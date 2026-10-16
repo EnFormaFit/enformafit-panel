@@ -497,16 +497,18 @@ function tRevision(c){
   const respsH=`<div class="sec-t" style="margin-bottom:8px">Preguntas de revisión</div>
   <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
     ${PP.map((q,i)=>{
-      // preguntas: buscar en c.revision.preguntas['S'+nextRev] (formato nuevo BD)
-      // o en rev.preguntas como fallback (formato plano antiguo)
+      // preguntas: buscar en c.revision.preguntas['S'+nextRev] (guardado por auto-load de panel-core)
+      // o en rev.preguntas plano como fallback
       const semKey='S'+c.nextRev;
       const pregSem=c?.revision?.preguntas?.[semKey]
         ||rev?.preguntas?.[semKey]
         ||rev?.preguntas||{};
-      const ans=pregSem[i]||pregSem[String(i)]||'';
+      const ans=pregSem[i]!=null?pregSem[i]:(pregSem[String(i)]!=null?pregSem[String(i)]:'');
+      // q es un string completo, no un array — usar q directamente
+      const qTexto=typeof q==='string'?q:(q[0]||'');
 
       return`<div style="background:var(--bg);border-radius:8px;padding:10px;border:1px solid var(--bor)">
-        <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:4px">P${i+1}. ${q[0]}</div>
+        <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:4px">P${i+1}. ${qTexto}</div>
         <div style="font-size:13px;color:${ans?'var(--t1)':'var(--bor)'}">${ans||'Sin respuesta aún'}</div>
       </div>`;
     }).join('')}
