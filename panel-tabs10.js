@@ -255,11 +255,11 @@ function tCheckin(c){
     }).catch(function(){});
   }
 
-  if(!c.checkInDone||!c.checkIn){
+  if(!c.checkIn){
     return'<div style="text-align:center;padding:40px;color:var(--t3)">'
       +'<div style="font-size:48px;margin-bottom:12px">⏳</div>'
       +'<div style="font-size:16px;font-weight:700">Check-in pendiente</div>'
-      +'<div style="font-size:13px;margin-top:6px">El cliente aún no lo ha enviado esta semana.</div>'
+      +'<div style="font-size:13px;margin-top:6px">El cliente aún no ha enviado ningún check-in.</div>'
     +'</div>';
   }
 
@@ -281,14 +281,17 @@ function tCheckin(c){
   var _ciDate=ci.semana_inicio?new Date(ci.semana_inicio):null;
   if(_ciDate)_ciDate.setDate(_ciDate.getDate()+7);
   var ciLabel=_ciDate?('sem '+_ciDate.toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit'})):'';
-  // Determinar si es de esta semana: semana_inicio+7 días debe ser entre hoy-6 y hoy+1
+  // Determinar si es de esta semana usando la misma lógica que lunesRef
   var _esEstaSemana=false;
   if(ci.semana_inicio){
-    var _hoy=new Date();_hoy.setHours(0,0,0,0);
-    var _siDate=new Date(ci.semana_inicio);
-    _siDate.setDate(_siDate.getDate()+7);
-    var _diffDias=Math.round((_hoy-_siDate)/(1000*60*60*24));
-    _esEstaSemana=_diffDias>=-1&&_diffDias<=6;
+    var _hoy2=new Date();
+    var _dia2=_hoy2.getDay();
+    var _lRef=new Date(_hoy2);
+    if(_dia2===0){_lRef.setDate(_hoy2.getDate()+1);}
+    else{_lRef.setDate(_hoy2.getDate()-(_dia2-1));}
+    var _siAct=new Date(_lRef);_siAct.setDate(_lRef.getDate()-7);
+    var _siActStr=_siAct.getFullYear()+'-'+String(_siAct.getMonth()+1).padStart(2,'0')+'-'+String(_siAct.getDate()).padStart(2,'0');
+    _esEstaSemana=(ci.semana_inicio||'').substring(0,10)===_siActStr;
   }
   var ciHeaderLabel=_esEstaSemana?'ESTA SEMANA':'ÚLTIMO CHECK-IN';
   var html='<div style="padding:4px;max-width:600px;margin:0 auto">';
