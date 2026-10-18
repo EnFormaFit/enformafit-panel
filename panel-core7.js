@@ -232,7 +232,7 @@ async function loadClientesFromAPI(){
         diasSinPeso:0,
         macros:{kcal,p:prot,c:carbs,g:grasa},
         macros_manuales:r.macros_manuales||false,
-        planPublicado:r.plan_publicado||r.visible_cliente||false,
+        planPublicado:r.bloque_visible||r.plan_publicado||r.visible_cliente||false,
         bloque:parseInt(r.numero_bloque)||1,
         bloqueHistorial:[],
         histPesos:[],
@@ -294,14 +294,16 @@ async function loadPesosBackground(clientes){
 // Toggle plan publicado via API
 async function togglePublicarAPI(id){
   const c=byId(id);if(!c)return;
-  c.planPublicado=!c.planPublicado;
-  // Call API to update
+  const nuevoEstado=!c.planPublicado;
+  // Call the correct endpoint: PATCH /api/clientes/:id/publicar-bloque
   try{
-    await apiCall('PATCH',`/api/clientes/${id}`,{plan_publicado:c.planPublicado});
+    await apiCall('PATCH',`/api/clientes/${id}/publicar-bloque`,{visible:nuevoEstado});
+    c.planPublicado=nuevoEstado;
+    toast(c.planPublicado?'✅ Plan publicado — el cliente ya puede verlo':'Plan despublicado',c.planPublicado?'vd':'');
   }catch(e){
     console.warn('[API] togglePublicar error:',e.message);
+    toast('Error al publicar plan','rj');
   }
-  toast(c.planPublicado?'✅ Plan publicado':'Plan despublicado',c.planPublicado?'vd':'');
   render();
 }
 

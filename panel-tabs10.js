@@ -224,12 +224,8 @@ function registrarCambio(cliId, descripcion){
 }
 
 function togglePublicar(id){
-  const c=byId(id);if(!c)return;
-  c.planPublicado=!c.planPublicado;
-  toast(c.planPublicado?'✅ Plan publicado — el cliente ya puede verlo':'Plan despublicado',c.planPublicado?'vd':'');
-  // Sync to API
-  if(API_TOKEN)apiCall('PATCH',`/api/clientes/${id}`,{plan_publicado:c.planPublicado}).catch(e=>console.warn('[API] toggle:',e));
-  render();
+  // Delegate to panel-core7's async version that uses the correct endpoint
+  togglePublicarAPI(id);
 }
 
 // ═══ TAB: CHECK-IN ═══
