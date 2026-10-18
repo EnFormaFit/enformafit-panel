@@ -702,7 +702,6 @@ function renderMedidasTable(medidas,cliId){
   var CANONICAL=[
     {label:'Hombros',     keys:['hombros','hombros (zona más amplia)','hombros (zona mas amplia)']},
     {label:'Pecho',       keys:['pecho','pecho (altura de pezones)']},
-    {label:'Cadera',      keys:['cadera']},
     {label:'Bíceps izq.', keys:['brazoi','bicepsi','brazo izquierdo (zona más amplia)','brazo izquierdo (zona mas amplia)','brazo izq.','bíceps izq.','biceps izq.']},
     {label:'Bíceps dcho.',keys:['brazod','bicepsd','brazo derecho (zona más amplia)','brazo derecho (zona mas amplia)','brazo dcho.','bíceps dcho.','biceps dcho.']},
     {label:'Cintura',     keys:['cintura','abdomen (altura del ombligo)','cintura ombligo']},
