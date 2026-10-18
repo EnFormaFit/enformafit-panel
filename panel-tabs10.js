@@ -231,13 +231,18 @@ function tCheckin(c){
         // Ordenar por semana_inicio desc para que el más reciente sea [0]
         var sorted=rows.slice().sort(function(a,b){return new Date(b.semana_inicio)-new Date(a.semana_inicio);});
         c.checkIn=sorted[0];
-        // Solo marcar checkInDone=true si el check-in más reciente es de esta semana
-        // (semana_inicio + 7 días debe caer entre hace 6 días y mañana)
-        var _hoy=new Date();_hoy.setHours(0,0,0,0);
-        var _siDate=new Date(sorted[0].semana_inicio);
-        _siDate.setDate(_siDate.getDate()+7);
-        var _diffDias=Math.round((_hoy-_siDate)/(1000*60*60*24));
-        c.checkInDone=(_diffDias>=-1&&_diffDias<=6);
+        // Solo marcar checkInDone=true si el check-in más reciente es de la semana actual
+        // semana_inicio actual = lunesRef - 7, donde lunesRef = próximo lunes si hoy es domingo, lunes de esta semana si lun-sab
+        var _hoy=new Date();
+        var _dia=_hoy.getDay(); // 0=dom,1=lun,...,6=sab
+        var _lunesRef=new Date(_hoy);
+        if(_dia===0){_lunesRef.setDate(_hoy.getDate()+1);}
+        else{_lunesRef.setDate(_hoy.getDate()-(_dia-1));}
+        var _semanaInicioActual=new Date(_lunesRef);
+        _semanaInicioActual.setDate(_lunesRef.getDate()-7);
+        var _siActualStr=_semanaInicioActual.toISOString().split('T')[0];
+        var _siClienteStr=(sorted[0].semana_inicio||'').substring(0,10);
+        c.checkInDone=(_siClienteStr===_siActualStr);
         var ne=c.diasSemana||4;
         var total=0;
         rows.forEach(function(r){
