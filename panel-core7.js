@@ -291,21 +291,6 @@ async function loadPesosBackground(clientes){
   }
 }
 
-// Toggle plan publicado via API
-async function togglePublicarAPI(id){
-  const c=byId(id);if(!c)return;
-  const nuevoEstado=!c.planPublicado;
-  // Call the correct endpoint: PATCH /api/clientes/:id/publicar-bloque
-  try{
-    await apiCall('PATCH',`/api/clientes/${id}/publicar-bloque`,{visible:nuevoEstado});
-    c.planPublicado=nuevoEstado;
-    toast(c.planPublicado?'✅ Plan publicado — el cliente ya puede verlo':'Plan despublicado',c.planPublicado?'vd':'');
-  }catch(e){
-    console.warn('[API] togglePublicar error:',e.message);
-    toast('Error al publicar plan','rj');
-  }
-  render();
-}
 
 async function apiPublicarPlan(clienteId, bloqueId, publicado){
   try{
@@ -532,7 +517,6 @@ function renderClient(ct){
       </div>
       ${c.lesiones?`<div class="badge bam" style="flex-shrink:0;max-width:180px;overflow:hidden;text-overflow:ellipsis">🩹 ${c.lesiones.split(',')[0]}</div>`:''}
       ${checkBirthday(c)?'<div style="font-size:22px" title="¡Hoy es su cumpleaños!">🎂</div>':''}
-      ${c.planPublicado?'<span class="badge bvd">✅ Plan publicado</span>':'<span class="badge bam">⏳ Borrador</span>'}
     </div>
     <div class="fs-tabs">${tabsH}</div>
     <div id="fs-body">${(fns[CLI_TAB]||tResumen)(c)}</div>
@@ -740,7 +724,6 @@ function rLista(tipo){
     <td style="color:var(--t3)">${c.obj}kg</td>
     <td><span class="badge ${ri===0?'brj':ri===1?'bam':'bgr'}">${ri===0?'⚠️ Esta sem':ri===1?'Próx.':'S'+c.nextRev}</span></td>
     ${tipo==='uno'?`<td><span class="badge ${c.checkInDone?'bvd':'bam'}">${c.checkInDone?'✅':'⏳'}</span></td>`:''}
-    <td><span class="badge ${c.planPublicado?'bvd':'bgr'}">${c.planPublicado?'Publicado':'Borrador'}</span></td>
   </tr>`;}).join('')}
   </tbody></table></div>`;
 }

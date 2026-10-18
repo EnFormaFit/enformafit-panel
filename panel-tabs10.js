@@ -189,10 +189,6 @@ function tResumen(c){
       ${c.intolerancias?`<div style="background:var(--rj2);border-left:3px solid var(--rj);border-radius:0 8px 8px 0;padding:9px 12px;font-size:12.5px;margin-bottom:8px">⚠️ <b>Intolerancias:</b> ${c.intolerancias}</div>`:''}
       ${c.comentario?`<div style="background:var(--bg);border-left:3px solid var(--az2);border-radius:0 8px 8px 0;padding:9px 12px;font-size:12px;color:var(--t2);margin-bottom:8px;font-style:italic">"${c.comentario}"</div>`:''}
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
-        <button class="btn ${c.planPublicado?'bo':'bp'}" onclick="togglePublicar('${c.id}')">
-          ${c.planPublicado?'⬇️ Despublicar':'🚀 Publicar al cliente'}
-        </button>
-
       </div>
     </div>
   </div>`;
@@ -223,10 +219,6 @@ function registrarCambio(cliId, descripcion){
   if(API_TOKEN)apiCall('POST','/api/clientes/'+cliId+'/cambio',{descripcion}).catch(()=>{});
 }
 
-function togglePublicar(id){
-  // Delegate to panel-core7's async version that uses the correct endpoint
-  togglePublicarAPI(id);
-}
 
 // ═══ TAB: CHECK-IN ═══
 function tCheckin(c){
