@@ -231,7 +231,13 @@ function tCheckin(c){
         // Ordenar por semana_inicio desc para que el más reciente sea [0]
         var sorted=rows.slice().sort(function(a,b){return new Date(b.semana_inicio)-new Date(a.semana_inicio);});
         c.checkIn=sorted[0];
-        c.checkInDone=true;
+        // Solo marcar checkInDone=true si el check-in más reciente es de esta semana
+        // (semana_inicio + 7 días debe caer entre hace 6 días y mañana)
+        var _hoy=new Date();_hoy.setHours(0,0,0,0);
+        var _siDate=new Date(sorted[0].semana_inicio);
+        _siDate.setDate(_siDate.getDate()+7);
+        var _diffDias=Math.round((_hoy-_siDate)/(1000*60*60*24));
+        c.checkInDone=(_diffDias>=-1&&_diffDias<=6);
         var ne=c.diasSemana||4;
         var total=0;
         rows.forEach(function(r){
