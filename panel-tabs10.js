@@ -700,11 +700,12 @@ function renderMedidasTable(medidas,cliId){
   if(!medidas||typeof medidas!=='object')return'';
   // Canonical order with all key format mappings
   var CANONICAL=[
-    {label:'Hombros',     keys:['hombros','hombros (zona más amplia)','hombros (zona mas amplia)','hombros']},
+    {label:'Hombros',     keys:['hombros','hombros (zona más amplia)','hombros (zona mas amplia)']},
     {label:'Pecho',       keys:['pecho','pecho (altura de pezones)']},
-    {label:'Brazo izq.',  keys:['brazoi','brazo izquierdo (zona más amplia)','brazo izquierdo (zona mas amplia)','brazo izq.']},
-    {label:'Brazo dcho.', keys:['brazod','brazo derecho (zona más amplia)','brazo derecho (zona mas amplia)','brazo dcho.']},
-    {label:'Cintura ombligo', keys:['cintura','abdomen (altura del ombligo)','cintura ombligo']},
+    {label:'Cadera',      keys:['cadera']},
+    {label:'Bíceps izq.', keys:['brazoi','bicepsi','brazo izquierdo (zona más amplia)','brazo izquierdo (zona mas amplia)','brazo izq.','bíceps izq.','biceps izq.']},
+    {label:'Bíceps dcho.',keys:['brazod','bicepsd','brazo derecho (zona más amplia)','brazo derecho (zona mas amplia)','brazo dcho.','bíceps dcho.','biceps dcho.']},
+    {label:'Cintura',     keys:['cintura','abdomen (altura del ombligo)','cintura ombligo']},
     {label:'Muslo izq.',  keys:['musloi','muslo izquierdo (zona más amplia)','muslo izquierdo (zona mas amplia)','muslo izq.']},
     {label:'Muslo dcho.', keys:['muslod','muslo derecho (zona más amplia)','muslo derecho (zona mas amplia)','muslo dcho.']},
     {label:'Gemelo izq.', keys:['gemeloi','gemelo_i','gemelo izq.']},
