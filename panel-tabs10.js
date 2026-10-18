@@ -721,7 +721,10 @@ function renderMedidasTable(medidas,cliId){
   CANONICAL.forEach(function(c){
     var found=null;
     Object.keys(medidas).forEach(function(k){
-      if(c.keys.indexOf(k.toLowerCase())>=0)found=k;
+      if(c.keys.indexOf(k.toLowerCase())>=0){
+        // Prefer the key with more data points
+        if(!found||Object.keys(medidas[k]||{}).length>Object.keys(medidas[found]||{}).length)found=k;
+      }
     });
     mf[c.label]=found?medidas[found]:{};
   });
