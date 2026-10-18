@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>EnFormaFit Panel</title>
 <link rel="stylesheet" href="panel.css">
 <style>#main-shell{visibility:hidden}</style>
@@ -95,6 +98,27 @@
 <script src="panel-core7.js?v=1792350000"></script>
 <script src="panel-tabs10.js?v=1792350000"></script>
 <script src="panel-rutinas3.js?v=1789735556"></script>
+<!-- auto-update: comprueba versión del servidor y recarga si hay deploy nuevo -->
+<script>
+(function(){
+  var BUILD='1792350000';
+  var CHECKED_KEY='ef_panel_ver_check';
+  var last=sessionStorage.getItem(CHECKED_KEY);
+  if(last===BUILD) return;
+  sessionStorage.setItem(CHECKED_KEY,BUILD);
+  try{
+    fetch('https://enformafit-backend-production.up.railway.app/api/version?_='+Date.now(),{cache:'no-store'})
+      .then(function(r){return r.json();})
+      .then(function(d){
+        if(d&&d.v&&d.v!==BUILD){
+          var newUrl=window.location.pathname+'?bust='+d.v;
+          window.location.replace(newUrl);
+        }
+      })
+      .catch(function(){});
+  }catch(e){}
+})();
+</script>
 
 </div>
 
