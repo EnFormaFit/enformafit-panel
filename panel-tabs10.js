@@ -240,7 +240,7 @@ function tCheckin(c){
         else{_lunesRef.setDate(_hoy.getDate()-(_dia-1));}
         var _semanaInicioActual=new Date(_lunesRef);
         _semanaInicioActual.setDate(_lunesRef.getDate()-7);
-        var _siActualStr=_semanaInicioActual.toISOString().split('T')[0];
+        var _siActualStr=_semanaInicioActual.getFullYear()+'-'+String(_semanaInicioActual.getMonth()+1).padStart(2,'0')+'-'+String(_semanaInicioActual.getDate()).padStart(2,'0');
         var _siClienteStr=(sorted[0].semana_inicio||'').substring(0,10);
         c.checkInDone=(_siClienteStr===_siActualStr);
         var ne=c.diasSemana||4;
