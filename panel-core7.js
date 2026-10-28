@@ -246,6 +246,7 @@ async function loadClientesFromAPI(){
         rutinaDias,
         rutinaSemanas,
         alimentos,
+        estado:r.estado||'activo',
       };
     });
 
