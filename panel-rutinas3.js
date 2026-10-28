@@ -761,6 +761,7 @@ async function guardarEditar(id){
   if(c.nivel!==undefined)patch.nivel=c.nivel;
   if(c.rutina!==undefined)patch.rutina_actual=c.rutina;
   if(c.pasosObj!==undefined&&c.pasosObj!==null)patch.pasos_objetivo=parseInt(c.pasosObj)||0;
+  if(c.diasSemana!==undefined&&c.diasSemana!==null)patch.dias_entreno=parseInt(c.diasSemana)||3;
   if(c.obj!==undefined&&c.obj!==null)patch.objetivo_kg=parseFloat(c.obj);
   if(c.pesoIni!==undefined&&c.pesoIni!==null&&c.pesoIni!=='')patch.peso_inicial=parseFloat(c.pesoIni);
   if(c.fechaNac)patch.fecha_nacimiento=c.fechaNac;
