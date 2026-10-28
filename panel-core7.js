@@ -358,8 +358,9 @@ const adhCol=a=>a>=.8?'var(--vd)':a>=.6?'var(--am)':'var(--rj)';
 const adhDot=a=>a>=.8?'dvd':a>=.6?'dam':'drj';
 const adhBadge=a=>a>=.8?'bvd':a>=.6?'bam':'brj';
 const revSems=t=>t==='programa'?[4,8,12]:[3,7,11];
-const uno=()=>C.filter(c=>c.tipo==='uno');
-const prog=()=>C.filter(c=>c.tipo==='programa');
+const uno=()=>C.filter(c=>c.tipo==='uno'&&c.estado!=='baja');
+const prog=()=>C.filter(c=>c.tipo==='programa'&&c.estado!=='baja');
+const baja=()=>C.filter(c=>c.estado==='baja');
 const byId=id=>C.find(c=>String(c.id)===String(id));
 const ciIdx=c=>C.indexOf(c);
 
@@ -379,10 +380,11 @@ function updateBadges(){
   set('sn-revp',p.filter(c=>c.semana===c.nextRev).length);
   set('sn-alp',p.filter(c=>c.diasSinPeso>7||c.adh<0.6).length);
   set('sn-uno',u.length);set('sn-prog',p.length);
+  set('sn-baja',baja().length);
 }
 
 // ═══ NAV ═══
-const TITLES={ci:'Check-ins semana',bd:'Base de datos — Rutinas y Ejercicios',rev1:'Revisiones 1:1',al1:'Alertas 1:1',uno:'Clientes 1:1',revp:'Revisiones programa',alp:'Alertas programa',prog:'Clientes programa',rut:'Editor rutinas',log:'Lógicas del plan',nuevo:'Nuevo cliente'};
+const TITLES={ci:'Check-ins semana',bd:'Base de datos — Rutinas y Ejercicios',rev1:'Revisiones 1:1',al1:'Alertas 1:1',uno:'Clientes 1:1',revp:'Revisiones programa',alp:'Alertas programa',prog:'Clientes programa',baja:'Clientes de baja',rut:'Editor rutinas',log:'Lógicas del plan',nuevo:'Nuevo cliente'};
 
 function nav(s){
   SEC=s;SEARCH='';VIEW='list';CLI_ID=null;EDITING=false;
@@ -396,7 +398,7 @@ function nav(s){
 function render(){
   const ct=document.getElementById('ct');
   if(VIEW==='client'&&CLI_ID){renderClient(ct);return;}
-  const map={ci:rCI,rev1:()=>rRevs('uno'),al1:()=>rAlertas('uno'),uno:()=>rLista('uno'),revp:()=>rRevs('prog'),alp:()=>rAlertas('prog'),prog:()=>rLista('prog'),rut:rRutinas,log:rLogicas,nuevo:rNuevo,bd:renderBD};
+  const map={ci:rCI,rev1:()=>rRevs('uno'),al1:()=>rAlertas('uno'),uno:()=>rLista('uno'),revp:()=>rRevs('prog'),alp:()=>rAlertas('prog'),prog:()=>rLista('prog'),baja:rListaBaja,rut:rRutinas,log:rLogicas,nuevo:rNuevo,bd:renderBD};
   ct.innerHTML=(map[SEC]||rCI)();
 }
 
@@ -732,6 +734,26 @@ function rLista(tipo){
   </tbody></table></div>`;
 }
 
+
+function rListaBaja(){
+  let clis=baja();
+  if(SEARCH)clis=clis.filter(c=>c.nom.toLowerCase().includes(SEARCH)||c.lesiones?.toLowerCase().includes(SEARCH));
+  if(!clis.length)return`<div class="card"><div class="cb" style="text-align:center;color:var(--t3);padding:30px">${SEARCH?`Sin resultados para "${SEARCH}"`:' No hay clientes de baja'}</div></div>`;
+  return`<div class="card">
+  <table class="tbl"><thead><tr>
+    <th>Cliente</th><th>Tipo</th><th>Semana</th><th>Último bloque</th>
+  </tr></thead><tbody>
+  ${clis.map(c=>`<tr onclick="openC('${c.id}','resumen')" style="opacity:0.7">
+    <td><div style="display:flex;align-items:center;gap:8px">
+      <div class="av" style="background:${gc(ciIdx(c))}">${c.init}</div>
+      <div style="font-weight:600">${c.nom}</div>
+    </div></td>
+    <td><span style="color:var(--t3);font-size:12px">${c.tipo==='uno'?'1:1 Coaching':'Programa'}</span></td>
+    <td><span class="badge baz" style="opacity:0.6">S${c.semana}/${c.semTotal}</span></td>
+    <td><span style="color:var(--t3);font-size:12px">Bloque ${c.bloque||1}</span></td>
+  </tr>`).join('')}
+  </tbody></table></div>`;
+}
 
 async function abrirAppCliente(clienteId){
   try{
