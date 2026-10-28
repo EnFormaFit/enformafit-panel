@@ -39,7 +39,15 @@ function tFormulario(c){
     <div style="margin:0 -16px 0;padding:8px 16px;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:12px 12px 0 0;font-weight:700;font-size:12px;color:#fff;letter-spacing:.5px;text-transform:uppercase">👤 Datos personales</div>`;
   h+=row('Nombre',c.nom);
   h+=row('Email',c.email);
-  h+=row('Tipo de plan',es1a1?'1:1 Coaching':'Programa');
+  h+=`<div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid rgba(0,0,0,.06);align-items:center">
+    <div style="min-width:180px;max-width:180px;font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.4px;padding-top:2px">Tipo de plan</div>
+    <div style="flex:1;display:flex;align-items:center;gap:10px">
+      <span style="font-size:14px;color:#1a1a1a">${es1a1?'1:1 Coaching':'Programa'}</span>
+      <button onclick="cambiarTipoPlan('${c.id}','${c.tipo}')" style="font-size:11px;padding:3px 10px;border-radius:6px;border:1px solid #667eea;color:#667eea;background:#f0f2ff;cursor:pointer;font-weight:600">
+        Cambiar a ${es1a1?'Programa':'1:1'}
+      </button>
+    </div>
+  </div>`;
   h+=row('Teléfono',n.telefono);
   h+=row('Fecha nacimiento',(c.fechaNac||c.dob)?(()=>{const d=c.fechaNac?new Date(c.fechaNac):new Date(c.dob);return isNaN(d)?'':(d.toLocaleDateString('es')+' ('+Math.floor((Date.now()-d)/(365.25*24*3600*1000))+' años)');})():'');
   h+=row('Peso actual',c.pesoIni?c.pesoIni+' kg':'');
@@ -1652,4 +1660,23 @@ function fixCheckinFechas(clienteId){
     window._ciSemanaLoaded=false;
     setTab('checkin');
   }).catch(function(e){toast('Error: '+e.message,'rj');});
+}
+
+async function cambiarTipoPlan(cliId, tipoActual){
+  const es1a1 = tipoActual==='uno'||tipoActual==='1a1';
+  const nuevoTipo = es1a1 ? 'programa' : '1a1';
+  const nuevoNom = es1a1 ? 'Programa' : '1:1 Coaching';
+  const actualNom = es1a1 ? '1:1 Coaching' : 'Programa';
+  if(!confirm(`¿Cambiar a este cliente de "${actualNom}" a "${nuevoNom}"?\n\nEsto actualiza las semanas de revisión automáticamente.`)) return;
+  try {
+    const nuevasSemanas = nuevoTipo==='programa' ? [4,8,12] : [3,7,11];
+    await apiCall('PATCH',`/api/clientes/${cliId}`,{tipo: nuevoTipo, semanas_revision: nuevasSemanas});
+    toast('Plan cambiado a '+nuevoNom+' ✓','ok');
+    // Actualizar dato local y reabrir ficha
+    const c = byId(cliId);
+    if(c) c.tipo = nuevoTipo;
+    openC(cliId, 'formulario');
+  } catch(e) {
+    toast('Error: '+e.message,'rj');
+  }
 }
