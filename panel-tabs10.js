@@ -285,11 +285,10 @@ function tCheckin(c){
   var adhMedia=c.adhMedia||adh;
   var adhMediaCol=adhMedia>=80?'var(--vd)':adhMedia>=50?'var(--nr)':'var(--rj)';
   var nSems=(c.checkIns||[]).length;
-  // Fecha display: semana_inicio + 7 días = lunes de la semana real (BD guarda lunesRef-7)
+  // Fecha display: semana_inicio ES ya el lunes de la semana (dom→próximo lunes, lun-sáb→lunes actual)
   var _ciDate=ci.semana_inicio?new Date(ci.semana_inicio):null;
-  if(_ciDate)_ciDate.setDate(_ciDate.getDate()+7);
   var ciLabel=_ciDate?('sem '+_ciDate.toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit'})):'';
-  // Determinar si es de esta semana usando la misma lógica que lunesRef
+  // Determinar si es de esta semana: misma lógica que backend (dom→+1, lun-sáb→lunes actual)
   var _esEstaSemana=false;
   if(ci.semana_inicio){
     var _hoy2=new Date();
@@ -297,8 +296,7 @@ function tCheckin(c){
     var _lRef=new Date(_hoy2);
     if(_dia2===0){_lRef.setDate(_hoy2.getDate()+1);}
     else{_lRef.setDate(_hoy2.getDate()-(_dia2-1));}
-    var _siAct=new Date(_lRef);_siAct.setDate(_lRef.getDate()-7);
-    var _siActStr=_siAct.getFullYear()+'-'+String(_siAct.getMonth()+1).padStart(2,'0')+'-'+String(_siAct.getDate()).padStart(2,'0');
+    var _siActStr=_lRef.getFullYear()+'-'+String(_lRef.getMonth()+1).padStart(2,'0')+'-'+String(_lRef.getDate()).padStart(2,'0');
     _esEstaSemana=(ci.semana_inicio||'').substring(0,10)===_siActStr;
   }
   var ciHeaderLabel=_esEstaSemana?'ESTA SEMANA':'ÚLTIMO CHECK-IN';
