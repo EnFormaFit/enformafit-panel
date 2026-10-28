@@ -127,6 +127,7 @@ async function loadClientesFromAPI(){
     const rows=await apiCall('GET','/api/clientes'+(ROL==='ceo'?'?ceo=1':''));
     console.log('[API] Respuesta BD:',rows?.length,'clientes');
     if(!rows||!rows.length)return;
+    console.log('[API] estados clientes:',rows.map(r=>r.nombre+':'+r.estado));
 
     const mapped=rows.map(r=>{
       const nom=r.nombre||'';
