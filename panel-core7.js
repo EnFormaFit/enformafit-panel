@@ -124,7 +124,7 @@ async function doLogin(){
 async function loadClientesFromAPI(){
   console.log('[API] Cargando clientes desde BD...');
   try{
-    const rows=await apiCall('GET','/api/clientes'+(ROL==='ceo'?'?ceo=1':''));
+    const rows=await apiCall('GET','/api/clientes'+(ROL==='ceo'?'?ceo=1&todos=1':'?todos=1'));
     console.log('[API] Respuesta BD:',rows?.length,'clientes');
     if(!rows||!rows.length)return;
     console.log('[API] estados clientes:',rows.map(r=>r.nombre+':'+r.estado));
