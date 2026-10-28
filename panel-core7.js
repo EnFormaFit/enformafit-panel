@@ -517,6 +517,10 @@ function renderClient(ct){
       </div>
       ${c.lesiones?`<div class="badge bam" style="flex-shrink:0;max-width:180px;overflow:hidden;text-overflow:ellipsis">🩹 ${c.lesiones.split(',')[0]}</div>`:''}
       ${checkBirthday(c)?'<div style="font-size:22px" title="¡Hoy es su cumpleaños!">🎂</div>':''}
+      ${c.estado==='baja'
+        ?`<button onclick="reactivarCliente('${c.id}')" style="font-size:11px;padding:3px 9px;border-radius:6px;border:1px solid #16a34a;color:#16a34a;background:#f0fdf4;cursor:pointer;font-weight:600;flex-shrink:0">✅ Reactivar</button>`
+        :`<button onclick="darDeBaja('${c.id}')" style="font-size:11px;padding:3px 9px;border-radius:6px;border:1px solid #dc2626;color:#dc2626;background:#fef2f2;cursor:pointer;font-weight:600;flex-shrink:0">🚫 Dar de baja</button>`
+      }
     </div>
     <div class="fs-tabs">${tabsH}</div>
     <div id="fs-body">${(fns[CLI_TAB]||tResumen)(c)}</div>
@@ -1057,4 +1061,26 @@ function bdAsignarRutina(codigo){
     c.rutinaCod=codigo;
     toast('Rutina asignada ✓','vd');
   }).catch(e=>toast('Error: '+e.message,'rj'));
+}
+
+async function darDeBaja(cliId){
+  const c=byId(cliId);if(!c)return;
+  if(!confirm(`¿Dar de baja a ${c.nom}?\n\nEl cliente dejará de tener acceso a la app.`))return;
+  try{
+    await apiCall('PATCH',`/api/clientes/${cliId}`,{estado:'baja'});
+    c.estado='baja';
+    toast(c.nom+' dado de baja ✓','ok');
+    render();
+  }catch(e){toast('Error: '+e.message,'rj');}
+}
+
+async function reactivarCliente(cliId){
+  const c=byId(cliId);if(!c)return;
+  if(!confirm(`¿Reactivar a ${c.nom}?`))return;
+  try{
+    await apiCall('PATCH',`/api/clientes/${cliId}`,{estado:'activo'});
+    c.estado='activo';
+    toast(c.nom+' reactivado ✓','ok');
+    render();
+  }catch(e){toast('Error: '+e.message,'rj');}
 }
