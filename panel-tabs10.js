@@ -240,15 +240,13 @@ function tCheckin(c){
         var sorted=rows.slice().sort(function(a,b){return new Date(b.semana_inicio)-new Date(a.semana_inicio);});
         c.checkIn=sorted[0];
         // Solo marcar checkInDone=true si el check-in más reciente es de la semana actual
-        // semana_inicio actual = lunesRef - 7, donde lunesRef = próximo lunes si hoy es domingo, lunes de esta semana si lun-sab
+        // REGLA: dom→próx lunes (+1), lun→mismo (0), mar-sáb→lunes anterior
         var _hoy=new Date();
-        var _dia=_hoy.getDay(); // 0=dom,1=lun,...,6=sab
-        var _lunesRef=new Date(_hoy);
-        if(_dia===0){_lunesRef.setDate(_hoy.getDate()+1);}
-        else{_lunesRef.setDate(_hoy.getDate()-(_dia-1));}
-        var _semanaInicioActual=new Date(_lunesRef);
-        _semanaInicioActual.setDate(_lunesRef.getDate()-7);
-        var _siActualStr=_semanaInicioActual.getFullYear()+'-'+String(_semanaInicioActual.getMonth()+1).padStart(2,'0')+'-'+String(_semanaInicioActual.getDate()).padStart(2,'0');
+        var _dow=_hoy.getUTCDay();
+        var _offsetLunes=_dow===0?1:1-_dow;
+        var _lunes=new Date(_hoy);
+        _lunes.setUTCDate(_hoy.getUTCDate()+_offsetLunes);
+        var _siActualStr=_lunes.toISOString().split('T')[0];
         var _siClienteStr=(sorted[0].semana_inicio||'').substring(0,10);
         c.checkInDone=(_siClienteStr===_siActualStr);
         var ne=c.diasSemana||4;
@@ -363,7 +361,7 @@ function tCheckin(c){
       var a=Math.round(Math.min(1,dE/ne)*40+Math.min(1,dN/7)*40+Math.min(1,dP/7)*20);
       var col=a>=80?'var(--vd)':a>=50?'var(--nr)':'var(--rj)';
       var _rDate=r.semana_inicio?new Date(r.semana_inicio):null;
-      if(_rDate)_rDate.setDate(_rDate.getDate()+7);
+      // semana_inicio ES ya el lunes real — no añadir días
       var fecha=_rDate?_rDate.toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit'}):'S?';
       var ok='ci_'+c.id+'_'+i;
       var isOpen=!!window[ok];
