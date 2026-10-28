@@ -658,7 +658,12 @@ function buildPesoGrid(pesoRows,inicioBloque,semanaActual,semTotal){
   var maxSem=semTotal||semanaActual||13; // Show all semanas of the block
   (pesoRows||[]).forEach(function(p){
     var d=new Date(p.f);var sem=1;
-    if(fi){var diff=Math.floor((d-fi)/(7*24*60*60*1000));sem=Math.max(0,diff+1);}
+    if(fi){
+      // REGLA semana_inicio: dom→próximo lunes (+1 día para calcular semana)
+      var dForSem=new Date(d);
+      if(dForSem.getUTCDay()===0)dForSem.setUTCDate(dForSem.getUTCDate()+1);
+      var diff=Math.floor((dForSem-fi)/(7*24*60*60*1000));sem=Math.max(0,diff+1);
+    }
     var dw=d.getDay();var di=dw===0?6:dw-1;
     if(!pm[sem])pm[sem]={};pm[sem][di]=p.v;
   });
