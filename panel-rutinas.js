@@ -324,11 +324,24 @@ function acSel(ei,nom){
   window._acJustSelected[ei] = {nom: ej.nombre, ts: Date.now()};
   const ejes=getRut(RUT_CLI,RUT_SEM,RUT_DIA);
   if(ejes[ei]){
-    ejes[ei].nom=ej.nombre;ejes[ei].sets=parseInt(ej.series)||3;
-    ejes[ei].reps=ej.reps||'8-10';ejes[ei].rir=parseInt(ej.rir)||2;
+    ejes[ei].nom=ej.nombre;
+    ejes[ei].sets=parseInt(ej.sets)||parseInt(ej.series)||3;
+    ejes[ei].reps=ej.reps||'8-10';
+    ejes[ei].rir=parseFloat(ej.rir)!==undefined&&ej.rir!==null?parseFloat(ej.rir):2;
     ejes[ei].url=ej.url||'';
-    const restMap={compound:180,maquina:120,aislamiento:90,abdomen:60,gemelos:60};
-    ejes[ei].rest=restMap[ej.tipo?.toLowerCase()]||90;
+    ejes[ei].acl=ej.aclaraciones||ej.acl||'';
+    // Usar rest de la BD si existe; si no, calcular por grupo muscular
+    if(ej.rest&&parseInt(ej.rest)>0){
+      ejes[ei].rest=parseInt(ej.rest);
+    } else {
+      const g=(ej.grupo_muscular||ej.grupo||'').toLowerCase();
+      const nom=(ej.nombre||'').toLowerCase();
+      const esCompuesto=nom.includes('sentadilla')||nom.includes('peso muerto')||nom.includes('hip thrust')||nom.includes('press banca')||nom.includes('press militar')||nom.includes('dominadas')||nom.includes('remo');
+      const esMaquinaPierna=nom.includes('prensa')||nom.includes('extensi')||nom.includes('curl femoral')||nom.includes('hip thrust máquina');
+      const esAislamiento=g==='bíceps'||g==='tríceps'||g==='hombro'||nom.includes('curl')||nom.includes('extensi')&&!esMaquinaPierna;
+      const esAbdGem=g==='abdomen'||g==='gemelo';
+      ejes[ei].rest=esAbdGem?60:esAislamiento?90:esMaquinaPierna?120:esCompuesto?180:120;
+    }
   }
   acHide(ei);
   // Patch just this row
