@@ -311,12 +311,24 @@ function acSel(ei,nom){
   const ejes=getRut(RUT_CLI,RUT_SEM,RUT_DIA);
   if(ejes[ei]){
     ejes[ei].nom=ej.nombre;
-    ejes[ei].sets=parseInt(ej.sets)||3;
+    // panel-data usa "series" (string), ejercicios_bd usa "sets" — soportar ambos
+    ejes[ei].sets=parseInt(ej.sets)||parseInt(ej.series)||3;
     ejes[ei].reps=ej.reps||'8-10';
-    ejes[ei].rir=parseFloat(ej.rir)||2;
+    ejes[ei].rir=ej.rir!==undefined&&ej.rir!==''?parseFloat(ej.rir):2;
     ejes[ei].url=ej.url||'';
-    ejes[ei].acl=ej.aclaraciones||'';
-    ejes[ei].rest=ej.rest||90;
+    ejes[ei].acl=ej.aclaraciones||ej.acl||'';
+    // Usar rest de la BD si existe y es válido
+    if(ej.rest&&parseInt(ej.rest)>0){
+      ejes[ei].rest=parseInt(ej.rest);
+    } else {
+      const g=(ej.grupo_muscular||ej.grupo||'').toLowerCase();
+      const nom2=(ej.nombre||'').toLowerCase();
+      const esComp=nom2.includes('sentadilla')||nom2.includes('peso muerto')||nom2.includes('hip thrust')||nom2.includes('press banca')||nom2.includes('press militar')||nom2.includes('dominadas')||nom2.includes('remo');
+      const esMaqPierna=nom2.includes('prensa')||nom2.includes('extensi')&&nom2.includes('pierna')||nom2.includes('curl femoral');
+      const esAisl=g==='bíceps'||g==='tríceps'||g==='hombro'||nom2.includes('curl bíceps')||nom2.includes('extensi tríceps')||nom2.includes('elevaciones');
+      const esAbdGem=g==='abdomen'||g==='gemelo';
+      ejes[ei].rest=esAbdGem?60:esAisl?90:esMaqPierna?120:esComp?180:120;
+    }
   }
   acHide(ei);
   // Patch just this row
