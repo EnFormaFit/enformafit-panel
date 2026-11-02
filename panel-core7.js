@@ -138,8 +138,18 @@ async function loadClientesFromAPI(){
       // Semanas revision
       const defaultRev=(r.tipo==='uno'||r.tipo==='1a1')?[3,7,11]:[4,8,12];
       const semRev=Array.isArray(r.semanas_revision)?r.semanas_revision:defaultRev;
-      const semana=parseInt(r.semana_actual)||0;
-      const nextRev=semRev.find(s=>s>=semana)||semRev[semRev.length-1];
+      // Calcular semana real desde bloque_inicio (igual que abajo en el objeto)
+      // para que nextRev use la semana actual real, no un valor desactualizado de BD
+      const semanaReal=(function(){
+        if(r.bloque_inicio){
+          const inicio=new Date(r.bloque_inicio);
+          const hoy=new Date();
+          const dias=Math.floor((hoy-inicio)/(1000*60*60*24));
+          return Math.max(0, Math.floor(dias/7)+1);
+        }
+        return parseInt(r.semana_actual)||0;
+      })();
+      const nextRev=semRev.find(s=>s>=semanaReal)||semRev[semRev.length-1];
       
       // Pesos from historial
       const pesoAct=parseFloat(r.peso_actual||r.peso_inicial)||80;
@@ -152,14 +162,14 @@ async function loadClientesFromAPI(){
       const grasa=parseInt(r.grasas_g)||60;
       
       // Rutina dias and objetivo_kg from notas_entrenador JSON
-      let rutinaDias={}, rutinaSemanas={}, objetivoKg=null, semanaActual=semana, entrenadorAsignado='alvaro';
+      let rutinaDias={}, rutinaSemanas={}, objetivoKg=null, semanaActual=semanaReal, entrenadorAsignado='alvaro';
       try{
         if(r.notas_entrenador){
           const notas=JSON.parse(r.notas_entrenador);
           rutinaDias=notas.rutina_base||notas.rutina_dias||{};
           rutinaSemanas=notas.rutina_semanas||{};
           objetivoKg=notas.objetivo_kg||null;
-          semanaActual=notas.semana_actual||semana;
+          semanaActual=notas.semana_actual||semanaReal;
           entrenadorAsignado=r.entrenador_id||notas.entrenador||'alvaro';
           if(notas.pasos_objetivo)r.pasos_obj=parseInt(notas.pasos_objetivo)||8000;
           if(notas.pasos_objetivo)r.pasos_obj=parseInt(notas.pasos_objetivo)||8000;
@@ -202,16 +212,7 @@ async function loadClientesFromAPI(){
         pesoAct,
         obj:r.objetivo_kg?Math.round(parseFloat(r.objetivo_kg)*10)/10:(objetivoKg?Math.round(objetivoKg*10)/10:Math.round(pesoIni*0.9*10)/10),
         altura:parseInt(r.altura)||175,
-        semana:(function(){
-          // Calculate current week from bloque_inicio
-          if(r.bloque_inicio){
-            const inicio=new Date(r.bloque_inicio);
-            const hoy=new Date();
-            const dias=Math.floor((hoy-inicio)/(1000*60*60*24));
-            return Math.max(0, Math.floor(dias/7)+1);
-          }
-          return semanaActual;
-        })(),
+        semana:semanaReal,
         semTotal:parseInt(r.semanas_bloque)||13,
         nextRev,
         diasSemana:parseInt(r.dias_entreno)||4,
@@ -278,6 +279,9 @@ async function loadClientesFromAPI(){
     // Reload check-ins now that C is populated (may have run before clients loaded)
     window._ciSemanaLoaded=false;
     loadCISemanaActual();
+    // Cargar revisiones enviadas para marcar revDone
+    window._revLoaded=false;
+    loadRevisionesPendientes();
   }catch(e){
     console.error('[API] Error cargando clientes:',e.message,e);
     toast('Error cargando clientes: '+e.message,'rj');
@@ -601,6 +605,27 @@ function loadCISemanaActual(){
   }).catch(function(){window._ciSemanaLoading=false;render();});
 }
 
+function loadRevisionesPendientes(){
+  if(window._revLoading)return;
+  window._revLoading=true;
+  window._revLoaded=false;
+  apiCall('GET','/api/entreno/revisiones/pendientes').then(function(rows){
+    window._revLoading=false;
+    window._revLoaded=true;
+    if(!rows||!rows.length){render();return;}
+    // Marcar clientes que ya enviaron revisión (estado='subida' = pendiente de feedback)
+    rows.forEach(function(r){
+      const c=byId(r.cliente_id);
+      if(c){c.revDone=true;c.revision=r;}
+    });
+    // Actualizar badge sn-revp
+    var p=prog();
+    var sn=document.getElementById('sn-revp');
+    if(sn)sn.textContent=p.filter(function(c){return c.semana===c.nextRev;}).length;
+    if(typeof render==='function')render();
+  }).catch(function(){window._revLoading=false;render();});
+}
+
 function rCI(){
   // Load this week's checkins once per session
   if(!window._ciSemanaLoaded&&!window._ciSemanaLoading){
@@ -648,6 +673,8 @@ function rCI(){
 
 // ═══ REVISIONES ═══
 function rRevs(tipo){
+  // Cargar estado de revisiones si aún no se ha hecho
+  if(!window._revLoaded&&!window._revLoading)loadRevisionesPendientes();
   const clis=tipo==='uno'?uno():prog();
   const conRev=clis.filter(c=>c.semana===c.nextRev);
   const env=conRev.filter(c=>c.revDone),pend=conRev.filter(c=>!c.revDone);
