@@ -330,13 +330,27 @@ function toast(msg,t=''){
   clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),2600);
 }
 
+// ═══ FOTOS B64 PENDIENTES (Cloudinary falló) ═══
+var FOTOS_B64_PENDIENTES=[];
+async function loadFotosB64Pendientes(){
+  try{
+    const data=await apiCall('GET','/api/clientes/fotos-b64-pendientes');
+    FOTOS_B64_PENDIENTES=Array.isArray(data)?data:[];
+    updateBadges();
+  }catch(e){
+    console.warn('[Panel] No se pudieron cargar fotos b64 pendientes:',e.message);
+  }
+}
+
 // ═══ BADGES ═══
 function updateBadges(){
   const u=uno(),p=prog();
   const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
   set('sn-ci',u.filter(c=>!c.checkInDone).length);
   set('sn-rev1',u.filter(c=>c.semana===c.nextRev).length);
-  set('sn-al1',u.filter(c=>c.diasSinPeso>7||c.adh<0.6).length);
+  // Alertas incluyen fotos b64 pendientes (Cloudinary falló)
+  const fotosPend=FOTOS_B64_PENDIENTES.length;
+  set('sn-al1',u.filter(c=>c.diasSinPeso>7||c.adh<0.6).length+(fotosPend>0?1:0));
   set('sn-revp',p.filter(c=>c.semana===c.nextRev).length);
   set('sn-alp',p.filter(c=>c.diasSinPeso>7||c.adh<0.6).length);
   set('sn-uno',u.length);set('sn-prog',p.length);
@@ -590,7 +604,30 @@ function rAlertas(tipo){
     <span style="font-size:12px;color:var(--az2);font-weight:600">Ver →</span>
   </div>`;
   const empty=`<div style="padding:14px;font-size:13px;color:var(--t3)">✅ Sin alertas</div>`;
+
+  // Bloque fotos en base64 (Cloudinary falló al subir)
+  const fotosB64Html=FOTOS_B64_PENDIENTES.length?`
+  <div class="card"><div class="ch" style="background:#fff3cd"><h2 style="color:#856404">📸 Fotos NO subidas a Cloudinary (${FOTOS_B64_PENDIENTES.length} revisiones)</h2></div>
+    <div style="padding:10px 14px;font-size:12.5px;color:var(--t2);background:#fffbeb;border-bottom:1px solid #fde68a">
+      ⚠️ Estas fotos están guardadas temporalmente en la base de datos como texto, pero <b>no están en Cloudinary</b>.
+      Arregla las variables de Cloudinary en Railway y luego migra estas fotos.
+    </div>
+    ${FOTOS_B64_PENDIENTES.map(r=>{
+      const cli=byId(r.cliente_id)||{nom:r.cliente_nombre||r.cliente_id,init:'?'};
+      const fecha=r.fecha?new Date(r.fecha).toLocaleDateString('es-ES',{day:'2-digit',month:'short'}):'';
+      return`<div class="arow" style="cursor:default">
+        <div class="av" style="background:#f59e0b;width:26px;height:26px;font-size:11px">${cli.init||'?'}</div>
+        <div style="flex:1"><b>${r.cliente_nombre||cli.nom}</b> <span style="color:var(--t3);font-size:11.5px">— S${r.semana} · ${fecha} · ${r.fotos_b64} foto${r.fotos_b64>1?'s':''}</span></div>
+        <span onclick="openC('${r.cliente_id}','revisiones')" style="font-size:12px;color:var(--az2);font-weight:600;cursor:pointer">Ver →</span>
+      </div>`;
+    }).join('')}
+  </div>`:tipo==='uno'?`
+  <div class="card"><div class="ch" style="background:#d1fae5"><h2 style="color:#065f46">📸 Fotos en Cloudinary</h2></div>
+    <div style="padding:14px;font-size:13px;color:var(--t3)">✅ Todas las fotos se subieron a Cloudinary correctamente</div>
+  </div>`:'';
+
   return`
+  ${tipo==='uno'?fotosB64Html:''}
   <div class="card"><div class="ch" style="background:var(--rj2)"><h2 style="color:var(--rj)">⚠️ Sin pesar +7 días — ${lbl}</h2></div>
     ${sinPeso.length?sinPeso.map(c=>rowFn(c,`— ${c.diasSinPeso} días sin registrar peso`)).join(''):empty}
   </div>
@@ -2654,6 +2691,8 @@ window.addEventListener('DOMContentLoaded',async()=>{
     // Then load real data from BD
     try{
       await loadClientesFromAPI();
+      // Cargar fotos b64 pendientes (Cloudinary falló) en paralelo
+      loadFotosB64Pendientes();
       // Restore last open client and tab
       try{
         const savedCli=localStorage.getItem('ef_cli');
