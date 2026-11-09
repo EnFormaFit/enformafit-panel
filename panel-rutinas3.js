@@ -636,6 +636,15 @@ function borrarCliente(id, nom){
   }).catch(function(e){toast('Error: '+e.message,'rj');});
 }
 
+async function irAEntrenoPendiente(cliId){
+  // Desde la tab editar, ir directamente a ver/editar la rutina del bloque pendiente
+  window.RUT_BLOQUE_PENDIENTE = true;
+  window._editandoPendiente = null;
+  setTab('entreno');
+  // Una vez en la tab entreno, cargar automáticamente la rutina pendiente
+  setTimeout(function(){ verBloquePendiente(cliId); }, 100);
+}
+
 async function confirmarNuevoBloque(id, nom, bloqueActual){
   // Pedir fecha de inicio del nuevo bloque
   const hoy = new Date();
@@ -755,8 +764,9 @@ function tEditar(c){
         Bloque actual: <strong>B${c.bloque||1}</strong> · Semana <strong>${c.semana||1}</strong>
         ${c.inicioBloque?` · Inicio <strong>${c.inicioBloque.split('-').reverse().join('/')}</strong>`:''}
       </div>
-      ${c.bloquePendienteFecha?`<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:#166534">
-        📦 Bloque <strong>B${c.bloquePendienteNum||((c.bloque||1)+1)}</strong> en recámara — se activa el <strong>${c.bloquePendienteFecha.split('T')[0].split('-').reverse().join('/')}</strong>
+      ${c.bloquePendienteFecha?`<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:#166534;display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <div>📦 Bloque <strong>B${c.bloquePendienteNum||((c.bloque||1)+1)}</strong> en recámara — se activa el <strong>${c.bloquePendienteFecha.split('T')[0].split('-').reverse().join('/')}</strong></div>
+        <button onclick="irAEntrenoPendiente('${c.id}')" style="background:#166534;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit;white-space:nowrap">✏️ Ver / editar rutina</button>
       </div>`:''}
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         <button class="btn" style="background:#f0fdf4;color:#166534;border:1.5px solid #bbf7d0;font-weight:600;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-family:inherit"
