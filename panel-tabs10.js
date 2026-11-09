@@ -1663,6 +1663,11 @@ function tEntrenoGrid(c){
     const s=i+1,isRev=rs.includes(s),isCur=s===c.semana;
     return`<button class="sem-btn${s===RUT_SEM?' on':''}${isRev&&s!==RUT_SEM?' rev':''}${isCur?' cur':''}" onclick="RUT_SEM=${s};setTab('entreno')">S${s}${isRev?'📋':''}${isCur?' 📍':''}</button>`;
   }).join('');
+  const bannerPendiente=c.bloquePendienteFecha?`<div style="display:flex;align-items:center;justify-content:space-between;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px 12px;margin-bottom:12px;gap:8px">
+    <div style="font-size:12px;color:#166534">📦 <strong>B${c.bloquePendienteNum||((c.bloque||1)+1)}</strong> en recámara — se activa el <strong>${c.bloquePendienteFecha.split('T')[0].split('-').reverse().join('/')}</strong></div>
+    <button onclick="verBloquePendiente('${c.id}')" style="background:#166534;color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:11px;cursor:pointer;font-family:inherit;white-space:nowrap">Ver / editar</button>
+  </div>`:'';
+
 
   // Derive training days from RUTINAS for this specific semana
   // so that different semanas can have different day structures
@@ -1722,6 +1727,7 @@ function tEntrenoGrid(c){
   </div>`:'';
 
   return`
+  ${bannerPendiente}
   <div class="card" style="margin-bottom:10px">
     <div class="ch"><h2>📅 Semanas</h2></div>
     <div class="cb" style="padding:10px 14px"><div class="sem-strip">${semH}</div></div>
