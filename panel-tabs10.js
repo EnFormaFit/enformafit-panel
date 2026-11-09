@@ -1398,18 +1398,108 @@ function nutReset(cliId){
 
 // ═══ TAB: ENTRENO — grid semanal + editor ═══
 function tEntreno(c){
-  RUT_CLI=c.id;
+  // Si estamos editando el bloque pendiente, NO sobrescribir RUT_CLI (ya tiene la clave __pend_)
+  if(!window._editandoPendiente){
+    RUT_CLI=c.id;
+  }
+  // Si hay bloque pendiente en modo preview, mostrar su rutina
+  if(window.RUT_BLOQUE_PENDIENTE&&!window._editandoPendiente){
+    return tEntrenoPendiente(c);
+  }
   if(ENT_VIEW==='editor'){
+    const esPendiente=!!window._editandoPendiente;
+    const botonVolver=esPendiente
+      ?`<button class="btn bo bs" onclick="salirEditorPendiente('${c.id}')">← Volver a preview</button>`
+      :`<button class="btn bo bs" onclick="ENT_VIEW='grid';setTab('entreno')">← Vista semana</button>`;
+    const tituloPendiente=esPendiente
+      ?`<div style="font-size:11px;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;border-radius:6px;padding:4px 10px">✏️ Editando bloque pendiente B${c.bloquePendienteNum||((c.bloque||1)+1)}</div>`
+      :'';
     return`<div>
-      <div style="display:flex;gap:8px;margin-bottom:12px">
-        <button class="btn bo bs" onclick="ENT_VIEW='grid';setTab('entreno')">← Vista semana</button>
-        <button class="btn bo bs" onclick="ENT_VIEW='historial';setTab('entreno')">📊 Historial completo</button>
+      <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
+        ${botonVolver}
+        ${!esPendiente?`<button class="btn bo bs" onclick="ENT_VIEW='historial';setTab('entreno')">📊 Historial completo</button>`:''}
+        ${!esPendiente&&c.bloquePendienteFecha?`<button class="btn" style="background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;font-size:11px" onclick="verBloquePendiente('${c.id}')">📦 Ver bloque pendiente</button>`:''}
+        ${tituloPendiente}
       </div>
       ${rRutinas()}
     </div>`;
   }
   if(ENT_VIEW==='historial') return tEntrenoHistorial(c);
   return tEntrenoGrid(c);
+}
+
+async function verBloquePendiente(cliId){
+  const c=byId(cliId);if(!c)return;
+  try{
+    const data=await apiCall('GET','/api/entreno/rutina-pendiente/'+cliId);
+    if(!data){toast('No hay bloque pendiente','');return;}
+    // Cargar la rutina pendiente en RUTINAS_PEND
+    window.RUTINAS_PEND=data.rutina_base||{};
+    window.RUT_BLOQUE_PENDIENTE=true;
+    // Forzar re-render en tab entreno
+    setTab('entreno');
+  }catch(e){toast('Error: '+e.message,'rj');}
+}
+
+function tEntrenoPendiente(c){
+  const fi=c.bloquePendienteFecha?(c.bloquePendienteFecha.split('T')[0].split('-').reverse().join('/')):'?';
+  const rp=window.RUTINAS_PEND||{};
+  const dias=DIAS_BASE.map((d,di)=>{
+    const ejes=rp[String(di)]||rp[di]||[];
+    return{...d,di,rest:ejes.length===0,ejes};
+  });
+  const diasH=dias.map((d,di)=>`
+    <div style="margin-bottom:14px">
+      <div style="font-weight:700;font-size:13px;color:var(--t1);margin-bottom:6px;padding:6px 10px;background:var(--bg2);border-radius:6px">
+        ${d.nom} ${d.rest?'<span style="color:var(--t3);font-weight:400">(Descanso)</span>':''}
+      </div>
+      ${!d.rest&&d.ejes.length?d.ejes.map(ej=>`<div style="padding:4px 10px;font-size:12px;color:var(--t2)">• ${ej.nombre||ej} ${ej.series?`<span style="color:var(--t3)">${ej.series}×${ej.reps||'?'}</span>`:''}</div>`).join(''):''}
+      ${!d.rest&&!d.ejes.length?`<div style="padding:4px 10px;font-size:12px;color:var(--t3)">Sin ejercicios asignados</div>`:''}
+    </div>
+  `).join('');
+  return`<div>
+    <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
+      <button class="btn bo bs" onclick="window.RUT_BLOQUE_PENDIENTE=false;setTab('entreno')">← Bloque actual</button>
+      <div style="font-size:12px;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;border-radius:8px;padding:5px 10px">
+        📦 Bloque pendiente B${c.bloquePendienteNum||((c.bloque||1)+1)} — se activa el ${fi}
+      </div>
+      <button class="btn" style="background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;font-size:11px" onclick="editarRutinaPendiente('${c.id}')">✏️ Editar rutina</button>
+    </div>
+    <div style="font-size:12px;color:var(--t3);margin-bottom:12px">Vista de la rutina base del próximo bloque. El cliente podrá verla antes de que empiece.</div>
+    ${diasH}
+  </div>`;
+}
+
+function editarRutinaPendiente(cliId){
+  // Cargar la rutina del bloque pendiente en RUTINAS para poder editarla con el editor normal
+  const c=byId(cliId);if(!c)return;
+  const rp=window.RUTINAS_PEND||{};
+  const pendKey='__pend_'+cliId;
+  // Guardar bajo una clave especial para diferenciar del activo
+  // Estructurar como semana 1 → dias del objeto rp
+  if(!RUTINAS[pendKey])RUTINAS[pendKey]={};
+  // rp es rutina_base: objeto {0: [...], 1: [...], ...}
+  // Lo metemos como semana 1 para que el editor pueda editarlo
+  RUTINAS[pendKey][1]={};
+  Object.keys(rp).forEach(function(di){
+    RUTINAS[pendKey][1][parseInt(di)]=JSON.parse(JSON.stringify(rp[di]||[]));
+  });
+  // Marcar que estamos editando el bloque pendiente de este cliente
+  window._editandoPendiente=cliId;
+  // Cambiar RUT_CLI a la clave pendiente para que el editor opere sobre RUTINAS[pendKey]
+  RUT_CLI=pendKey;
+  RUT_SEM=1;
+  ENT_VIEW='editor';
+  setTab('entreno');
+}
+
+function salirEditorPendiente(cliId){
+  // Restaurar RUT_CLI al id real y limpiar modo pendiente
+  RUT_CLI=cliId||window._editandoPendiente;
+  window._editandoPendiente=null;
+  window.RUT_BLOQUE_PENDIENTE=true; // volver a la vista previa
+  ENT_VIEW='grid';
+  setTab('entreno');
 }
 
 function tEntrenoHistorial(c){

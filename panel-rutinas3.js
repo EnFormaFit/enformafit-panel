@@ -274,6 +274,13 @@ function ejSave(ei,k,v){
   },1500);
 }
 function guardarRutinaEnBD(cliId){
+  // Si cliId es una clave pendiente '__pend_xxx', extraer el id real
+  let realId=cliId;
+  let esPendiente=false;
+  if(typeof cliId==='string'&&cliId.startsWith('__pend_')){
+    realId=cliId.replace('__pend_','');
+    esPendiente=true;
+  }
   if(!RUTINAS[cliId])return;
   // Build rutina_base and rutina_semanas from RUTINAS[cliId]
   const rutinaSemanas={};
@@ -282,10 +289,13 @@ function guardarRutinaEnBD(cliId){
     const sem=parseInt(key);
     if(!isNaN(sem))rutinaSemanas[sem]=RUTINAS[cliId][sem];
   });
-  apiCall('PATCH','/api/entreno/rutina',{
-    cliente_id:cliId,
+  const payload={
+    cliente_id:realId,
     rutina_semanas:rutinaSemanas
-  }).catch(function(e){console.warn('[Rutina] Error guardando:',e.message);});
+  };
+  if(esPendiente)payload.bloque_estado='pendiente';
+  apiCall('PATCH','/api/entreno/rutina',payload)
+    .catch(function(e){console.warn('[Rutina] Error guardando:',e.message);});
 }
 
 function acSearch(inp,ei){
