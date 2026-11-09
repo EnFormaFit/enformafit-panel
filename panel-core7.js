@@ -236,6 +236,8 @@ async function loadClientesFromAPI(){
         macros_manuales:r.macros_manuales||false,
         planPublicado:r.bloque_visible||r.plan_publicado||r.visible_cliente||false,
         bloque:parseInt(r.numero_bloque)||1,
+        bloquePendienteFecha:r.bloque_pendiente_fecha||null,
+        bloquePendienteNum:parseInt(r.bloque_pendiente_num)||null,
         bloqueHistorial:[],
         histPesos:[],
         checkIn:null,

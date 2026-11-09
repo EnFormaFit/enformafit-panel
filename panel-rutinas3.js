@@ -627,16 +627,30 @@ function borrarCliente(id, nom){
 }
 
 async function confirmarNuevoBloque(id, nom, bloqueActual){
-  if(!confirm('¿Crear bloque '+(bloqueActual+1)+' para '+nom+'?\n\nEl bloque actual (B'+bloqueActual+') se marcará como completado y se abrirá un bloque nuevo desde la semana 1.\n\nEl historial de entreno, revisiones y fotos queda guardado.'))return;
+  // Pedir fecha de inicio del nuevo bloque
+  const hoy = new Date();
+  const dow = hoy.getDay();
+  const offset = dow === 0 ? 1 : dow === 1 ? 7 : 8 - dow; // siguiente lunes
+  const sigLunes = new Date(hoy);
+  sigLunes.setDate(hoy.getDate() + offset);
+  const sigLunesStr = sigLunes.toISOString().split('T')[0];
+
+  const fechaInput = prompt(
+    '📦 Nuevo bloque ' + (bloqueActual+1) + ' para ' + nom + '\n\n' +
+    'El bloque actual (B' + bloqueActual + ') sigue activo hasta la fecha de inicio del nuevo.\n' +
+    'El cliente podrá ver el nuevo bloque en la app unos días antes.\n\n' +
+    'Fecha de inicio del bloque ' + (bloqueActual+1) + ' (YYYY-MM-DD):',
+    sigLunesStr
+  );
+  if(fechaInput === null) return; // canceló
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(fechaInput.trim())){
+    toast('Fecha inválida. Usa formato YYYY-MM-DD','rj');
+    return;
+  }
   try {
-    const res = await apiCall('POST','/api/clientes/'+id+'/nuevo-bloque',{});
-    toast('✅ Bloque '+(bloqueActual+1)+' creado — semana reiniciada a 1','vd');
-    // Actualizar el cliente en memoria
-    const c = byId(id);
-    if(c){
-      c.bloque = bloqueActual + 1;
-      c.semana = 1;
-    }
+    const res = await apiCall('POST','/api/clientes/'+id+'/nuevo-bloque',{ fecha_inicio: fechaInput.trim() });
+    const fi = fechaInput.trim().split('-').reverse().join('/');
+    toast('📦 Bloque '+(bloqueActual+1)+' en recámara — se activa el '+fi,'vd');
     setTab('editar');
   } catch(e){
     toast('Error: '+e.message,'rj');
@@ -731,12 +745,15 @@ function tEditar(c){
         Bloque actual: <strong>B${c.bloque||1}</strong> · Semana <strong>${c.semana||1}</strong>
         ${c.inicioBloque?` · Inicio <strong>${c.inicioBloque.split('-').reverse().join('/')}</strong>`:''}
       </div>
+      ${c.bloquePendienteFecha?`<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:#166534">
+        📦 Bloque <strong>B${c.bloquePendienteNum||((c.bloque||1)+1)}</strong> en recámara — se activa el <strong>${c.bloquePendienteFecha.split('T')[0].split('-').reverse().join('/')}</strong>
+      </div>`:''}
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         <button class="btn" style="background:#f0fdf4;color:#166534;border:1.5px solid #bbf7d0;font-weight:600;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-family:inherit"
           onclick="confirmarNuevoBloque('${c.id}','${c.nom}',${c.bloque||1})">
-          🆕 Nuevo bloque
+          ${c.bloquePendienteFecha?'🔄 Cambiar bloque pendiente':'🆕 Nuevo bloque'}
         </button>
-        <span style="font-size:12px;color:var(--t3)">Cierra el bloque actual y abre un bloque nuevo desde la semana 1. El historial de entreno y revisiones queda guardado.</span>
+        <span style="font-size:12px;color:var(--t3)">${c.bloquePendienteFecha?'Reemplaza el bloque en recámara actual.':'Programa un bloque nuevo en recámara. El cliente lo ve en la app antes de que empiece.'}</span>
       </div>
     </div></div>
   </div>
