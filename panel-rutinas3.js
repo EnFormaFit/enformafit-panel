@@ -626,6 +626,23 @@ function borrarCliente(id, nom){
   }).catch(function(e){toast('Error: '+e.message,'rj');});
 }
 
+async function confirmarNuevoBloque(id, nom, bloqueActual){
+  if(!confirm('¿Crear bloque '+(bloqueActual+1)+' para '+nom+'?\n\nEl bloque actual (B'+bloqueActual+') se marcará como completado y se abrirá un bloque nuevo desde la semana 1.\n\nEl historial de entreno, revisiones y fotos queda guardado.'))return;
+  try {
+    const res = await apiCall('POST','/api/clientes/'+id+'/nuevo-bloque',{});
+    toast('✅ Bloque '+(bloqueActual+1)+' creado — semana reiniciada a 1','vd');
+    // Actualizar el cliente en memoria
+    const c = byId(id);
+    if(c){
+      c.bloque = bloqueActual + 1;
+      c.semana = 1;
+    }
+    setTab('editar');
+  } catch(e){
+    toast('Error: '+e.message,'rj');
+  }
+}
+
 function tEditar(c){
   const ed=EDITING;
   // On entering edit mode, save a snapshot for cancel
@@ -707,7 +724,23 @@ function tEditar(c){
       </div></div>
     </div>
   </div></div>
-  <div style="margin-top:32px;padding-top:20px;border-top:2px solid #fee2e2;text-align:center"><div style="font-size:12px;color:var(--t3);margin-bottom:10px">⚠️ Zona de peligro</div><button onclick="borrarCliente('${c.id}','${c.nom}')" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;padding:8px 20px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit">🗑️ Eliminar cliente permanentemente</button></div>`;
+  <div style="margin-top:28px;padding-top:20px;border-top:1.5px solid var(--bor)">
+    <div class="sec-t" style="margin-bottom:10px">📦 Bloque de entrenamiento</div>
+    <div class="card"><div class="cb" style="padding:12px 14px">
+      <div style="font-size:13px;color:var(--t2);margin-bottom:12px">
+        Bloque actual: <strong>B${c.bloque||1}</strong> · Semana <strong>${c.semana||1}</strong>
+        ${c.inicioBloque?` · Inicio <strong>${c.inicioBloque.split('-').reverse().join('/')}</strong>`:''}
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="btn" style="background:#f0fdf4;color:#166534;border:1.5px solid #bbf7d0;font-weight:600;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-family:inherit"
+          onclick="confirmarNuevoBloque('${c.id}','${c.nom}',${c.bloque||1})">
+          🆕 Nuevo bloque
+        </button>
+        <span style="font-size:12px;color:var(--t3)">Cierra el bloque actual y abre un bloque nuevo desde la semana 1. El historial de entreno y revisiones queda guardado.</span>
+      </div>
+    </div></div>
+  </div>
+  <div style="margin-top:24px;padding-top:20px;border-top:2px solid #fee2e2;text-align:center"><div style="font-size:12px;color:var(--t3);margin-bottom:10px">⚠️ Zona de peligro</div><button onclick="borrarCliente('${c.id}','${c.nom}')" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;padding:8px 20px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit">🗑️ Eliminar cliente permanentemente</button></div>`;
 }
 function cancelEditar(id){
   if(window._editSnapshot&&window._editSnapshot.id===id){
