@@ -308,7 +308,7 @@ function acSearch(inp,ei){
   const q=inp.value.toLowerCase().trim();
   const list=document.getElementById('ac-'+ei);if(!list)return;
   if(!q||q.length<2){list.style.display='none';return;}
-  const ms=EJ.filter(e=>e.nombre.toLowerCase().includes(q)).slice(0,8);
+  const ms=EJ.filter(e=>e.nombre.toLowerCase().includes(q)).slice(0,25);
   if(!ms.length){list.style.display='none';return;}
   list.innerHTML=ms.map(e=>`<div class="ac-item" onmousedown="acSel(${ei},'${e.nombre.replace(/'/g,"\\'")}')"><span>${e.nombre}</span><small>${e.grupo||''}</small></div>`).join('');
   list.style.display='block';
