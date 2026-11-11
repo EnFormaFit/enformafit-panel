@@ -1635,6 +1635,12 @@ function salirEditorPendiente(cliId){
 // ═══ HISTORIAL DE BLOQUES (bloques completados) ═══
 function tBloqueHistorial(c){
   const cacheKey='_bloqHist_'+c.id;
+  // Guardar vista de origen para volver correctamente
+  if(!window._histOrigenView) window._histOrigenView=window.RUT_BLOQUE_PENDIENTE?'grid':'editor';
+  const volverLabel=window._histOrigenView==='grid'?'← Volver al preview':'← Volver al editor';
+  const volverOnclick=window._histOrigenView==='grid'
+    ?`window.RUT_BLOQUE_PENDIENTE=true;window._histOrigenView=null;ENT_VIEW='grid';setTab('entreno')`
+    :`window._histOrigenView=null;ENT_VIEW='editor';setTab('entreno')`;
   if(!window[cacheKey]){
     // Cargando
     if(API_TOKEN){
@@ -1649,7 +1655,7 @@ function tBloqueHistorial(c){
     }
     return`<div>
       <div style="display:flex;gap:8px;margin-bottom:12px">
-        <button class="btn bo bs" onclick="ENT_VIEW='editor';setTab('entreno')">← Volver al editor</button>
+        <button class="btn bo bs" onclick="${volverOnclick}">${volverLabel}</button>
       </div>
       <div class="card"><div class="cb" style="text-align:center;padding:24px;color:var(--t3)">Cargando bloques anteriores...</div></div>
     </div>`;
@@ -1665,14 +1671,14 @@ function tBloqueHistorial(c){
   if(!bloques.length){
     return`<div>
       <div style="display:flex;gap:8px;margin-bottom:12px">
-        <button class="btn bo bs" onclick="ENT_VIEW='editor';setTab('entreno')">← Volver al editor</button>
+        <button class="btn bo bs" onclick="${volverOnclick}">${volverLabel}</button>
       </div>
       <div class="card"><div class="cb" style="text-align:center;padding:24px;color:var(--t3)">Sin bloques completados aún</div></div>
     </div>`;
   }
   let h=`<div>
     <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
-      <button class="btn bo bs" onclick="ENT_VIEW='editor';setTab('entreno')">← Volver al editor</button>
+      <button class="btn bo bs" onclick="${volverOnclick}">${volverLabel}</button>
       <h2 style="margin:0;font-size:15px">📁 Bloques anteriores — ${c.nom.split(' ')[0]}</h2>
     </div>
     <div class="card"><div class="cb" style="padding:12px">`;
