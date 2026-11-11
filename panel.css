@@ -233,6 +233,8 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
   background:#fff;font-size:11.5px;font-weight:600;color:var(--t2);cursor:pointer;
   font-family:inherit;transition:all .15s;white-space:nowrap}
 .sem-btn.on{background:var(--az);border-color:var(--az);color:#fff}
+.sem-btn.cur{border-color:#1e3a8a;color:#1e3a8a;font-weight:800}
+.sem-btn.on.cur{background:#1e3a8a;border-color:#1e3a8a;color:#fff}
 .sem-btn.rev{border-color:var(--az2);color:var(--az2)}
 .sem-btn.on.rev{background:var(--az2)}
 .day-strip{display:flex;gap:5px;flex-wrap:wrap}

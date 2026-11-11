@@ -1406,6 +1406,8 @@ function nutReset(cliId){
 function tEntreno(c){
   // Si estamos editando el bloque pendiente, NO sobrescribir RUT_CLI (ya tiene la clave __pend_)
   if(!window._editandoPendiente){
+    // Al cambiar de cliente, posicionar en su semana actual
+    if(RUT_CLI!==c.id) RUT_SEM=c.semana||1;
     RUT_CLI=c.id;
   }
   // Si hay bloque pendiente en modo preview, mostrar su rutina
