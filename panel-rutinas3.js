@@ -116,7 +116,10 @@ document.addEventListener('keydown',e=>{
 });
 
 function rRutinas(){
-  const c=RUT_CLI?byId(RUT_CLI):null;
+  // Soporte para bloque pendiente: RUT_CLI puede ser '__pend_<id>'
+  const isPend=RUT_CLI&&RUT_CLI.startsWith('__pend_');
+  const realId=isPend?RUT_CLI.replace('__pend_',''):RUT_CLI;
+  const c=realId?byId(realId):null;
   const opts=C.map(x=>`<option value="${x.id}" ${RUT_CLI===x.id?'selected':''}>${x.nom} (${x.tipo==='uno'?'1:1':'Prog'} S${x.semana}/${x.semTotal})</option>`).join('');
   const selH=`<select style="width:100%;border:1.5px solid var(--bor);border-radius:8px;padding:8px;font-size:13.5px;outline:none;font-family:inherit;background:#fff;margin-bottom:12px" onchange="RUT_CLI=this.value;RUT_SEM=1;RUT_DIA=0;${VIEW==='client'?'setTab(\'entreno\')':'render()'}">
     <option value="">-- Selecciona cliente --</option>${opts}
@@ -124,9 +127,12 @@ function rRutinas(){
 
   if(!c)return`<div class="card"><div class="cb">${selH}</div></div>`;
 
-  const rs=revSems(c.tipo),st=c.semTotal;
+  // Si es bloque pendiente, usar semanas del bloque pendiente
+  const st=isPend?(c._pendSemanas||c.semTotal):c.semTotal;
+  const rs=isPend?[]:revSems(c.tipo);
   const semH=Array.from({length:st},(_,i)=>{
-    const s=i+1,isRev=rs.includes(s),isCur=s===c.semana;
+    // En modo pendiente: no marcar semana actual (📍) ni semanas de revisión
+    const s=i+1,isRev=rs.includes(s),isCur=!isPend&&s===c.semana;
     return`<button class="sem-btn${s===RUT_SEM?' on':''}${isRev&&s!==RUT_SEM?' rev':''}${isCur?' cur':''}" onclick="RUT_SEM=${s};RUT_DIA=0;${VIEW==='client'?'setTab(\'entreno\')':'render()'}">S${s}${isRev?'📋':''}${isCur?' 📍':''}</button>`;
   }).join('');
 
