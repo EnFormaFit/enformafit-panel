@@ -657,16 +657,29 @@ function rCI(){
     h+=`</div>`;
   }
   if(env.length){
+    // Ordenar por created_at descendente (más reciente primero)
+    const envOrd=[...env].sort((a,b)=>{
+      const ta=a.checkIn?.created_at?new Date(a.checkIn.created_at).getTime():0;
+      const tb=b.checkIn?.created_at?new Date(b.checkIn.created_at).getTime():0;
+      return tb-ta;
+    });
     h+=`<div class="card"><div class="ch"><h2>✅ Recibidos (${env.length})</h2></div>
-    <table class="tbl"><thead><tr><th>Cliente</th><th>Adh.</th><th>Entrenos</th><th>Nutrición</th><th>Pasos</th><th>⭐</th></tr></thead><tbody>`;
-    env.forEach(c=>{const ci=c.checkIn||{};const ne=c.diasSemana||4;
-      h+=`<tr onclick="openC('${c.id}','checkin')">
-        <td><div style="display:flex;align-items:center;gap:8px"><div class="av" style="background:${gc(ciIdx(c))}">${c.init}</div>${c.nom}</div></td>
+    <table class="tbl"><thead><tr><th>Cliente</th><th>Recibido</th><th>Adh.</th><th>Entrenos</th><th>Nutri.</th><th>Pasos</th><th>⭐</th><th>Visto</th></tr></thead><tbody>`;
+    envOrd.forEach(c=>{const ci=c.checkIn||{};const ne=c.diasSemana||4;
+      const fechaCI=ci.created_at?new Date(ci.created_at).toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
+      const visto=ci.leido_entrenador;
+      const vistoHTML=visto
+        ?`<span title="Ya lo has visto" style="font-size:15px">✅</span>`
+        :`<span title="Sin leer" style="font-size:15px;filter:grayscale(1);opacity:0.4">👁</span>`;
+      h+=`<tr onclick="openC('${c.id}','checkin')" style="${!visto?'font-weight:600':''}">
+        <td><div style="display:flex;align-items:center;gap:8px"><div class="av" style="background:${gc(ciIdx(c))}">${c.init}</div>${c.nom}${!visto?` <span style="background:#fbbf24;color:#78350f;font-size:9px;font-weight:700;padding:1px 5px;border-radius:10px;margin-left:2px">NUEVO</span>`:''}</div></td>
+        <td style="font-size:11px;color:var(--t3);white-space:nowrap">${fechaCI}</td>
         <td><span class="badge ${adhBadge(c.adh)}">${Math.round(c.adh*100)}%</span></td>
         <td><b>${ci.dias_entreno_real||0}</b>/${ne}</td>
         <td>${ci.dias_nutricion||0}/7</td>
         <td>${ci.dias_pasos||0}/7</td>
-        <td>${'⭐'.repeat(ci.estrellas||0)}</td>
+        <td>${'⭐'.repeat(ci.estrellas||0)||'—'}</td>
+        <td style="text-align:center">${vistoHTML}</td>
       </tr>`;});
     h+=`</tbody></table></div>`;
   }

@@ -256,6 +256,12 @@ function tCheckin(c){
         });
         c.adhMedia=Math.round(total/rows.length);
         c.adh=Math.round(Math.min(1,(sorted[0].dias_entreno_real||0)/ne)*40+Math.min(1,(sorted[0].dias_nutricion||0)/7)*40+Math.min(1,(sorted[0].dias_pasos||0)/7)*20)/100;
+        // Marcar como leído al abrir si no estaba leído
+        if(c.checkIn&&!c.checkIn.leido_entrenador){
+          apiCall('PATCH','/api/entreno/checkins/'+c.id+'/leido').then(function(){
+            if(c.checkIn)c.checkIn.leido_entrenador=true;
+          }).catch(function(){});
+        }
         setTab('checkin');
       }
     }).catch(function(){});
