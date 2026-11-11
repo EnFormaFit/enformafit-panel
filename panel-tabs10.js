@@ -1457,9 +1457,19 @@ function tEntrenoPendiente(c){
   const diasH=dias.map((d,di)=>`
     <div style="margin-bottom:14px">
       <div style="font-weight:700;font-size:13px;color:var(--t1);margin-bottom:6px;padding:6px 10px;background:var(--bg2);border-radius:6px">
-        ${d.nom} ${d.rest?'<span style="color:var(--t3);font-weight:400">(Descanso)</span>':''}
+        ${d.nom} ${d.rest?'😴':''}
       </div>
-      ${!d.rest&&d.ejes.length?d.ejes.map(ej=>`<div style="padding:4px 10px;font-size:12px;color:var(--t2)">• ${ej.nombre||ej} ${ej.series?`<span style="color:var(--t3)">${ej.series}×${ej.reps||'?'}</span>`:''}</div>`).join(''):''}
+      ${d.rest?`<div style="padding:4px 10px;font-size:12px;color:var(--t3)">Día de descanso</div>`:''}
+      ${!d.rest&&d.ejes.length?d.ejes.map(ej=>{
+        const nom=ej.nom||ej.nombre||ej.n||'—';
+        const sets=ej.sets||ej.series||'?';
+        const reps=ej.reps||ej.rep||'?';
+        const rir=ej.rir!=null?` · RIR${ej.rir}`:'';
+        return`<div style="padding:5px 10px;font-size:12px;color:var(--t2);border-bottom:1px solid var(--bor2)">
+          <span style="font-weight:600">${nom}</span>
+          <span style="color:var(--t3);margin-left:6px">${sets}×${reps}${rir}</span>
+        </div>`;
+      }).join(''):''}
       ${!d.rest&&!d.ejes.length?`<div style="padding:4px 10px;font-size:12px;color:var(--t3)">Sin ejercicios asignados</div>`:''}
     </div>
   `).join('');
