@@ -1424,6 +1424,7 @@ function tEntreno(c){
       <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
         ${botonVolver}
         ${!esPendiente?`<button class="btn bo bs" onclick="ENT_VIEW='historial';setTab('entreno')">📊 Historial completo</button>`:''}
+        ${!esPendiente?`<button class="btn bo bs" onclick="ENT_VIEW='bloques';setTab('entreno')">📁 Bloques anteriores</button>`:''}
         ${!esPendiente&&c.bloquePendienteFecha?`<button class="btn" style="background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;font-size:11px" onclick="verBloquePendiente('${c.id}')">📦 Ver bloque pendiente</button>`:''}
         ${tituloPendiente}
       </div>
@@ -1431,6 +1432,7 @@ function tEntreno(c){
     </div>`;
   }
   if(ENT_VIEW==='historial') return tEntrenoHistorial(c);
+  if(ENT_VIEW==='bloques') return tBloqueHistorial(c);
   return tEntrenoGrid(c);
 }
 
@@ -1439,10 +1441,32 @@ async function verBloquePendiente(cliId){
   try{
     const data=await apiCall('GET','/api/entreno/rutina-pendiente/'+cliId);
     if(!data){toast('No hay bloque pendiente','');return;}
-    // Cargar la rutina pendiente en RUTINAS_PEND
-    window.RUTINAS_PEND=data.rutina_base||{};
+    // Guardar datos del bloque pendiente en el objeto cliente
+    c._pendSemanas=data.semanas||13;
+    c._pendFecha=data.fecha_inicio||c.bloquePendienteFecha||null;
+    // Cargar todas las semanas del bloque pendiente en RUTINAS[pendKey]
+    const pendKey='__pend_'+cliId;
+    RUTINAS[pendKey]={};
+    const rutSemanas=data.rutina_semanas||{};
+    const rutBase=data.rutina_base||{};
+    // Copiar semanas disponibles; si no hay semanas, meter rutina_base como semana 1
+    const semsDisp=Object.keys(rutSemanas).map(Number).filter(n=>n>0);
+    if(semsDisp.length>0){
+      semsDisp.forEach(function(s){
+        RUTINAS[pendKey][s]=JSON.parse(JSON.stringify(rutSemanas[s]||{}));
+      });
+    } else {
+      // Usar rutina_base como semana 1
+      const sem1={};
+      Object.keys(rutBase).forEach(function(di){sem1[parseInt(di)]=JSON.parse(JSON.stringify(rutBase[di]||[]));});
+      RUTINAS[pendKey][1]=sem1;
+    }
+    // Ir al editor completo con la clave pendiente
+    window._editandoPendiente=cliId;
+    RUT_CLI=pendKey;
+    RUT_SEM=1;
+    ENT_VIEW='editor';
     window.RUT_BLOQUE_PENDIENTE=true;
-    // Forzar re-render en tab entreno
     setTab('entreno');
   }catch(e){toast('Error: '+e.message,'rj');}
 }
@@ -1516,6 +1540,125 @@ function salirEditorPendiente(cliId){
   window.RUT_BLOQUE_PENDIENTE=true; // volver a la vista previa
   ENT_VIEW='grid';
   setTab('entreno');
+}
+
+// ═══ HISTORIAL DE BLOQUES (bloques completados) ═══
+function tBloqueHistorial(c){
+  const cacheKey='_bloqHist_'+c.id;
+  if(!window[cacheKey]){
+    // Cargando
+    if(API_TOKEN){
+      apiCall('GET','/api/entreno/bloques-historial/'+c.id)
+        .then(function(bloques){
+          window[cacheKey]=bloques||[];
+          setTab('entreno');
+        }).catch(function(e){
+          window[cacheKey]=[];
+          toast('Error cargando historial: '+e.message,'rj');
+        });
+    }
+    return`<div>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button class="btn bo bs" onclick="ENT_VIEW='editor';setTab('entreno')">← Volver al editor</button>
+      </div>
+      <div class="card"><div class="cb" style="text-align:center;padding:24px;color:var(--t3)">Cargando bloques anteriores...</div></div>
+    </div>`;
+  }
+  const bloques=window[cacheKey];
+  // Ver bloque específico
+  if(window._verBloqueHist!=null){
+    const bIdx=window._verBloqueHist;
+    const b=bloques[bIdx];
+    if(b){return renderBloqueHistDetail(c,b,bIdx,bloques.length);}
+  }
+  // Lista de bloques
+  if(!bloques.length){
+    return`<div>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button class="btn bo bs" onclick="ENT_VIEW='editor';setTab('entreno')">← Volver al editor</button>
+      </div>
+      <div class="card"><div class="cb" style="text-align:center;padding:24px;color:var(--t3)">Sin bloques completados aún</div></div>
+    </div>`;
+  }
+  let h=`<div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
+      <button class="btn bo bs" onclick="ENT_VIEW='editor';setTab('entreno')">← Volver al editor</button>
+      <h2 style="margin:0;font-size:15px">📁 Bloques anteriores — ${c.nom.split(' ')[0]}</h2>
+    </div>
+    <div class="card"><div class="cb" style="padding:12px">`;
+  bloques.forEach(function(b,i){
+    const fi=b.fecha_inicio?b.fecha_inicio.split('T')[0].split('-').reverse().join('/'):'-';
+    const ff=b.fecha_fin?b.fecha_fin.split('T')[0].split('-').reverse().join('/'):'activo';
+    const nSems=Object.keys(b.rutina_semanas||{}).length||1;
+    h+=`<div onclick="window._verBloqueHist=${i};setTab('entreno')" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--bor2);cursor:pointer;border-radius:8px;transition:background .15s" onmouseover="this.style.background='var(--bg2)'" onmouseout="this.style.background=''">
+      <div>
+        <span style="font-weight:700;color:var(--az)">B${b.numero_bloque}</span>
+        <span style="font-size:12px;color:var(--t2);margin-left:8px">${fi} → ${ff}</span>
+        <span style="font-size:11px;color:var(--t3);margin-left:8px">${nSems} semanas guardadas</span>
+      </div>
+      <span style="color:var(--t3);font-size:16px">›</span>
+    </div>`;
+  });
+  h+=`</div></div></div>`;
+  return h;
+}
+
+function renderBloqueHistDetail(c,b,bIdx,total){
+  const fi=b.fecha_inicio?b.fecha_inicio.split('T')[0].split('-').reverse().join('/'):'-';
+  const ff=b.fecha_fin?b.fecha_fin.split('T')[0].split('-').reverse().join('/'):'—';
+  const semanas=b.rutina_semanas||{};
+  const semsDisp=Object.keys(semanas).map(Number).filter(n=>n>0).sort((a,z)=>a-z);
+  const semTotal=b.semanas||semsDisp.length||13;
+  if(!window._histBloqSem)window._histBloqSem=1;
+  const curSem=window._histBloqSem;
+  const semH=Array.from({length:semTotal},function(_,i){
+    const s=i+1;
+    const tieneDatos=semsDisp.includes(s);
+    return`<button class="sem-btn${s===curSem?' on':''}${!tieneDatos?' disabled':''}" style="${!tieneDatos?'opacity:.4;cursor:default':''}" onclick="${tieneDatos?'window._histBloqSem='+s+';setTab(\'entreno\')':''}">S${s}</button>`;
+  }).join('');
+  const semData=semanas[curSem]||semanas[String(curSem)]||{};
+  const DIAS_NOM=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+  let diasH='';
+  DIAS_BASE.forEach(function(d,di){
+    const ejes=semData[di]||semData[String(di)]||[];
+    if(d.rest&&!ejes.length)return;
+    diasH+=`<div style="margin-bottom:14px">
+      <div style="font-weight:700;font-size:12px;color:var(--az);padding:5px 10px;background:var(--bg2);border-radius:6px 6px 0 0;border-bottom:2px solid var(--az)">${d.nom} · ${d.tipo}</div>`;
+    if(!ejes.length){
+      diasH+=`<div style="padding:8px 10px;font-size:12px;color:var(--t3)">Descanso</div>`;
+    } else {
+      ejes.forEach(function(ej,ei){
+        const nom=ej.nom||ej.nombre||'—';
+        const sets=ej.sets||ej.series||'?';
+        const reps=ej.reps||ej.rep||'?';
+        const rir=ej.rir!=null?` · RIR${ej.rir}`:'';
+        const rest=ej.rest?` · ${ej.rest}`:'';
+        diasH+=`<div style="display:flex;align-items:center;gap:10px;padding:6px 10px;border-bottom:1px solid var(--bor2);font-size:12px">
+          <span style="font-size:10px;color:var(--t3);min-width:16px">${ei+1}</span>
+          <span style="font-weight:600;flex:1">${nom}</span>
+          <span style="color:var(--t2)">${sets}×${reps}${rir}${rest}</span>
+        </div>`;
+      });
+    }
+    diasH+=`</div>`;
+  });
+  if(!diasH){diasH=`<div style="padding:16px;color:var(--t3);text-align:center;font-size:12px">Sin datos guardados en S${curSem}</div>`;}
+  return`<div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
+      <button class="btn bo bs" onclick="window._verBloqueHist=null;window._histBloqSem=1;setTab('entreno')">← Bloques anteriores</button>
+      <div style="font-size:13px;font-weight:700">📁 B${b.numero_bloque} — ${fi} a ${ff}</div>
+      ${bIdx>0?`<button class="btn bo bs" style="margin-left:auto;font-size:11px" onclick="window._verBloqueHist=${bIdx-1};window._histBloqSem=1;setTab('entreno')">Más reciente ›</button>`:''}
+      ${bIdx<total-1?`<button class="btn bo bs" style="font-size:11px" onclick="window._verBloqueHist=${bIdx+1};window._histBloqSem=1;setTab('entreno')">‹ Más antiguo</button>`:''}
+    </div>
+    <div class="card" style="margin-bottom:10px">
+      <div class="ch"><h2>📅 Semanas</h2></div>
+      <div class="cb" style="padding:10px 14px"><div class="sem-strip">${semH}</div></div>
+    </div>
+    <div class="card">
+      <div class="ch"><h2>S${curSem} · B${b.numero_bloque}</h2></div>
+      <div class="cb" style="padding:10px">${diasH}</div>
+    </div>
+  </div>`;
 }
 
 function tEntrenoHistorial(c){
