@@ -1436,78 +1436,168 @@ function tEntreno(c){
   return tEntrenoGrid(c);
 }
 
+// Carga datos del bloque pendiente en RUTINAS[pendKey] y devuelve la clave
+async function _cargarDatosPendiente(cliId){
+  const c=byId(cliId);if(!c)throw new Error('Cliente no encontrado');
+  const data=await apiCall('GET','/api/entreno/rutina-pendiente/'+cliId);
+  if(!data)throw new Error('NO_PEND');
+  c._pendSemanas=data.semanas||13;
+  c._pendFecha=data.fecha_inicio||c.bloquePendienteFecha||null;
+  const pendKey='__pend_'+cliId;
+  RUTINAS[pendKey]={};
+  const rutSemanas=data.rutina_semanas||{};
+  const rutBase=data.rutina_base||{};
+  const semsDisp=Object.keys(rutSemanas).map(Number).filter(n=>n>0);
+  if(semsDisp.length>0){
+    semsDisp.forEach(function(s){
+      RUTINAS[pendKey][s]=JSON.parse(JSON.stringify(rutSemanas[s]||{}));
+    });
+  } else {
+    const sem1={};
+    Object.keys(rutBase).forEach(function(di){sem1[parseInt(di)]=JSON.parse(JSON.stringify(rutBase[di]||[]));});
+    RUTINAS[pendKey][1]=sem1;
+  }
+  return pendKey;
+}
+
+// Ver bloque pendiente → preview con grid (como el bloque actual)
 async function verBloquePendiente(cliId){
-  const c=byId(cliId);if(!c)return;
   try{
-    const data=await apiCall('GET','/api/entreno/rutina-pendiente/'+cliId);
-    if(!data){toast('No hay bloque pendiente','');return;}
-    // Guardar datos del bloque pendiente en el objeto cliente
-    c._pendSemanas=data.semanas||13;
-    c._pendFecha=data.fecha_inicio||c.bloquePendienteFecha||null;
-    // Cargar todas las semanas del bloque pendiente en RUTINAS[pendKey]
-    const pendKey='__pend_'+cliId;
-    RUTINAS[pendKey]={};
-    const rutSemanas=data.rutina_semanas||{};
-    const rutBase=data.rutina_base||{};
-    // Copiar semanas disponibles; si no hay semanas, meter rutina_base como semana 1
-    const semsDisp=Object.keys(rutSemanas).map(Number).filter(n=>n>0);
-    if(semsDisp.length>0){
-      semsDisp.forEach(function(s){
-        RUTINAS[pendKey][s]=JSON.parse(JSON.stringify(rutSemanas[s]||{}));
-      });
-    } else {
-      // Usar rutina_base como semana 1
-      const sem1={};
-      Object.keys(rutBase).forEach(function(di){sem1[parseInt(di)]=JSON.parse(JSON.stringify(rutBase[di]||[]));});
-      RUTINAS[pendKey][1]=sem1;
-    }
-    // Ir al editor completo con la clave pendiente
+    await _cargarDatosPendiente(cliId);
+    // Ir al preview del bloque pendiente (mismo grid que tEntrenoGrid)
+    window._editandoPendiente=null;
+    RUT_SEM=1;
+    ENT_VIEW='grid';
+    window.RUT_BLOQUE_PENDIENTE=true;
+    setTab('entreno');
+  }catch(e){
+    if(e.message==='NO_PEND')toast('No hay bloque pendiente','');
+    else toast('Error: '+e.message,'rj');
+  }
+}
+
+// Editar bloque pendiente → editor completo con semanas, copiar, importar
+async function editarBloquePendiente(cliId){
+  try{
+    const pendKey=await _cargarDatosPendiente(cliId);
     window._editandoPendiente=cliId;
     RUT_CLI=pendKey;
     RUT_SEM=1;
     ENT_VIEW='editor';
     window.RUT_BLOQUE_PENDIENTE=true;
     setTab('entreno');
-  }catch(e){toast('Error: '+e.message,'rj');}
+  }catch(e){
+    if(e.message==='NO_PEND')toast('No hay bloque pendiente','');
+    else toast('Error: '+e.message,'rj');
+  }
 }
 
 function tEntrenoPendiente(c){
   const fi=c.bloquePendienteFecha?(c.bloquePendienteFecha.split('T')[0].split('-').reverse().join('/')):'?';
-  const rp=window.RUTINAS_PEND||{};
-  const dias=DIAS_BASE.map((d,di)=>{
-    const ejes=rp[String(di)]||rp[di]||[];
+  const pendKey='__pend_'+c.id;
+  const semTotal=c._pendSemanas||13;
+  // Sem selector (sin marcador actual ni revisión)
+  const semH=Array.from({length:semTotal},(_,i)=>{
+    const s=i+1;
+    return`<button class="sem-btn${s===RUT_SEM?' on':''}" onclick="RUT_SEM=${s};setTab('entreno')">S${s}</button>`;
+  }).join('');
+
+  // Datos de la semana seleccionada (de RUTINAS[pendKey])
+  const semRutData=(RUTINAS[pendKey]||{})[RUT_SEM]||(RUTINAS[pendKey]||{})[String(RUT_SEM)]||null;
+
+  // Si no hay datos cargados aún (aún no se llamó verBloquePendiente con carga completa),
+  // usar fallback de RUTINAS_PEND (rutina_base como semana 1)
+  let semData=semRutData;
+  if(!semData&&RUT_SEM===1){
+    const rp=window.RUTINAS_PEND||{};
+    semData=rp;
+  }
+
+  const trainingDays=DIAS_BASE.map(function(d,di){
+    const ejes=(semData&&(semData[di]||semData[String(di)]))||[];
     return{...d,di,rest:ejes.length===0,ejes};
   });
-  const diasH=dias.map((d,di)=>`
-    <div style="margin-bottom:14px">
-      <div style="font-weight:700;font-size:13px;color:var(--t1);margin-bottom:6px;padding:6px 10px;background:var(--bg2);border-radius:6px">
-        ${d.nom} ${d.rest?'😴':''}
-      </div>
-      ${d.rest?`<div style="padding:4px 10px;font-size:12px;color:var(--t3)">Día de descanso</div>`:''}
-      ${!d.rest&&d.ejes.length?d.ejes.map(ej=>{
-        const nom=ej.nom||ej.nombre||ej.n||'—';
+  const trainOnly=trainingDays.filter(d=>!d.rest);
+  const restOnly=trainingDays.filter(d=>d.rest);
+  const maxEj=Math.max(...trainOnly.map(d=>d.ejes.length),0);
+
+  let grid=`<div class="ent-grid-wrap">
+    <table class="ent-grid" style="width:100%">
+      <thead><tr>
+        <th class="ent-idx">#</th>
+        ${trainOnly.map(d=>`<th style="min-width:150px">
+          <div>${d.nom}</div>
+          <div style="font-size:10px;opacity:.65;font-weight:400">${d.tipo}</div>
+        </th>`).join('')}
+      </tr></thead>
+      <tbody>`;
+
+  for(let ei=0;ei<maxEj;ei++){
+    grid+=`<tr>
+      <td class="ent-idx" style="text-align:center;font-size:11px;font-weight:700;color:var(--t3);background:var(--bg)">${ei+1}</td>
+      ${trainOnly.map(d=>{
+        const ej=d.ejes[ei];
+        if(!ej)return`<td></td>`;
+        const nom=ej.nom||ej.nombre||'—';
         const sets=ej.sets||ej.series||'?';
         const reps=ej.reps||ej.rep||'?';
         const rir=ej.rir!=null?` · RIR${ej.rir}`:'';
-        return`<div style="padding:5px 10px;font-size:12px;color:var(--t2);border-bottom:1px solid var(--bor2)">
-          <span style="font-weight:600">${nom}</span>
-          <span style="color:var(--t3);margin-left:6px">${sets}×${reps}${rir}</span>
-        </div>`;
-      }).join(''):''}
-      ${!d.rest&&!d.ejes.length?`<div style="padding:4px 10px;font-size:12px;color:var(--t3)">Sin ejercicios asignados</div>`:''}
-    </div>
-  `).join('');
+        const restLbl=ej.rest?(REST_LABEL[ej.rest]||ej.rest):'';
+        const hasUrl=ej.url&&ej.url.trim();
+        return`<td class="ent-cell" onclick="editarBloquePendiente('${c.id}')" title="Click para editar">
+          <div class="ent-nom">${nom}</div>
+          <div class="ent-meta">${sets}×${reps}${rir}${restLbl?' · '+restLbl:''}</div>
+          ${hasUrl?`<a href="${ej.url}" target="_blank" onclick="event.stopPropagation()" style="font-size:10px;color:var(--rj);text-decoration:none">▶</a>`:''}
+        </td>`;
+      }).join('')}
+    </tr>`;
+  }
+
+  if(maxEj===0)grid+=`<tr><td colspan="${trainOnly.length+1}" style="text-align:center;padding:20px;color:var(--t3);font-style:italic">Sin ejercicios — haz click en "✏️ Editar" para añadir</td></tr>`;
+  grid+=`</tbody></table></div>`;
+
+  const restH=restOnly.length?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+    ${restOnly.map(d=>`<div class="badge bgr">😴 ${d.nom}</div>`).join('')}
+  </div>`:'';
+
   return`<div>
-    <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
-      <button class="btn bo bs" onclick="window.RUT_BLOQUE_PENDIENTE=false;setTab('entreno')">← Bloque actual</button>
+    <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
+      <button class="btn bo bs" onclick="window.RUT_BLOQUE_PENDIENTE=false;RUT_SEM=1;setTab('entreno')">← Bloque actual</button>
       <div style="font-size:12px;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;border-radius:8px;padding:5px 10px">
-        📦 Bloque pendiente B${c.bloquePendienteNum||((c.bloque||1)+1)} — se activa el ${fi}
+        📦 B${c.bloquePendienteNum||((c.bloque||1)+1)} en recámara — se activa el ${fi}
       </div>
-      <button class="btn" style="background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;font-size:11px" onclick="editarRutinaPendiente('${c.id}')">✏️ Editar rutina</button>
     </div>
-    <div style="font-size:12px;color:var(--t3);margin-bottom:12px">Vista de la rutina base del próximo bloque. El cliente podrá verla antes de que empiece.</div>
-    ${diasH}
+    <div class="card" style="margin-bottom:10px">
+      <div class="ch"><h2>📅 Semanas</h2></div>
+      <div class="cb" style="padding:10px 14px"><div class="sem-strip">${semH}</div></div>
+    </div>
+    ${restH}
+    <div class="card">
+      <div class="ch">
+        <h2>💪 S${RUT_SEM} — Vista completa</h2>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn bo bs" onclick="cpImportPend('${c.id}',${RUT_SEM})">📥 Importar rutina</button>
+          <button class="btn bo bs" onclick="cpSemPend('${c.id}',${RUT_SEM})">📋 Copiar semana</button>
+          <button class="btn bp bs" onclick="editarBloquePendiente('${c.id}')">✏️ Editar detalle</button>
+        </div>
+      </div>
+      <div class="cb" style="padding:10px 14px">${grid}</div>
+    </div>
   </div>`;
+}
+
+// Wrappers de copiar/importar para modo pendiente (cargan bloque y abren editor en esa semana)
+async function cpImportPend(cliId,sem){
+  await editarBloquePendiente(cliId);
+  RUT_SEM=sem;
+  setTab('entreno');
+  setTimeout(function(){cpImport(sem);},100);
+}
+async function cpSemPend(cliId,sem){
+  await editarBloquePendiente(cliId);
+  RUT_SEM=sem;
+  setTab('entreno');
+  setTimeout(function(){cpSem(sem);},100);
 }
 
 function editarRutinaPendiente(cliId){
