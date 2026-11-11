@@ -248,8 +248,22 @@ function tCheckin(c){
         });
         c.adhMedia=Math.round(total/rows.length);
         c.adh=Math.round(Math.min(1,(rows[0].dias_entreno_real||0)/ne)*40+Math.min(1,(rows[0].dias_nutricion||0)/7)*40+Math.min(1,(rows[0].dias_pasos||0)/7)*20);
+        // Marcar como leído al abrir
+        if(c.checkIn&&!c.checkIn.leido_entrenador){
+          apiCall('PATCH','/api/entreno/checkins/'+c.id+'/leido').then(function(){
+            if(c.checkIn) c.checkIn.leido_entrenador=true;
+          }).catch(function(){});
+        }
         setTab('checkin');
       }
+    }).catch(function(){});
+  }
+
+  // Si ya estaba cargado y no estaba marcado como leído, marcarlo ahora
+  if(c._ciLoaded&&c.checkIn&&!c.checkIn.leido_entrenador&&!c._ciLeidoPending&&API_TOKEN){
+    c._ciLeidoPending=true;
+    apiCall('PATCH','/api/entreno/checkins/'+c.id+'/leido').then(function(){
+      if(c.checkIn) c.checkIn.leido_entrenador=true;
     }).catch(function(){});
   }
 
