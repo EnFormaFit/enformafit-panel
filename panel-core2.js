@@ -361,7 +361,8 @@ function updateBadges(){
   set('sn-ci',u.filter(c=>!c.checkInDone).length);
   set('sn-rev1',u.filter(c=>c.semana===c.nextRev).length);
   set('sn-al1',u.filter(c=>c.diasSinPeso>7||c.adh<0.6).length);
-  set('sn-revp',p.filter(c=>c.semana===c.nextRev).length);
+  // Programa: feedback se da la semana siguiente a la de subida
+  set('sn-revp',p.filter(c=>c.semana===c.nextRev+1).length);
   set('sn-alp',p.filter(c=>c.diasSinPeso>7||c.adh<0.6).length);
   set('sn-uno',u.length);set('sn-prog',p.length);
 }
@@ -607,9 +608,13 @@ function rCI(){
 // ═══ REVISIONES ═══
 function rRevs(tipo){
   const clis=tipo==='uno'?uno():prog();
-  const conRev=clis.filter(c=>c.semana===c.nextRev);
+  // Para 1a1: dar feedback en la misma semana que suben la rev (semana===nextRev)
+  // Para programa: el cliente sube en nextRev, el entrenador da FB la semana siguiente (semana===nextRev+1)
+  const esProg=tipo==='prog';
+  const conRev=clis.filter(c=>esProg ? c.semana===c.nextRev+1 : c.semana===c.nextRev);
   const env=conRev.filter(c=>c.revDone),pend=conRev.filter(c=>!c.revDone);
-  const prox=clis.filter(c=>c.nextRev-c.semana===1);
+  // "Próx semana": para 1a1 es nextRev-semana===1, para prog es nextRev-semana===0 (suben esta sem, FB la próxima)
+  const prox=esProg ? clis.filter(c=>c.semana===c.nextRev) : clis.filter(c=>c.nextRev-c.semana===1);
   const lbl=tipo==='uno'?'1:1':'Programa';
   let h=`<div class="kpig">
     <div class="kpi"><div class="kpi-ico" style="background:var(--rj2)">📋</div><div><div class="kpi-v" style="color:var(--rj)">${conRev.length}</div><div class="kpi-l">Esta semana — ${lbl}</div></div></div>
@@ -673,7 +678,11 @@ function rLista(tipo){
     <th>Cliente</th><th>Semana</th><th>Adherencia</th><th>Peso act.</th>
     <th>Objetivo</th><th>Próx. rev.</th>${tipo==='uno'?'<th>Check-in</th>':''}<th>Plan</th>
   </tr></thead><tbody>
-  ${clis.map(c=>{const ri=c.nextRev-c.semana;return`<tr onclick="openC('${c.id}','resumen')">
+  ${clis.map(c=>{
+    // Para programa: el entrenador da FB en nextRev+1; para 1a1: en nextRev
+    const fbSem=tipo==='prog'?c.nextRev+1:c.nextRev;
+    const ri=fbSem-c.semana;
+    return`<tr onclick="openC('${c.id}','resumen')">
     <td><div style="display:flex;align-items:center;gap:8px">
       <div class="av" style="background:${gc(ciIdx(c))}">${c.init}</div>
       <div>
@@ -688,7 +697,7 @@ function rLista(tipo){
     </div></td>
     <td style="font-weight:700;color:var(--az2)">${c.pesoAct}kg</td>
     <td style="color:var(--t3)">${c.obj}kg</td>
-    <td><span class="badge ${ri===0?'brj':ri===1?'bam':'bgr'}">${ri===0?'⚠️ Esta sem':ri===1?'Próx.':'S'+c.nextRev}</span></td>
+    <td><span class="badge ${ri===0?'brj':ri===1?'bam':'bgr'}">${ri===0?'⚠️ FB esta sem':ri===1?'Próx. FB':'S'+c.nextRev}</span></td>
     ${tipo==='uno'?`<td><span class="badge ${c.checkInDone?'bvd':'bam'}">${c.checkInDone?'✅':'⏳'}</span></td>`:''}
     <td><span class="badge ${c.planPublicado?'bvd':'bgr'}">${c.planPublicado?'Publicado':'Borrador'}</span></td>
   </tr>`;}).join('')}
