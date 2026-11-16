@@ -385,7 +385,8 @@ function updateBadges(){
   set('sn-ci',u.filter(c=>!c.checkInDone).length);
   set('sn-rev1',u.filter(c=>c.semana===c.nextRev).length);
   set('sn-al1',u.filter(c=>c.diasSinPeso>7||c.adh<0.6).length);
-  set('sn-revp',p.filter(c=>c.semana===c.nextRev).length);
+  // Programa: feedback se da la semana siguiente a la de subida
+  set('sn-revp',p.filter(c=>c.semana===c.nextRev+1).length);
   set('sn-alp',p.filter(c=>c.diasSinPeso>7||c.adh<0.6).length);
   set('sn-uno',u.length);set('sn-prog',p.length);
   set('sn-baja',baja().length);
@@ -623,7 +624,7 @@ function loadRevisionesPendientes(){
     // Actualizar badge sn-revp
     var p=prog();
     var sn=document.getElementById('sn-revp');
-    if(sn)sn.textContent=p.filter(function(c){return c.semana===c.nextRev;}).length;
+    if(sn)sn.textContent=p.filter(function(c){return c.semana===c.nextRev+1;}).length;
     if(typeof render==='function')render();
   }).catch(function(){window._revLoading=false;render();});
 }
@@ -691,9 +692,12 @@ function rRevs(tipo){
   // Cargar estado de revisiones si aún no se ha hecho
   if(!window._revLoaded&&!window._revLoading)loadRevisionesPendientes();
   const clis=tipo==='uno'?uno():prog();
-  const conRev=clis.filter(c=>c.semana===c.nextRev);
+  // Para 1a1: dar FB en nextRev; para Programa: dar FB en nextRev+1
+  const esProg=tipo==='prog';
+  const conRev=clis.filter(c=>esProg ? c.semana===c.nextRev+1 : c.semana===c.nextRev);
   const env=conRev.filter(c=>c.revDone),pend=conRev.filter(c=>!c.revDone);
-  const prox=clis.filter(c=>c.nextRev-c.semana===1);
+  // Próx sem: para Programa es cuando están en nextRev (suben esta sem, FB la próxima)
+  const prox=esProg ? clis.filter(c=>c.semana===c.nextRev) : clis.filter(c=>c.nextRev-c.semana===1);
   const lbl=tipo==='uno'?'1:1':'Programa';
   let h=`<div class="kpig">
     <div class="kpi"><div class="kpi-ico" style="background:var(--rj2)">📋</div><div><div class="kpi-v" style="color:var(--rj)">${conRev.length}</div><div class="kpi-l">Esta semana — ${lbl}</div></div></div>
@@ -705,7 +709,7 @@ function rRevs(tipo){
     h+=`<div class="card"><div class="ch"><h2>✅ Dar feedback</h2></div>`;
     env.forEach(c=>{h+=`<div style="display:flex;align-items:center;gap:11px;padding:11px 14px;border-bottom:1px solid var(--bor2);cursor:pointer" onclick="openC('${c.id}','revision')">
       <div class="av" style="background:${gc(ciIdx(c))}">${c.init}</div>
-      <div style="flex:1"><div style="font-weight:700">${c.nom}</div><div style="font-size:11.5px;color:var(--t3)">S${c.nextRev}/${c.semTotal}</div></div>
+      <div style="flex:1"><div style="font-weight:700">${c.nom}</div><div style="font-size:11.5px;color:var(--t3)">S${c.semana}/${c.semTotal}</div></div>
       <span class="badge bvd">Enviada</span><span style="font-size:12px;color:var(--az2);font-weight:700;margin-left:8px">Feedback →</span>
     </div>`;});
     h+=`</div>`;
@@ -757,7 +761,11 @@ function rLista(tipo){
     <th>Cliente</th><th>Semana</th><th>Adherencia</th><th>Peso act.</th>
     <th>Objetivo</th><th>Próx. rev.</th>${tipo==='uno'?'<th>Check-in</th>':''}<th>Plan</th>
   </tr></thead><tbody>
-  ${clis.map(c=>{const ri=c.nextRev-c.semana;return`<tr onclick="openC('${c.id}','resumen')">
+  ${clis.map(c=>{
+    // Para programa: FB en nextRev+1; para 1a1: FB en nextRev
+    const fbSem=tipo==='prog'?c.nextRev+1:c.nextRev;
+    const ri=fbSem-c.semana;
+    return`<tr onclick="openC('${c.id}','resumen')">
     <td><div style="display:flex;align-items:center;gap:8px">
       <div class="av" style="background:${gc(ciIdx(c))}">${c.init}</div>
       <div>
@@ -772,7 +780,7 @@ function rLista(tipo){
     </div></td>
     <td style="font-weight:700;color:var(--az2)">${c.pesoAct}kg</td>
     <td style="color:var(--t3)">${c.obj}kg</td>
-    <td><span class="badge ${ri===0?'brj':ri===1?'bam':'bgr'}">${ri===0?'⚠️ Esta sem':ri===1?'Próx.':'S'+c.nextRev}</span></td>
+    <td><span class="badge ${ri===0?'brj':ri===1?'bam':'bgr'}">${ri===0?'⚠️ FB esta sem':ri===1?'Próx. FB':'S'+fbSem}</span></td>
     ${tipo==='uno'?`<td><span class="badge ${c.checkInDone?'bvd':'bam'}">${c.checkInDone?'✅':'⏳'}</span></td>`:''}
   </tr>`;}).join('')}
   </tbody></table></div>`;
