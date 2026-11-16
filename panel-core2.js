@@ -626,7 +626,7 @@ function rRevs(tipo){
     h+=`<div class="card"><div class="ch"><h2>✅ Dar feedback</h2></div>`;
     env.forEach(c=>{h+=`<div style="display:flex;align-items:center;gap:11px;padding:11px 14px;border-bottom:1px solid var(--bor2);cursor:pointer" onclick="openC('${c.id}','revision')">
       <div class="av" style="background:${gc(ciIdx(c))}">${c.init}</div>
-      <div style="flex:1"><div style="font-weight:700">${c.nom}</div><div style="font-size:11.5px;color:var(--t3)">S${c.nextRev}/${c.semTotal}</div></div>
+      <div style="flex:1"><div style="font-weight:700">${c.nom}</div><div style="font-size:11.5px;color:var(--t3)">S${c.semana}/${c.semTotal}</div></div>
       <span class="badge bvd">Enviada</span><span style="font-size:12px;color:var(--az2);font-weight:700;margin-left:8px">Feedback →</span>
     </div>`;});
     h+=`</div>`;
