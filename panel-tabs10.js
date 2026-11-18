@@ -745,27 +745,28 @@ function renderMedidasTable(medidas,cliId){
   sa.forEach(function(s){if(s!=='S0')latestSem=s;});
   if(!latestSem)latestSem='S0';
 
+  // Detectar semana del formato plano: la semana con revisión más reciente que tenga algún valor numérico directo
+  var planaSem=null;
+  Object.values(medidas).forEach(function(v){if(typeof v==='number'&&!planaSem)planaSem=latestSem;});
+
   var mf={};
   CANONICAL.forEach(function(c){
-    var found=null;
+    // Fusionar TODOS los keys que matcheen (puede haber S0 anidado + S8 plano bajo distintas claves)
+    var merged={};
     Object.keys(medidas).forEach(function(k){
       if(c.keys.indexOf(k.toLowerCase())>=0){
-        if(!found||Object.keys(medidas[k]||{}).length>Object.keys(medidas[found]||{}).length)found=k;
+        var val=medidas[k];
+        if(typeof val==='number'){
+          // Formato plano: asignar a la semana del formato plano
+          var sem=planaSem||latestSem;
+          if(merged[sem]==null)merged[sem]=val;
+        } else if(val&&typeof val==='object'){
+          // Formato anidado: fusionar todas las semanas
+          Object.keys(val).forEach(function(s){if(val[s]!=null)merged[s]=val[s];});
+        }
       }
     });
-    if(found){
-      var val=medidas[found];
-      // Si el valor es un número (formato plano), convertir a formato anidado
-      if(typeof val==='number'){
-        var nested={};
-        nested[latestSem]=val;
-        mf[c.label]=nested;
-      } else {
-        mf[c.label]=val||{};
-      }
-    } else {
-      mf[c.label]={};
-    }
+    mf[c.label]=merged;
   });
   var rows='';
   Object.entries(mf).forEach(function(e,i){
