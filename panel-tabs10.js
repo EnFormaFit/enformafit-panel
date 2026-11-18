@@ -739,16 +739,33 @@ function renderMedidasTable(medidas,cliId){
   var sems=new Set(['S0'].concat(revSems));
   Object.values(medidas).forEach(function(v){if(typeof v==='object')Object.keys(v).forEach(function(k){sems.add(k);});});
   var sa=[...sems].sort(function(a,b){return parseInt(a.replace('S',''))-parseInt(b.replace('S',''));});
+  // Detectar si las medidas son formato plano {hombros:127} o anidado {hombros:{S8:127}}
+  // y normalizar todo a formato anidado buscando la semana más reciente disponible
+  var latestSem=null;
+  sa.forEach(function(s){if(s!=='S0')latestSem=s;});
+  if(!latestSem)latestSem='S0';
+
   var mf={};
   CANONICAL.forEach(function(c){
     var found=null;
     Object.keys(medidas).forEach(function(k){
       if(c.keys.indexOf(k.toLowerCase())>=0){
-        // Prefer the key with more data points
         if(!found||Object.keys(medidas[k]||{}).length>Object.keys(medidas[found]||{}).length)found=k;
       }
     });
-    mf[c.label]=found?medidas[found]:{};
+    if(found){
+      var val=medidas[found];
+      // Si el valor es un número (formato plano), convertir a formato anidado
+      if(typeof val==='number'){
+        var nested={};
+        nested[latestSem]=val;
+        mf[c.label]=nested;
+      } else {
+        mf[c.label]=val||{};
+      }
+    } else {
+      mf[c.label]={};
+    }
   });
   var rows='';
   Object.entries(mf).forEach(function(e,i){
