@@ -1778,17 +1778,13 @@ function renderBloqueHistDetail(c,b,bIdx,total){
 }
 
 function tEntrenoHistorial(c){
-  // Load from API always for fresh data
   if(API_TOKEN){
     apiCall('GET','/api/entreno/historial/'+c.id)
       .then(rows=>{
         const el=document.getElementById('hist-body');
         if(!el)return;
         if(!rows||!rows.length){el.innerHTML='<div style="padding:20px;color:var(--t3);text-align:center">Sin registros de entrenamiento aún</div>';return;}
-        // Build rutina order map from RUTINAS
-          var rut=RUTINAS[c.id]||{};
-          var rutSem=rut[RUT_SEM]||rut[1]||{};
-          el.innerHTML=buildHistTable(rows,rutSem,c.semTotal||13);
+        el.innerHTML=buildHistPorBloques(rows,c);
       }).catch(e=>{
         const el=document.getElementById('hist-body');
         if(el)el.innerHTML='<div style="padding:20px;color:var(--rj)">Error: '+e.message+'</div>';
@@ -1805,22 +1801,73 @@ function tEntrenoHistorial(c){
   '</div>';
 }
 
+function buildHistPorBloques(rows, c){
+  if(!rows||!rows.length)return'<div style="padding:20px;color:var(--t3);text-align:center">Sin registros aún</div>';
+  // Agrupar rows por bloque_id
+  var bloqueMap={};
+  var bloqueInfo={};
+  rows.forEach(function(r){
+    var bid=r.bloque_id||'sin_bloque';
+    if(!bloqueMap[bid])bloqueMap[bid]=[];
+    bloqueMap[bid].push(r);
+    if(!bloqueInfo[bid]&&r.bloque_id){
+      bloqueInfo[bid]={
+        numero:r.numero_bloque||'?',
+        estado:r.bloque_estado||'',
+        inicio:r.bloque_inicio?r.bloque_inicio.split('T')[0]:'',
+        semanas:r.bloque_semanas||13
+      };
+    }
+  });
+  // Ordenar bloques: activo primero, luego por número desc
+  var bids=Object.keys(bloqueMap).sort(function(a,b){
+    var ea=bloqueInfo[a]?bloqueInfo[a].estado:'';
+    var eb=bloqueInfo[b]?bloqueInfo[b].estado:'';
+    if(ea==='activo'&&eb!=='activo')return-1;
+    if(eb==='activo'&&ea!=='activo')return 1;
+    var na=bloqueInfo[a]?parseInt(bloqueInfo[a].numero)||0:0;
+    var nb=bloqueInfo[b]?parseInt(bloqueInfo[b].numero)||0:0;
+    return nb-na;
+  });
+  var html='<div style="padding:14px">';
+  bids.forEach(function(bid,bIdx){
+    var brows=bloqueMap[bid];
+    var info=bloqueInfo[bid]||{numero:'?',estado:'',inicio:'',semanas:13};
+    var esActivo=info.estado==='activo';
+    var uid='hb_'+bid.replace(/[^a-z0-9]/gi,'_');
+    var label='Bloque '+info.numero+(esActivo?' — Actual':'')+(info.inicio?' · desde '+info.inicio:'');
+    var badgeColor=esActivo?'var(--vd)':'var(--t3)';
+    var abierto=esActivo||(bIdx===0); // activo siempre abierto; si no hay activo, el primero
+    html+='<div style="margin-bottom:12px;border:1px solid var(--bor);border-radius:10px;overflow:hidden">';
+    // Cabecera acordeón
+    html+='<div onclick="(function(){var el=document.getElementById(\''+uid+'\');var ico=document.getElementById(\''+uid+'_ico\');if(el.style.display===\'none\'){el.style.display=\'\';ico.textContent=\'▾\';}else{el.style.display=\'none\';ico.textContent=\'▸\';}})();" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg2);cursor:pointer;user-select:none">';
+    html+='<div style="display:flex;align-items:center;gap:10px">';
+    html+='<span style="font-weight:700;font-size:13px;color:var(--t1)">'+label+'</span>';
+    if(esActivo)html+='<span style="font-size:10px;font-weight:700;color:'+badgeColor+';border:1px solid '+badgeColor+';border-radius:4px;padding:1px 6px">EN CURSO</span>';
+    html+='</div>';
+    html+='<span id="'+uid+'_ico" style="font-size:14px;color:var(--t3)">'+(abierto?'▾':'▸')+'</span>';
+    html+='</div>';
+    // Contenido (oculto si no activo)
+    html+='<div id="'+uid+'" style="'+(abierto?'':'display:none')+'">';
+    html+=buildHistTable(brows,{},info.semanas);
+    html+='</div>';
+    html+='</div>';
+  });
+  html+='</div>';
+  return html;
+}
+
 function buildHistTable(rows,rutinaOrder,semTotal){
   if(!rows||!rows.length)return'<div style="padding:20px;color:var(--t3);text-align:center">Sin registros aún</div>';
   var totalSems=semTotal||13;
-  // All semanas S1..Stotal as fixed columns
   var allSems=Array.from({length:totalSems},function(_,i){return i+1;});
-  // Build byDia from rutina first (all exercises), then add any from rows not in rutina
   var byDia={};
   if(rutinaOrder){
     Object.keys(rutinaOrder).forEach(function(dia){
       var rutDia=rutinaOrder[dia]||[];
-      if(rutDia.length){
-        byDia[dia]=rutDia.map(function(e){return e.nom;});
-      }
+      if(rutDia.length) byDia[dia]=rutDia.map(function(e){return e.nom;});
     });
   }
-  // Add any exercises from rows not already in byDia (edge case)
   rows.forEach(function(r){
     var dia=r.dia!=null?parseInt(r.dia):0;
     if(!byDia[dia])byDia[dia]=[];
@@ -1837,7 +1884,6 @@ function buildHistTable(rows,rutinaOrder,semTotal){
     html+='<div style="background:var(--az);color:#fff;font-weight:700;font-size:12px;padding:8px 14px;border-radius:8px 8px 0 0;letter-spacing:.3px">'+(DIAS_NOM[dia]||'Día '+dia)+'</div>';
     ejsInDia.forEach(function(ej,ejIdx){
       var ejRows=rows.filter(function(r){return r.ejercicio===ej&&parseInt(r.dia)==dia;});
-      // maxSeries: use rutina sets if available, else rows, else 3
       var rutEj=rutinaOrder&&rutinaOrder[dia]?rutinaOrder[dia].find(function(e){return e.nom===ej;}):null;
       var maxSeries=ejRows.length?Math.max.apply(null,ejRows.map(function(r){return r.serie;})):(rutEj?rutEj.sets:3);
       var bg=ejIdx%2===0?'#fff':'#f9fafc';
@@ -1845,13 +1891,11 @@ function buildHistTable(rows,rutinaOrder,semTotal){
       html+='<div style="font-weight:600;font-size:12px;color:var(--t1);padding:7px 12px 4px;border-bottom:1px solid var(--bor2)">'+ej+'</div>';
       html+='<div style="overflow-x:auto">';
       html+='<table style="border-collapse:collapse;font-size:11px;width:100%;min-width:'+(allSems.length*56+60)+'px">';
-      // Header row
       html+='<thead><tr style="background:#f0f4fa">';
       html+='<th style="padding:5px 8px;text-align:left;color:var(--t3);font-weight:600;font-size:10px;white-space:nowrap;border-right:1px solid var(--bor2);min-width:40px">Serie</th>';
       allSems.forEach(function(s){
         var hasDat=ejRows.some(function(r){return r.semana===s;});
-        html+='<th style="padding:5px 6px;text-align:center;font-size:10px;white-space:nowrap;min-width:52px;color:'+(hasDat?'var(--az)':'var(--t3)')+'">';
-        html+='S'+s+'</th>';
+        html+='<th style="padding:5px 6px;text-align:center;font-size:10px;white-space:nowrap;min-width:52px;color:'+(hasDat?'var(--az)':'var(--t3)')+'">S'+s+'</th>';
       });
       html+='</tr></thead><tbody>';
       for(var si=1;si<=maxSeries;si++){
@@ -1864,10 +1908,7 @@ function buildHistTable(rows,rutinaOrder,semTotal){
           } else {
             var kg=parseFloat(reg.kg);
             var kgStr=kg===Math.floor(kg)?Math.floor(kg)+'':kg.toFixed(1).replace(/\.0$/,'');
-            html+='<td style="padding:5px 6px;text-align:center">';
-            html+='<span style="font-weight:700;color:var(--az);font-size:12px">'+kgStr+'</span>';
-            html+='<span style="color:var(--t3);font-size:9px">×'+reg.reps_reales+'</span>';
-            html+='</td>';
+            html+='<td style="padding:5px 6px;text-align:center"><span style="font-weight:700;color:var(--az);font-size:12px">'+kgStr+'</span><span style="color:var(--t3);font-size:9px">×'+reg.reps_reales+'</span></td>';
           }
         });
         html+='</tr>';
