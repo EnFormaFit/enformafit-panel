@@ -525,7 +525,7 @@ function tRevision(c){
   // Si solo hay 1 bloque, mostrar como antes (4 columnas = 4 posiciones dentro del bloque)
   let fotosH='';
   if(numBloques<=1){
-    // Vista original: 4 columnas por posición de semana del bloque actual
+    // Vista 1 bloque: comparativa de TODAS las posiciones del bloque, resaltando la seleccionada
     const allRevSems=posSemsBase;
     const revLabels={0:'S0 Inicio',4:'S4',8:'S8',12:'S12',3:'S3',7:'S7',11:'S11'};
     fotosH=`<div class="sec-t" style="margin-bottom:8px">Comparativa fotos — bloque actual <span style="font-weight:400;font-size:9.5px">(hover → ajustar crop)</span></div>
@@ -536,10 +536,11 @@ function tRevision(c){
         <div class="rev-photos-row" style="grid-template-columns:repeat(${allRevSems.length},1fr)">
           ${allRevSems.map((rs,ri)=>{
             const isActive=rs===nextRev;
+            const isSel=ri===selChip;
             const fotoKey='s'+rs+'_'+pi;
             const hasFoto=rev?.fotos?.[fotoKey];
             const locked=rs>c.semana&&rs!==0;
-            return`<div>
+            return`<div style="${isSel?'outline:2px solid '+posColors[ri]+';border-radius:8px;padding:2px':''}">
               <div style="font-size:9px;font-weight:700;color:#fff;background:${posColors[ri]||'var(--az2)'};padding:3px 8px;border-radius:4px;display:inline-block;margin-bottom:4px;opacity:${locked?.5:1}">${revLabels[rs]||'S'+rs}${isActive?' ●':''}</div>
               <div class="photo-slot${hasFoto?' has':''}${locked?' locked':''}">
                 ${hasFoto
@@ -650,41 +651,37 @@ function tRevision(c){
   const allPregs=c?.revision?.preguntas||rev?.preguntas||{};
   let respsH='';
   if(numBloques<=1){
-    // Vista original: todas las semanas del bloque
-    const semConResp=Object.keys(allPregs)
-      .filter(k=>/^S\d+$/.test(k)&&Object.keys(allPregs[k]||{}).length)
-      .sort((a,b)=>parseInt(b.slice(1))-parseInt(a.slice(1)));
-    const _semRevCal=(c.tipo==='1a1'||c.tipo==='uno')?[3,7,11]:[4,8,12];
-    const _pendNum=_semRevCal.find(s=>!semConResp.includes('S'+s));
-    const nextKey=_pendNum?'S'+_pendNum:'S'+c.nextRev;
-    if(_pendNum&&!semConResp.includes(nextKey))semConResp.push(nextKey);
-    respsH=`<div class="sec-t" style="margin-bottom:8px">Preguntas de revisión</div>
+    // Vista 1 bloque: mostrar preguntas de la posición seleccionada (semSel)
+    // Si semSel=0 (Inicio) no hay preguntas en la semana 0, mostrar aviso
+    const selPosLabel=posLabels[selChip]||('S'+semSel);
+    const selPosColor=posColors[selChip]||'var(--az2)';
+    const pregSelKey='S'+semSel;
+    const pregSel=allPregs[pregSelKey]||{};
+    const tieneRespSel=Object.values(pregSel).some(v=>v!=null&&v!=='');
+    const isNextSel=semSel===nextRev;
+    const isPendSel=isNextSel&&!tieneRespSel;
+    respsH=`<div class="sec-t" style="margin-bottom:8px">Preguntas — <span style="color:${selPosColor}">${selPosLabel}</span></div>
     <div style="margin-bottom:14px">
-      ${semConResp.map(semKey=>{
-        const semNum=semKey.slice(1);
-        const pregSem=allPregs[semKey]||{};
-        const tieneResp=Object.values(pregSem).some(v=>v!=null&&v!=='');
-        const esPendiente=semKey===nextKey&&!tieneResp;
-        if(esPendiente)return`<div style="margin-bottom:12px">
-          <div style="font-size:11px;font-weight:700;display:flex;align-items:center;gap:6px">
-            <span style="background:var(--bor);color:var(--t2);padding:2px 8px;border-radius:10px;font-size:10px">S${semNum}</span>
-            <span style="color:var(--t3);font-size:11px">⏳ Pendiente de envío</span>
-          </div></div>`;
-        return`<div style="margin-bottom:12px">
-          <div style="font-size:11px;font-weight:700;color:var(--az2);margin-bottom:6px;display:flex;align-items:center;gap:6px">
-            <span style="background:var(--az2);color:#fff;padding:2px 8px;border-radius:10px;font-size:10px">S${semNum}</span>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:6px">
-            ${PP.map((q,i)=>{
-              const ans=pregSem[i]!=null?pregSem[i]:(pregSem[String(i)]!=null?pregSem[String(i)]:'');
-              const qTexto=typeof q==='string'?q:(q[0]||'');
-              return`<div style="background:var(--bg);border-radius:8px;padding:10px;border:1px solid ${ans?'var(--bor)':'var(--bor2)'}">
-                <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:4px">P${i+1}. ${qTexto}</div>
-                <div style="font-size:13px;color:${ans?'var(--t1)':'var(--bor)'}">${ans||'Sin respuesta aún'}</div>
-              </div>`;
-            }).join('')}
-          </div></div>`;
-      }).join('')}
+      ${semSel===0
+        ?`<div style="color:var(--t3);font-size:12px;padding:8px 0">No hay preguntas de revisión en el Inicio (semana 0).</div>`
+        :isPendSel
+          ?`<div style="display:flex;align-items:center;gap:8px;padding:8px 0">
+              <span style="background:${selPosColor};color:#fff;padding:2px 10px;border-radius:10px;font-size:10px;font-weight:700">S${semSel}</span>
+              <span style="color:var(--t3);font-size:12px">⏳ Pendiente de envío</span>
+            </div>`
+          :tieneRespSel
+            ?`<div style="display:flex;flex-direction:column;gap:6px">
+                ${PP.map((q,i)=>{
+                  const ans=pregSel[i]!=null?pregSel[i]:(pregSel[String(i)]!=null?pregSel[String(i)]:'');
+                  const qTexto=typeof q==='string'?q:(q[0]||'');
+                  return`<div style="background:var(--bg);border-radius:8px;padding:10px;border:1px solid ${ans?'var(--bor)':'var(--bor2)'}">
+                    <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:4px">P${i+1}. ${qTexto}</div>
+                    <div style="font-size:13px;color:${ans?'var(--t1)':'var(--bor)'}">${ans||'Sin respuesta aún'}</div>
+                  </div>`;
+                }).join('')}
+              </div>`
+            :`<div style="color:var(--t3);font-size:12px;padding:8px 0">Sin respuestas para ${selPosLabel} (S${semSel}).</div>`
+      }
     </div>`;
   } else {
     // Cross-block: preguntas de semSel por bloque
