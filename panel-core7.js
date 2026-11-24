@@ -462,35 +462,47 @@ function setTab(t){
         c._revLoaded=true;
         apiCall('GET','/api/entreno/revisiones/'+CLI_ID).then(rows=>{
           if(rows&&rows.length){
-            const medidas={};const fotos=c.revision?.fotos||{};
-            const preguntas={};const fotosRev={};
+            const medidas={};const preguntas={};const fotosRev={};
+            // CLAVE: incluir numero_bloque para evitar colisiones entre bloques.
+            // Formato fotos:    b{nb}_s{sem}_{pi}
+            // Formato medidas:  columna 'B{nb}·S{sem}'
+            // Formato preguntas: 'B{nb}·S{sem}'
+            const _PM={frente:0,perfil_d:1,perfil_i:2,espalda:3};
+            const _RI={'rev_0':0,'rev_1':1,'rev_2':2,'rev_3':3};
             rows.forEach(r=>{
+              const nb=r.numero_bloque||1;
+              const colKey='B'+nb+'·S'+r.semana; // clave única cross-bloque
               // Medidas
               const meds=typeof r.medidas==='string'?JSON.parse(r.medidas||'{}'):(r.medidas||{});
               Object.entries(meds).forEach(([nom,vals])=>{
                 if(!medidas[nom])medidas[nom]={};
-                if(typeof vals==='object'&&vals!==null)Object.assign(medidas[nom],vals);
-                else if(vals!=null)medidas[nom]['S'+r.semana]=vals;
+                if(typeof vals==='object'&&vals!==null){
+                  // Formato anidado {S4: 92} → re-keyed con bloque
+                  Object.entries(vals).forEach(([sk,sv])=>{
+                    // sk puede ser 'S4', 'S0', etc — reemplazamos con colKey si coincide semana
+                    const skNum=parseInt(sk.replace('S',''));
+                    const targetKey='B'+nb+'·S'+skNum;
+                    if(sv!=null) medidas[nom][targetKey]=sv;
+                  });
+                } else if(vals!=null){
+                  medidas[nom][colKey]=vals;
+                }
               });
-              // Preguntas
+              // Preguntas — clave única por bloque+semana
               const pregs=typeof r.preguntas==='string'?JSON.parse(r.preguntas||'{}'):(r.preguntas||{});
-              if(Object.keys(pregs).length)preguntas['S'+r.semana]=pregs;
-              // Fotos - fotos_urls es TEXT[] en BD: [frente, perfil_d, perfil_i, espalda]
+              if(Object.keys(pregs).length) preguntas[colKey]=pregs;
+              // Fotos — clave única por bloque+semana+pose
               if(Array.isArray(r.fotos_urls)){
-                r.fotos_urls.forEach((url,pi)=>{ if(url) fotosRev['s'+r.semana+'_'+pi]=url; });
+                r.fotos_urls.forEach((url,pi)=>{ if(url) fotosRev['b'+nb+'_s'+r.semana+'_'+pi]=url; });
               } else {
-                // fallback: objeto {rev_0: url, ...} o {frente: url, ...} o {s4_0: url, ...}
                 const fots=typeof r.fotos==='string'?JSON.parse(r.fotos||'{}'):(r.fotos||{});
-                const _PM={frente:0,perfil_d:1,perfil_i:2,espalda:3};
-                const _RI={'rev_0':0,'rev_1':1,'rev_2':2,'rev_3':3};
                 Object.entries(fots).forEach(([k,url])=>{
                   if(!url) return;
-                  // s{sem}_{pi} format: use directly
                   const ms=k.match(/^s\d+_(\d+)$/);
-                  if(ms){fotosRev['s'+r.semana+'_'+parseInt(ms[1])]=url;return;}
+                  if(ms){fotosRev['b'+nb+'_s'+r.semana+'_'+parseInt(ms[1])]=url;return;}
                   let pi=_PM[k];
                   if(pi===undefined) pi=_RI[k];
-                  if(pi!==undefined) fotosRev['s'+r.semana+'_'+pi]=url;
+                  if(pi!==undefined) fotosRev['b'+nb+'_s'+r.semana+'_'+pi]=url;
                 });
               }
             });

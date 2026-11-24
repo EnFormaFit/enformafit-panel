@@ -521,196 +521,157 @@ function tRevision(c){
   // Semana de la posición seleccionada
   const semSel=getSemForPos(selChip);
 
-  // Para cada bloque, obtener las fotos de la semana seleccionada
-  // Si solo hay 1 bloque, mostrar como antes (4 columnas = 4 posiciones dentro del bloque)
-  let fotosH='';
-  if(numBloques<=1){
-    // Vista 1 bloque: comparativa de TODAS las posiciones del bloque, resaltando la seleccionada
-    const allRevSems=posSemsBase;
-    const revLabels={0:'S0 Inicio',4:'S4',8:'S8',12:'S12',3:'S3',7:'S7',11:'S11'};
-    fotosH=`<div class="sec-t" style="margin-bottom:8px">Comparativa fotos — bloque actual <span style="font-weight:400;font-size:9.5px">(hover → ajustar crop)</span></div>
-    <div style="margin-bottom:14px">
-      ${POSES.map((pos,pi)=>`
-      <div class="rev-pose-row">
-        <div class="rev-pose-lbl">${pos}</div>
-        <div class="rev-photos-row" style="grid-template-columns:repeat(${allRevSems.length},1fr)">
-          ${allRevSems.map((rs,ri)=>{
-            const isActive=rs===nextRev;
-            const isSel=ri===selChip;
-            const fotoKey='s'+rs+'_'+pi;
-            const hasFoto=rev?.fotos?.[fotoKey];
-            const locked=rs>c.semana&&rs!==0;
-            return`<div style="${isSel?'outline:2px solid '+posColors[ri]+';border-radius:8px;padding:2px':''}">
-              <div style="font-size:9px;font-weight:700;color:#fff;background:${posColors[ri]||'var(--az2)'};padding:3px 8px;border-radius:4px;display:inline-block;margin-bottom:4px;opacity:${locked?.5:1}">${revLabels[rs]||'S'+rs}${isActive?' ●':''}</div>
-              <div class="photo-slot${hasFoto?' has':''}${locked?' locked':''}">
-                ${hasFoto
-                  ?`<div class="ph-img-wrap" id="phw-${rs}-${pi}" style="cursor:grab"
-                       onmousedown="phStartDrag(event,'ph-${rs}-${pi}')"
-                       ontouchstart="phStartDrag(event,'ph-${rs}-${pi}')">
-                       <img src="${hasFoto}" id="ph-${rs}-${pi}"
-                         style="transform:scale(1) translateX(0px) translateY(0px)"
-                         data-scale="1" data-tx="0" data-ty="0">
-                     </div>
-                     <div class="ph-zoom-bar">
-                       <button class="ph-zoom-btn" onclick="phZoom('ph-${rs}-${pi}',0.15)">+</button>
-                       <button class="ph-zoom-btn" onclick="phZoom('ph-${rs}-${pi}',-0.15)">−</button>
-                       <button class="ph-zoom-btn" onclick="phZoom('ph-${rs}-${pi}',0,'up')">↑</button>
-                       <button class="ph-zoom-btn" onclick="phZoom('ph-${rs}-${pi}',0,'down')">↓</button>
-                       <button class="ph-zoom-btn" onclick="phZoom('ph-${rs}-${pi}',0,'reset')" style="font-size:9px">↺</button>
-                     </div>
-                     <div class="ph-lbl">${revLabels[rs]||'S'+rs}</div>
-                     <button onclick="deleteRevPhoto('${c.id}',${rs},${pi})" style="position:absolute;top:4px;left:4px;background:rgba(220,50,50,.85);border:none;border-radius:4px;color:#fff;font-size:11px;cursor:pointer;padding:2px 5px;z-index:20;opacity:0;transition:opacity .2s" class="ph-del-btn">🗑</button>`
-                  :`<div class="ph-empty" ${!locked?`onclick="uploadRevPhoto('${c.id}','${rs}',${pi})" style="cursor:pointer"`:''}><span style="font-size:20px">📷</span><span style="font-size:10px">${locked?'🔒':'📤 Subir'}</span></div>`
-                }
-              </div>
-            </div>`;
-          }).join('')}
-        </div>
-      </div>`).join('')}
-    </div>`;
-  } else {
-    // Vista cross-block: columnas = bloques, semana = la de la posición seleccionada
-    // Construir mapa de fotos por bloque para semSel
-    const fotosPorBloque=bloques.map(bl=>{
+  // ── FOTOS: vista unificada — chips seleccionan posición, columnas = bloques ──
+  // Siempre: columnas = bloques que tienen esa posición (o bloque activo para subir)
+  // Clave fotos en c.revision.fotos: b{nb}_s{sem}_{pi}
+  const blqCols=['#2E6DA4','#9B59B6','#E74C3C','#F39C12','#1ABC9C','#E67E22'];
+  const posSelLabel=posLabels[selChip]||('S'+semSel);
+
+  // Para cada bloque, construir mapa pi→url para semSel
+  const fotosPorBloque=bloques.map(bl=>{
+    const nb=bl.numero_bloque;
+    const fMap={};
+    // Fuente 1: c.revision.fotos (ya indexado con clave b{nb}_s{sem}_{pi})
+    if(c.revision&&c.revision.fotos){
+      [0,1,2,3].forEach(pi=>{
+        const fk='b'+nb+'_s'+semSel+'_'+pi;
+        if(c.revision.fotos[fk]) fMap[pi]=c.revision.fotos[fk];
+      });
+    }
+    // Fuente 2: allRows (fotos_urls o fotos raw de BD, por si aún no se cargaron en c.revision)
+    if(!Object.keys(fMap).length){
       const row=bl.rows.find(r=>r.semana===semSel);
-      if(!row) return {};
-      const fMap={};
-      if(Array.isArray(row.fotos_urls)){
-        row.fotos_urls.forEach((url,pi)=>{if(url) fMap[pi]=url;});
-      } else if(row.fotos){
-        const fots=typeof row.fotos==='string'?JSON.parse(row.fotos||'{}'):(row.fotos||{});
-        const _PM={frente:0,perfil_d:1,perfil_i:2,espalda:3};
-        const _RI={'rev_0':0,'rev_1':1,'rev_2':2,'rev_3':3};
-        Object.entries(fots).forEach(([k,url])=>{
-          if(!url) return;
-          // Try direct s{sem}_{pi} format
-          const m2=k.match(/^s\d+_(\d+)$/);
-          if(m2){fMap[parseInt(m2[1])]=url;return;}
-          let pi=_PM[k];
-          if(pi===undefined) pi=_RI[k];
-          if(pi!==undefined) fMap[pi]=url;
-        });
+      if(row){
+        if(Array.isArray(row.fotos_urls)){
+          row.fotos_urls.forEach((url,pi)=>{if(url) fMap[pi]=url;});
+        } else if(row.fotos){
+          const fots=typeof row.fotos==='string'?JSON.parse(row.fotos||'{}'):(row.fotos||{});
+          const _PMf={frente:0,perfil_d:1,perfil_i:2,espalda:3};
+          const _RIf={'rev_0':0,'rev_1':1,'rev_2':2,'rev_3':3};
+          Object.entries(fots).forEach(([k,url])=>{
+            if(!url) return;
+            const m2=k.match(/^(?:b\d+_)?s\d+_(\d+)$/);
+            if(m2){fMap[parseInt(m2[1])]=url;return;}
+            let pi=_PMf[k]; if(pi===undefined) pi=_RIf[k];
+            if(pi!==undefined) fMap[pi]=url;
+          });
+        }
       }
-      // Also check the merged fotos from c.revision.fotos (key s{semSel}_{pi})
-      if(c.revision&&c.revision.fotos&&bl.estado==='activo'){
-        [0,1,2,3].forEach(pi=>{
-          const fk='s'+semSel+'_'+pi;
-          if(c.revision.fotos[fk]) fMap[pi]=c.revision.fotos[fk];
-        });
-      }
-      return fMap;
-    });
+    }
+    return fMap;
+  });
 
-    const blqCols=['#2E6DA4','#9B59B6','#E74C3C','#F39C12','#1ABC9C','#E67E22'];
-    const posSelLabel=posLabels[selChip]||('S'+semSel);
+  // Si no hay bloques con datos para semSel, añadir bloque activo como columna vacía para subir
+  const bloquesVista = bloques.length ? bloques : [{numero_bloque:1,estado:'activo',rows:[]}];
 
-    fotosH=`<div class="sec-t" style="margin-bottom:8px">Comparativa fotos — ${posSelLabel} (S${semSel}) por bloque <span style="font-weight:400;font-size:9.5px">(hover → ajustar crop)</span></div>
-    <div style="margin-bottom:14px">
-      ${POSES.map((pos,pi)=>`
-      <div class="rev-pose-row">
-        <div class="rev-pose-lbl">${pos}</div>
-        <div class="rev-photos-row" style="grid-template-columns:repeat(${bloques.length},1fr)">
-          ${bloques.map((bl,bi)=>{
-            const hasFoto=fotosPorBloque[bi][pi];
-            const isActivo=bl.estado==='activo';
-            const blLbl='B'+bl.numero_bloque+(isActivo?' ●':'');
-            const blId='bph-'+bl.numero_bloque+'-'+semSel+'-'+pi;
-            return`<div>
-              <div style="font-size:9px;font-weight:700;color:#fff;background:${blqCols[bi%blqCols.length]};padding:3px 8px;border-radius:4px;display:inline-block;margin-bottom:4px">${blLbl}</div>
-              <div class="photo-slot${hasFoto?' has':''}">
-                ${hasFoto
-                  ?`<div class="ph-img-wrap" id="${blId}w" style="cursor:grab"
-                       onmousedown="phStartDrag(event,'${blId}')"
-                       ontouchstart="phStartDrag(event,'${blId}')">
-                       <img src="${hasFoto}" id="${blId}"
-                         style="transform:scale(1) translateX(0px) translateY(0px)"
-                         data-scale="1" data-tx="0" data-ty="0">
-                     </div>
-                     <div class="ph-zoom-bar">
-                       <button class="ph-zoom-btn" onclick="phZoom('${blId}',0.15)">+</button>
-                       <button class="ph-zoom-btn" onclick="phZoom('${blId}',-0.15)">−</button>
-                       <button class="ph-zoom-btn" onclick="phZoom('${blId}',0,'up')">↑</button>
-                       <button class="ph-zoom-btn" onclick="phZoom('${blId}',0,'down')">↓</button>
-                       <button class="ph-zoom-btn" onclick="phZoom('${blId}',0,'reset')" style="font-size:9px">↺</button>
-                     </div>
-                     <div class="ph-lbl">B${bl.numero_bloque}</div>`
-                  :`<div class="ph-empty" ${isActivo?`onclick="uploadRevPhoto('${c.id}','${semSel}',${pi})" style="cursor:pointer"`:''}><span style="font-size:20px">📷</span><span style="font-size:10px">${isActivo?'📤 Subir':'—'}</span></div>`
-                }
-              </div>
-            </div>`;
-          }).join('')}
-        </div>
-      </div>`).join('')}
-    </div>`;
-  }
+  let fotosH=`<div class="sec-t" style="margin-bottom:8px">
+    Fotos — <span style="color:${posColors[selChip]||'var(--az2)'}">${posSelLabel}</span> por bloque
+    <span style="font-weight:400;font-size:9.5px;margin-left:6px">(hover → ajustar crop)</span>
+  </div>
+  <div style="margin-bottom:14px">
+    ${POSES.map((pos,pi)=>`
+    <div class="rev-pose-row">
+      <div class="rev-pose-lbl">${pos}</div>
+      <div class="rev-photos-row" style="grid-template-columns:repeat(${bloquesVista.length},1fr)">
+        ${bloquesVista.map((bl,bi)=>{
+          const nb=bl.numero_bloque;
+          const hasFoto=fotosPorBloque[bi]?.[pi];
+          const isActivo=bl.estado==='activo';
+          const blLbl='B'+nb+(isActivo?' ●':'');
+          const blId='bph-'+nb+'-'+semSel+'-'+pi;
+          return`<div>
+            <div style="font-size:9px;font-weight:700;color:#fff;background:${blqCols[bi%blqCols.length]};padding:3px 8px;border-radius:4px;display:inline-block;margin-bottom:4px">${blLbl}</div>
+            <div class="photo-slot${hasFoto?' has':''}">
+              ${hasFoto
+                ?`<div class="ph-img-wrap" id="${blId}w" style="cursor:grab"
+                     onmousedown="phStartDrag(event,'${blId}')"
+                     ontouchstart="phStartDrag(event,'${blId}')">
+                     <img src="${hasFoto}" id="${blId}"
+                       style="transform:scale(1) translateX(0px) translateY(0px)"
+                       data-scale="1" data-tx="0" data-ty="0">
+                   </div>
+                   <div class="ph-zoom-bar">
+                     <button class="ph-zoom-btn" onclick="phZoom('${blId}',0.15)">+</button>
+                     <button class="ph-zoom-btn" onclick="phZoom('${blId}',-0.15)">−</button>
+                     <button class="ph-zoom-btn" onclick="phZoom('${blId}',0,'up')">↑</button>
+                     <button class="ph-zoom-btn" onclick="phZoom('${blId}',0,'down')">↓</button>
+                     <button class="ph-zoom-btn" onclick="phZoom('${blId}',0,'reset')" style="font-size:9px">↺</button>
+                   </div>
+                   <div class="ph-lbl">B${nb}</div>
+                   <button onclick="deleteRevPhoto('${c.id}',${nb},${semSel},${pi})" style="position:absolute;top:4px;left:4px;background:rgba(220,50,50,.85);border:none;border-radius:4px;color:#fff;font-size:11px;cursor:pointer;padding:2px 5px;z-index:20;opacity:0;transition:opacity .2s" class="ph-del-btn">🗑</button>`
+                :`<div class="ph-empty" ${isActivo?`onclick="uploadRevPhoto('${c.id}','${semSel}',${pi})" style="cursor:pointer"`:''}><span style="font-size:20px">📷</span><span style="font-size:10px">${isActivo?'📤 Subir':'—'}</span></div>`
+              }
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`).join('')}
+  </div>`;
 
   // Medidas en tabla horizontal comparativa
   const medsH=buildMedidasHTML(c);
 
-  // Preguntas: mostrar las de la posición seleccionada a través de bloques
-  const allPregs=c?.revision?.preguntas||rev?.preguntas||{};
-  let respsH='';
-  if(numBloques<=1){
-    // Vista 1 bloque: mostrar preguntas de la posición seleccionada (semSel)
-    // Si semSel=0 (Inicio) no hay preguntas en la semana 0, mostrar aviso
-    const selPosLabel=posLabels[selChip]||('S'+semSel);
-    const selPosColor=posColors[selChip]||'var(--az2)';
-    const pregSelKey='S'+semSel;
-    const pregSel=allPregs[pregSelKey]||{};
-    const tieneRespSel=Object.values(pregSel).some(v=>v!=null&&v!=='');
-    const isNextSel=semSel===nextRev;
-    const isPendSel=isNextSel&&!tieneRespSel;
-    respsH=`<div class="sec-t" style="margin-bottom:8px">Preguntas — <span style="color:${selPosColor}">${selPosLabel}</span></div>
-    <div style="margin-bottom:14px">
-      ${semSel===0
-        ?`<div style="color:var(--t3);font-size:12px;padding:8px 0">No hay preguntas de revisión en el Inicio (semana 0).</div>`
-        :isPendSel
-          ?`<div style="display:flex;align-items:center;gap:8px;padding:8px 0">
-              <span style="background:${selPosColor};color:#fff;padding:2px 10px;border-radius:10px;font-size:10px;font-weight:700">S${semSel}</span>
-              <span style="color:var(--t3);font-size:12px">⏳ Pendiente de envío</span>
-            </div>`
-          :tieneRespSel
+  // ── PREGUNTAS: siempre por bloque, chips seleccionan posición ──────────────
+  // Bloque activo expandido por defecto; bloques anteriores en acordeón plegado.
+  // Clave en c.revision.preguntas: 'B{nb}·S{sem}'
+  const selPosLabel2=posLabels[selChip]||('S'+semSel);
+  const selPosColor2=posColors[selChip]||'var(--az2)';
+  let respsH=`<div class="sec-t" style="margin-bottom:8px">
+    Preguntas — <span style="color:${selPosColor2}">${selPosLabel2}</span> por bloque
+  </div>
+  <div style="margin-bottom:14px">`;
+
+  if(semSel===0){
+    respsH+=`<div style="color:var(--t3);font-size:12px;padding:8px 0">No hay preguntas en el Inicio (semana 0).</div>`;
+  } else {
+    const bloquesParaPregs=bloques.length?bloques:[{numero_bloque:1,estado:'activo',rows:[]}];
+    bloquesParaPregs.forEach((bl,bi)=>{
+      const nb=bl.numero_bloque;
+      const isActivo=bl.estado==='activo';
+      const colKey='B'+nb+'·S'+semSel;
+      // Fuente 1: c.revision.preguntas (ya indexado con clave B{nb}·S{sem})
+      let pregs=(c.revision?.preguntas&&c.revision.preguntas[colKey])||null;
+      // Fuente 2: allRows (si aún no se cargaron en c.revision)
+      if(!pregs){
+        const row=bl.rows.find(r=>r.semana===semSel);
+        if(row) pregs=typeof row.preguntas==='string'?JSON.parse(row.preguntas||'{}'):(row.preguntas||null);
+      }
+      const tieneResp=pregs&&Object.values(pregs).some(v=>v!=null&&v!=='');
+      const isNext=isActivo&&semSel===nextRev;
+      const isPend=isNext&&!tieneResp;
+      const acordeonId='preg-acord-'+c.id+'-'+nb+'-'+semSel;
+      // Bloque activo: siempre expandido. Bloques anteriores: colapsados por defecto.
+      const expanded=isActivo||tieneResp;
+      respsH+=`<div style="margin-bottom:10px;border:1px solid var(--bor2);border-radius:8px;overflow:hidden">
+        <div onclick="document.getElementById('${acordeonId}').style.display=document.getElementById('${acordeonId}').style.display==='none'?'block':'none'"
+          style="display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;background:var(--bg2)">
+          <span style="background:${blqCols[bi%blqCols.length]};color:#fff;padding:2px 10px;border-radius:10px;font-size:10px;font-weight:700">
+            Bloque ${nb}${isActivo?' ●':''}
+          </span>
+          ${isPend?'<span style="color:var(--t3);font-size:11px">⏳ Pendiente de envío</span>':''}
+          ${!tieneResp&&!isPend?'<span style="color:var(--t3);font-size:11px">Sin respuestas</span>':''}
+          ${tieneResp?'<span style="color:var(--vd);font-size:11px">✓ Completado</span>':''}
+          <span style="margin-left:auto;font-size:12px;color:var(--t3)">${expanded?'▲':'▼'}</span>
+        </div>
+        <div id="${acordeonId}" style="display:${expanded?'block':'none'};padding:10px 12px">
+          ${tieneResp
             ?`<div style="display:flex;flex-direction:column;gap:6px">
                 ${PP.map((q,i)=>{
-                  const ans=pregSel[i]!=null?pregSel[i]:(pregSel[String(i)]!=null?pregSel[String(i)]:'');
+                  const ans=pregs[i]!=null?pregs[i]:(pregs[String(i)]!=null?pregs[String(i)]:'');
                   const qTexto=typeof q==='string'?q:(q[0]||'');
                   return`<div style="background:var(--bg);border-radius:8px;padding:10px;border:1px solid ${ans?'var(--bor)':'var(--bor2)'}">
                     <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:4px">P${i+1}. ${qTexto}</div>
-                    <div style="font-size:13px;color:${ans?'var(--t1)':'var(--bor)'}">${ans||'Sin respuesta aún'}</div>
+                    <div style="font-size:13px;color:${ans?'var(--t1)':'var(--bor)'}">${ans||'Sin respuesta'}</div>
                   </div>`;
                 }).join('')}
               </div>`
-            :`<div style="color:var(--t3);font-size:12px;padding:8px 0">Sin respuestas para ${selPosLabel} (S${semSel}).</div>`
-      }
-    </div>`;
-  } else {
-    // Cross-block: preguntas de semSel por bloque
-    const blqCols2=['#2E6DA4','#9B59B6','#E74C3C','#F39C12','#1ABC9C','#E67E22'];
-    respsH=`<div class="sec-t" style="margin-bottom:8px">Preguntas — ${posLabels[selChip]||'S'+semSel} por bloque</div>
-    <div style="margin-bottom:14px">
-      ${bloques.map((bl,bi)=>{
-        const row=bl.rows.find(r=>r.semana===semSel);
-        const pregs=row?(typeof row.preguntas==='string'?JSON.parse(row.preguntas||'{}'):(row.preguntas||{})):null;
-        const tieneResp=pregs&&Object.values(pregs).some(v=>v!=null&&v!=='');
-        return`<div style="margin-bottom:14px">
-          <div style="font-size:11px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px">
-            <span style="background:${blqCols2[bi%blqCols2.length]};color:#fff;padding:3px 10px;border-radius:12px;font-size:10px">Bloque ${bl.numero_bloque}${bl.estado==='activo'?' ●':''}</span>
-            ${!tieneResp?'<span style="color:var(--t3);font-size:11px">Sin respuestas</span>':''}
-          </div>
-          ${tieneResp?`<div style="display:flex;flex-direction:column;gap:6px">
-            ${PP.map((q,i)=>{
-              const ans=pregs[i]!=null?pregs[i]:(pregs[String(i)]!=null?pregs[String(i)]:'');
-              const qTexto=typeof q==='string'?q:(q[0]||'');
-              return`<div style="background:var(--bg);border-radius:8px;padding:10px;border:1px solid ${ans?'var(--bor)':'var(--bor2)'}">
-                <div style="font-size:11px;font-weight:700;color:var(--t3);margin-bottom:4px">P${i+1}. ${qTexto}</div>
-                <div style="font-size:13px;color:${ans?'var(--t1)':'var(--bor)'}">${ans||'Sin respuesta'}</div>
-              </div>`;
-            }).join('')}
-          </div>`:''}
-        </div>`;
-      }).join('')}
-    </div>`;
+            :`<div style="color:var(--t3);font-size:12px">${isPend?'El cliente aún no ha enviado esta revisión.':'Sin respuestas registradas.'}</div>`
+          }
+        </div>
+      </div>`;
+    });
   }
+  respsH+=`</div>`;
 
   const fbH=`<div class="sec-t" style="margin-bottom:6px">Notas del entrenador</div>
   <div style="border:1.5px solid var(--bor);border-radius:8px;padding:10px;margin-bottom:14px">
@@ -745,10 +706,10 @@ function uploadRevPhoto(cliId, rev, pose){
   inp.click();
 }
 
-function deleteRevPhoto(cliId,rev,pose){
+function deleteRevPhoto(cliId,nb,sem,pose){
   if(!confirm('¿Eliminar esta foto? No se puede deshacer.'))return;
   const c=byId(cliId);if(!c||!c.revision?.fotos)return;
-  delete c.revision.fotos['s'+rev+'_'+pose];
+  delete c.revision.fotos['b'+nb+'_s'+sem+'_'+pose];
   toast('Foto eliminada','');setTab('revision');
 }
 function phStartDrag(e,id){
@@ -881,7 +842,6 @@ function buildMedidasHTML(c){
 
 function renderMedidasTable(medidas,cliId){
   if(!medidas||typeof medidas!=='object')return'';
-  // Canonical order with all key format mappings
   var CANONICAL=[
     {label:'Hombros',     keys:['hombros','hombros (zona más amplia)','hombros (zona mas amplia)']},
     {label:'Pecho',       keys:['pecho','pecho (altura de pezones)']},
@@ -893,67 +853,81 @@ function renderMedidasTable(medidas,cliId){
     {label:'Gemelo izq.', keys:['gemeloi','gemelo_i','gemelo izq.']},
     {label:'Gemelo dcho.',keys:['gemelod','gemelo_d','gemelo dcho.']},
   ];
-  // Use client's revision semanas for column headers
-  var c=cliId?byId(cliId):null;
-  var revSems=c&&(c.tipo==='1a1'||c.tipo==='uno')?['S3','S7','S11']:['S4','S8','S12'];
-  var sems=new Set(['S0'].concat(revSems));
-  Object.values(medidas).forEach(function(v){if(typeof v==='object')Object.keys(v).forEach(function(k){sems.add(k);});});
-  var sa=[...sems].sort(function(a,b){return parseInt(a.replace('S',''))-parseInt(b.replace('S',''));});
-  // Detectar si las medidas son formato plano {hombros:127} o anidado {hombros:{S8:127}}
-  // y normalizar todo a formato anidado buscando la semana más reciente disponible
-  var latestSem=null;
-  sa.forEach(function(s){if(s!=='S0')latestSem=s;});
-  if(!latestSem)latestSem='S0';
 
-  // Detectar semana del formato plano: la semana con revisión más reciente que tenga algún valor numérico directo
-  var planaSem=null;
-  Object.values(medidas).forEach(function(v){if(typeof v==='number'&&!planaSem)planaSem=latestSem;});
+  // ── Recolectar todas las columnas únicas (formato B{nb}·S{sem} o legacy S{sem}) ──
+  // Ordenar: primero por numero_bloque, luego por semana
+  var colSet=new Set();
+  Object.values(medidas).forEach(function(v){
+    if(typeof v==='object'&&v!==null) Object.keys(v).forEach(function(k){colSet.add(k);});
+  });
+  // Separar columnas con bloque (B1·S0) de legacy sin bloque (S0)
+  var sa=[...colSet].sort(function(a,b){
+    // Parsear B{nb}·S{sem} o legacy S{sem}
+    var mA=a.match(/^B(\d+)·S(\d+)$/), mB=b.match(/^B(\d+)·S(\d+)$/);
+    var nbA=mA?parseInt(mA[1]):1, semA=mA?parseInt(mA[2]):parseInt(a.replace(/^S/,''));
+    var nbB=mB?parseInt(mB[1]):1, semB=mB?parseInt(mB[2]):parseInt(b.replace(/^S/,''));
+    return nbA!==nbB?nbA-nbB:semA-semB;
+  });
 
+  // ── Normalizar medidas a formato {colKey: valor} por medida ──
   var mf={};
-  CANONICAL.forEach(function(c){
-    // Fusionar TODOS los keys que matcheen (puede haber S0 anidado + S8 plano bajo distintas claves)
+  CANONICAL.forEach(function(canon){
     var merged={};
     Object.keys(medidas).forEach(function(k){
-      if(c.keys.indexOf(k.toLowerCase())>=0){
+      if(canon.keys.indexOf(k.toLowerCase())>=0){
         var val=medidas[k];
         if(typeof val==='number'){
-          // Formato plano: asignar a la semana del formato plano
-          var sem=planaSem||latestSem;
-          if(merged[sem]==null)merged[sem]=val;
+          // Formato plano legacy — asignar a la última columna disponible o S0
+          var fallbackCol=sa[sa.length-1]||'S0';
+          if(merged[fallbackCol]==null) merged[fallbackCol]=val;
         } else if(val&&typeof val==='object'){
-          // Formato anidado: fusionar todas las semanas
-          Object.keys(val).forEach(function(s){if(val[s]!=null)merged[s]=val[s];});
+          Object.keys(val).forEach(function(s){if(val[s]!=null) merged[s]=val[s];});
         }
       }
     });
-    mf[c.label]=merged;
+    mf[canon.label]=merged;
   });
+
+  // ── Construir tabla ──
+  // Colores por bloque para las cabeceras
+  var blqColsMed=['#2E6DA4','#9B59B6','#E74C3C','#F39C12','#1ABC9C','#E67E22'];
+  var hdrs=sa.map(function(s){
+    var m=s.match(/^B(\d+)·S(\d+)$/);
+    var nb=m?parseInt(m[1]):1;
+    var sem=m?m[2]:s.replace('S','');
+    var bg=blqColsMed[(nb-1)%blqColsMed.length];
+    var lbl=m?'B'+nb+'·S'+sem:('S'+sem);
+    return'<th style="padding:4px 8px;text-align:center;color:#fff;font-size:10px;min-width:52px;background:'+bg+'">'+lbl+'</th>';
+  }).join('');
+
   var rows='';
   Object.entries(mf).forEach(function(e,i){
     var nom=e[0],vals=e[1];
-    var bg=i%2===0?'#fff':'var(--bg)';
-    var cells='';
-    var nums=[];
+    var hasSomeVal=Object.keys(vals).length>0;
+    if(!hasSomeVal)return; // ocultar filas completamente vacías
+    var bg=i%2===0?'transparent':'rgba(0,0,0,.03)';
+    var cells='';var nums=[];
     sa.forEach(function(s){
-      var v=typeof vals==='object'&&vals[s]!=null?vals[s]:null;
+      var v=vals[s]!=null?vals[s]:null;
       nums.push(v);
-      cells+='<td style="padding:5px 10px;text-align:center;font-weight:700">'+(v!=null?v:'<span style="color:var(--bor2)">—</span>')+'</td>';
+      cells+='<td style="padding:4px 8px;text-align:center;font-weight:700;font-size:12px">'+(v!=null?v:'<span style="color:var(--bor2)">—</span>')+'</td>';
     });
     var first=nums.find(function(v){return v!=null;});
     var last=[...nums].reverse().find(function(v){return v!=null;});
     var cambio=first!=null&&last!=null&&first!==last?+(last-first).toFixed(1):null;
     var col=cambio===null?'var(--t3)':cambio<0?'var(--vd)':cambio>0?'var(--rj)':'var(--t3)';
     rows+='<tr style="border-bottom:1px solid var(--bor2);background:'+bg+'">'
-      +'<td style="padding:5px 10px;font-size:12px;font-weight:600;color:var(--t2)">'+nom+'</td>'
+      +'<td style="padding:4px 10px;font-size:11px;font-weight:600;color:var(--t2);white-space:nowrap">'+nom+'</td>'
       +cells
-      +'<td style="padding:5px 8px;text-align:center;font-weight:700;color:'+col+'">'+(cambio!==null?(cambio>0?'+':'')+cambio:'—')+'</td></tr>';
+      +'<td style="padding:4px 8px;text-align:center;font-weight:700;font-size:12px;color:'+col+'">'+(cambio!==null?(cambio>0?'+':'')+cambio:'—')+'</td></tr>';
   });
-  var hdrs=sa.map(function(s){return'<th style="padding:5px 10px;text-align:center;color:#fff;font-size:11px;min-width:58px">'+s+'</th>';}).join('');
-  var saveBtn='';
-  return'<div class="sec-t" style="margin-bottom:6px">Medidas (cm)'+saveBtn+'</div>'
+
+  if(!rows) return'<div style="color:var(--t3);font-size:12px;padding:8px 0">Sin medidas registradas.</div>';
+
+  return'<div class="sec-t" style="margin-bottom:6px">Medidas (cm)</div>'
     +'<div style="overflow-x:auto;margin-bottom:12px"><table style="border-collapse:collapse;font-size:12px;width:100%">'
-    +'<thead><tr style="background:var(--az)"><th style="padding:5px 10px;text-align:left;color:rgba(255,255,255,.8);font-size:10px;min-width:120px">Medida</th>'
-    +hdrs+'<th style="padding:5px 8px;text-align:center;color:rgba(255,255,255,.8);font-size:10px">Δ</th></tr></thead>'
+    +'<thead><tr><th style="padding:4px 10px;text-align:left;background:var(--az);color:rgba(255,255,255,.8);font-size:10px;min-width:110px">Medida</th>'
+    +hdrs+'<th style="padding:4px 8px;text-align:center;background:var(--az);color:rgba(255,255,255,.8);font-size:10px">Δ total</th></tr></thead>'
     +'<tbody>'+rows+'</tbody></table></div>';
 }
 
@@ -1048,27 +1022,54 @@ function loadMedidasCliente(cliId){
     .then(rows=>{
       if(!rows||!rows.length){toast('Sin medidas en BD','');return;}
       const c=byId(cliId);
+      // Reconstruir medidas, preguntas y fotos con claves B{nb}·S{sem}
+      const medidas={}, fotosRev={};
+      rows.forEach(function(rev){
+        const nb=rev.numero_bloque||1;
+        const sem=rev.semana;
+        const colKey='B'+nb+'·S'+sem;
+        // Fotos: b{nb}_s{sem}_{pi}
+        const fotos=typeof rev.fotos==='string'?JSON.parse(rev.fotos||'{}'):rev.fotos||{};
+        Object.entries(fotos).forEach(([pose,url])=>{
+          if(url) fotosRev['b'+nb+'_s'+sem+'_'+pose]=url;
+        });
+        if(Array.isArray(rev.fotos_urls)){
+          rev.fotos_urls.forEach(function(url,pi){if(url) fotosRev['b'+nb+'_s'+sem+'_'+pi]=url;});
+        }
+        // Medidas: B{nb}·S{sem}
+        const meds=typeof rev.medidas==='string'?JSON.parse(rev.medidas||'{}'):rev.medidas||{};
+        Object.entries(meds).forEach(([nom,vals])=>{
+          if(!medidas[nom])medidas[nom]={};
+          if(typeof vals==='object'&&vals!==null){
+            Object.entries(vals).forEach(([sk,sv])=>{
+              if(sv!=null){
+                const skNum=parseInt(sk.replace('S',''));
+                medidas[nom]['B'+nb+'·S'+(isNaN(skNum)?sk:skNum)]=sv;
+              }
+            });
+          } else if(vals!=null){
+            medidas[nom][colKey]=vals;
+          }
+        });
+      });
       if(c){
-        // Load fotos from all revisions into c.revision.fotos
-        if(!c.revision)c.revision={fotos:{}};
-        if(!c.revision.fotos)c.revision.fotos={};
-        rows.forEach(function(rev){
-          const sem=rev.semana;
-          const fotos=typeof rev.fotos==='string'?JSON.parse(rev.fotos||'{}'):rev.fotos||{};
-          Object.entries(fotos).forEach(([pose,url])=>{
-            if(url)c.revision.fotos['s'+sem+'_'+pose]=url;
-          });
+        if(!c.revision)c.revision={};
+        c.revision.fotos=fotosRev;
+        // Mergear medidas en c.revision.medidas
+        if(!c.revision.medidas)c.revision.medidas={};
+        Object.entries(medidas).forEach(([nom,vals])=>{
+          if(!c.revision.medidas[nom])c.revision.medidas[nom]={};
+          Object.assign(c.revision.medidas[nom],vals);
         });
       }
-      const s0=rows.find(r=>r.semana===0);
-      if(!s0||!s0.medidas){
+      if(!Object.keys(medidas).length){
         const el=document.getElementById('medidas-'+cliId);
-        if(el)el.innerHTML='<div style="padding:12px;color:var(--t3);font-size:12px">Sin medidas S0 registradas</div>';
+        if(el)el.innerHTML='<div style="padding:12px;color:var(--t3);font-size:12px">Sin medidas registradas</div>';
         return;
       }
       const el=document.getElementById('medidas-'+cliId);
       if(el)el.innerHTML=renderMedidasTable(
-        typeof s0.medidas==='string'?JSON.parse(s0.medidas):s0.medidas, rows);
+        c&&c.revision&&c.revision.medidas?c.revision.medidas:medidas, cliId);
       toast('Medidas y fotos cargadas','vd');
       render();
     }).catch(e=>toast('Error: '+e.message,'rj'));
