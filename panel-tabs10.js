@@ -564,38 +564,28 @@ function tRevision(c){
   // Si no hay bloques con datos para semSel, añadir bloque activo como columna vacía para subir
   const bloquesVista = bloques.length ? bloques : [{numero_bloque:1,estado:'activo',rows:[]}];
 
-  // Ancho fijo por columna-bloque: más bloques → columnas más estrechas, siempre comparables
-  const colW=bloquesVista.length<=2?130:bloquesVista.length<=4?110:90;
+  // Layout: filas = poses, columnas = bloques. Scroll horizontal si no caben.
+  // Cada columna-bloque tiene 200px fijos → fotos siempre al mismo tamaño independientemente de N bloques
+  const COL_W=200;
 
   let fotosH=`<div class="sec-t" style="margin-bottom:8px">
     Fotos — <span style="color:${posColors[selChip]||'var(--az2)'}">${posSelLabel}</span> por bloque
     <span style="font-weight:400;font-size:9.5px;margin-left:6px">(hover → ajustar crop)</span>
   </div>
-  <div style="overflow-x:auto;margin-bottom:14px">
-    <table style="border-collapse:separate;border-spacing:6px 0">
-      <thead><tr>
-        <th style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;min-width:70px;text-align:left;padding-bottom:4px">Pose</th>
-        ${bloquesVista.map((bl,bi)=>{
-          const nb=bl.numero_bloque;
-          const isActivo=bl.estado==='activo';
-          return`<th style="text-align:center;padding-bottom:4px;width:${colW}px">
-            <div style="font-size:10px;font-weight:700;color:#fff;background:${blqCols[bi%blqCols.length]};padding:3px 10px;border-radius:12px;white-space:nowrap;display:inline-block">
-              B${nb}${isActivo?' ●':''}
-            </div>
-          </th>`;
-        }).join('')}
-      </tr></thead>
-      <tbody>
-        ${POSES.map((pos,pi)=>`
-        <tr>
-          <td style="font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;padding-right:8px;white-space:nowrap;vertical-align:middle">${pos}</td>
+  <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:14px">
+    <div style="display:flex;gap:0;min-width:max-content">
+      ${POSES.map((pos,pi)=>`
+      <div class="rev-pose-row" style="flex-shrink:0;width:${COL_W}px;margin-right:8px">
+        <div class="rev-pose-lbl" style="margin-bottom:6px">${pos}</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
           ${bloquesVista.map((bl,bi)=>{
             const nb=bl.numero_bloque;
             const hasFoto=fotosPorBloque[bi]?.[pi];
             const isActivo=bl.estado==='activo';
             const blId='bph-'+nb+'-'+semSel+'-'+pi;
-            return`<td style="vertical-align:top;width:${colW}px">
-              <div class="photo-slot${hasFoto?' has':''}" style="width:${colW}px">
+            return`<div>
+              <div style="font-size:9px;font-weight:700;color:#fff;background:${blqCols[bi%blqCols.length]};padding:3px 8px;border-radius:4px;display:inline-block;margin-bottom:4px">B${nb}${isActivo?' ●':''}</div>
+              <div class="photo-slot${hasFoto?' has':''}">
                 ${hasFoto
                   ?`<div class="ph-img-wrap" id="${blId}w" style="cursor:grab"
                        onmousedown="phStartDrag(event,'${blId}')"
@@ -616,11 +606,11 @@ function tRevision(c){
                   :`<div class="ph-empty" ${isActivo?`onclick="uploadRevPhoto('${c.id}','${semSel}',${pi})" style="cursor:pointer"`:''}><span style="font-size:20px">📷</span><span style="font-size:10px">${isActivo?'📤 Subir':'—'}</span></div>`
                 }
               </div>
-            </td>`;
+            </div>`;
           }).join('')}
-        </tr>`).join('')}
-      </tbody>
-    </table>
+        </div>
+      </div>`).join('')}
+    </div>
   </div>`;
 
   // Medidas en tabla horizontal comparativa
