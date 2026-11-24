@@ -489,7 +489,7 @@ function tRevision(c){
     }).join('')}
   </div>`;
 
-  // FOTOS: cada postura en su fila, columnas = bloques
+  // FOTOS: normalizar todas las claves a s{sem}_{pi} format
   if(c.revision&&c.revision.fotos){
     var _PM2={frente:0,perfil_d:1,perfil_i:2,espalda:3};
     var _RI2={'rev_0':0,'rev_1':1,'rev_2':2,'rev_3':3};
@@ -497,15 +497,23 @@ function tRevision(c){
     Object.entries(c.revision.fotos).forEach(function(e){
       var k=e[0], url=e[1];
       if(!url) return;
+      // ya es s{sem}_{pi}
       if(/^s\d+_\d+$/.test(k)){_normalized[k]=url;return;}
+      // rev_S{sem}_{pose} formato viejo
       var m=k.match(/^rev_S(\d+)_(.+)$/);
       if(m){
-        var sem=m[1], pose=m[2];
-        var pi=_PM2[pose];
-        if(pi===undefined) pi=_RI2[pose];
-        if(pi!==undefined) _normalized['s'+sem+'_'+pi]=url;
+        var sem2=m[1], pose2=m[2];
+        var pi2=_PM2[pose2];
+        if(pi2===undefined) pi2=_RI2[pose2];
+        if(pi2!==undefined) _normalized['s'+sem2+'_'+pi2]=url;
         return;
       }
+      // rev_N sin semana → asignar a nextRev (semana de revisión actual)
+      var mRev=k.match(/^rev_(\d+)$/);
+      if(mRev){_normalized['s'+nextRev+'_'+mRev[1]]=url;return;}
+      // nombre simple frente/perfil_d/etc sin semana → asignar a nextRev
+      var pi3=_PM2[k];
+      if(pi3!==undefined){_normalized['s'+nextRev+'_'+pi3]=url;}
     });
     c.revision.fotos=_normalized;
   }

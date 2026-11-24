@@ -479,12 +479,15 @@ function setTab(t){
               if(Array.isArray(r.fotos_urls)){
                 r.fotos_urls.forEach((url,pi)=>{ if(url) fotosRev['s'+r.semana+'_'+pi]=url; });
               } else {
-                // fallback: objeto {rev_0: url, ...} o {frente: url, ...}
+                // fallback: objeto {rev_0: url, ...} o {frente: url, ...} o {s4_0: url, ...}
                 const fots=typeof r.fotos==='string'?JSON.parse(r.fotos||'{}'):(r.fotos||{});
                 const _PM={frente:0,perfil_d:1,perfil_i:2,espalda:3};
                 const _RI={'rev_0':0,'rev_1':1,'rev_2':2,'rev_3':3};
                 Object.entries(fots).forEach(([k,url])=>{
                   if(!url) return;
+                  // s{sem}_{pi} format: use directly
+                  const ms=k.match(/^s\d+_(\d+)$/);
+                  if(ms){fotosRev['s'+r.semana+'_'+parseInt(ms[1])]=url;return;}
                   let pi=_PM[k];
                   if(pi===undefined) pi=_RI[k];
                   if(pi!==undefined) fotosRev['s'+r.semana+'_'+pi]=url;
