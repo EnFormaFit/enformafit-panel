@@ -564,53 +564,49 @@ function tRevision(c){
   // Si no hay bloques con datos para semSel, añadir bloque activo como columna vacía para subir
   const bloquesVista = bloques.length ? bloques : [{numero_bloque:1,estado:'activo',rows:[]}];
 
-  // Layout: filas = poses, columnas = bloques. Scroll horizontal si no caben.
-  // Cada columna-bloque tiene 200px fijos → fotos siempre al mismo tamaño independientemente de N bloques
-  const COL_W=200;
-
+  // Layout: filas = poses, columnas = bloques. grid repeat(N,1fr) → fotos grandes y comparables.
+  // Scroll horizontal si hay muchos bloques.
   let fotosH=`<div class="sec-t" style="margin-bottom:8px">
     Fotos — <span style="color:${posColors[selChip]||'var(--az2)'}">${posSelLabel}</span> por bloque
     <span style="font-weight:400;font-size:9.5px;margin-left:6px">(hover → ajustar crop)</span>
   </div>
-  <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:14px">
-    <div style="display:flex;gap:0;min-width:max-content">
-      ${POSES.map((pos,pi)=>`
-      <div class="rev-pose-row" style="flex-shrink:0;width:${COL_W}px;margin-right:8px">
-        <div class="rev-pose-lbl" style="margin-bottom:6px">${pos}</div>
-        <div style="display:flex;flex-direction:column;gap:6px">
-          ${bloquesVista.map((bl,bi)=>{
-            const nb=bl.numero_bloque;
-            const hasFoto=fotosPorBloque[bi]?.[pi];
-            const isActivo=bl.estado==='activo';
-            const blId='bph-'+nb+'-'+semSel+'-'+pi;
-            return`<div>
-              <div style="font-size:9px;font-weight:700;color:#fff;background:${blqCols[bi%blqCols.length]};padding:3px 8px;border-radius:4px;display:inline-block;margin-bottom:4px">B${nb}${isActivo?' ●':''}</div>
-              <div class="photo-slot${hasFoto?' has':''}">
-                ${hasFoto
-                  ?`<div class="ph-img-wrap" id="${blId}w" style="cursor:grab"
-                       onmousedown="phStartDrag(event,'${blId}')"
-                       ontouchstart="phStartDrag(event,'${blId}')">
-                       <img src="${hasFoto}" id="${blId}"
-                         style="transform:scale(1) translateX(0px) translateY(0px)"
-                         data-scale="1" data-tx="0" data-ty="0">
-                     </div>
-                     <div class="ph-zoom-bar">
-                       <button class="ph-zoom-btn" onclick="phZoom('${blId}',0.15)">+</button>
-                       <button class="ph-zoom-btn" onclick="phZoom('${blId}',-0.15)">−</button>
-                       <button class="ph-zoom-btn" onclick="phZoom('${blId}',0,'up')">↑</button>
-                       <button class="ph-zoom-btn" onclick="phZoom('${blId}',0,'down')">↓</button>
-                       <button class="ph-zoom-btn" onclick="phZoom('${blId}',0,'reset')" style="font-size:9px">↺</button>
-                     </div>
-                     <div class="ph-lbl">B${nb}</div>
-                     <button onclick="deleteRevPhoto('${c.id}',${nb},${semSel},${pi})" style="position:absolute;top:4px;left:4px;background:rgba(220,50,50,.85);border:none;border-radius:4px;color:#fff;font-size:11px;cursor:pointer;padding:2px 5px;z-index:20;opacity:0;transition:opacity .2s" class="ph-del-btn">🗑</button>`
-                  :`<div class="ph-empty" ${isActivo?`onclick="uploadRevPhoto('${c.id}','${semSel}',${pi})" style="cursor:pointer"`:''}><span style="font-size:20px">📷</span><span style="font-size:10px">${isActivo?'📤 Subir':'—'}</span></div>`
-                }
-              </div>
-            </div>`;
-          }).join('')}
-        </div>
-      </div>`).join('')}
-    </div>
+  <div style="margin-bottom:14px">
+    ${POSES.map((pos,pi)=>`
+    <div class="rev-pose-row">
+      <div class="rev-pose-lbl">${pos}</div>
+      <div class="rev-photos-row" style="grid-template-columns:repeat(${bloquesVista.length},1fr)">
+        ${bloquesVista.map((bl,bi)=>{
+          const nb=bl.numero_bloque;
+          const hasFoto=fotosPorBloque[bi]?.[pi];
+          const isActivo=bl.estado==='activo';
+          const blId='bph-'+nb+'-'+semSel+'-'+pi;
+          return`<div>
+            <div style="font-size:9px;font-weight:700;color:#fff;background:${blqCols[bi%blqCols.length]};padding:3px 8px;border-radius:4px;display:inline-block;margin-bottom:4px">B${nb}${isActivo?' ●':''}</div>
+            <div class="photo-slot${hasFoto?' has':''}">
+              ${hasFoto
+                ?`<div class="ph-img-wrap" id="${blId}w" style="cursor:grab"
+                     onmousedown="phStartDrag(event,'${blId}')"
+                     ontouchstart="phStartDrag(event,'${blId}')">
+                     <img src="${hasFoto}" id="${blId}"
+                       style="transform:scale(1) translateX(0px) translateY(0px)"
+                       data-scale="1" data-tx="0" data-ty="0">
+                   </div>
+                   <div class="ph-zoom-bar">
+                     <button class="ph-zoom-btn" onclick="phZoom('${blId}',0.15)">+</button>
+                     <button class="ph-zoom-btn" onclick="phZoom('${blId}',-0.15)">−</button>
+                     <button class="ph-zoom-btn" onclick="phZoom('${blId}',0,'up')">↑</button>
+                     <button class="ph-zoom-btn" onclick="phZoom('${blId}',0,'down')">↓</button>
+                     <button class="ph-zoom-btn" onclick="phZoom('${blId}',0,'reset')" style="font-size:9px">↺</button>
+                   </div>
+                   <div class="ph-lbl">B${nb}</div>
+                   <button onclick="deleteRevPhoto('${c.id}',${nb},${semSel},${pi})" style="position:absolute;top:4px;left:4px;background:rgba(220,50,50,.85);border:none;border-radius:4px;color:#fff;font-size:11px;cursor:pointer;padding:2px 5px;z-index:20;opacity:0;transition:opacity .2s" class="ph-del-btn">🗑</button>`
+                :`<div class="ph-empty" ${isActivo?`onclick="uploadRevPhoto('${c.id}','${semSel}',${pi})" style="cursor:pointer"`:''}><span style="font-size:20px">📷</span><span style="font-size:10px">${isActivo?'📤 Subir':'—'}</span></div>`
+              }
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`).join('')}
   </div>`;
 
   // Medidas en tabla horizontal comparativa
